@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <string name="app_name">Locale Plugin</string>
+    <string name="plugin_name">Activity</string>
+    <string name="location_name">Destination</string>
+</resources>

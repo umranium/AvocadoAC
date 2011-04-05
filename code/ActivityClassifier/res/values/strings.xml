@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <string name="app_name">ActivityRecorder</string>
+    <string name="introheader">Introduction</string>
+    <string name="screenheader">Screen Lock</string>
+    <string name="intro1">
+        The mail address has to be Gmail account,
+if you want to use the service properly.
+
+    </string>
+    <string name="error_disconnected">Error: disconnected from service</string>
+	<string name="delete">Delete Database</string>
+	<string name="copy">Copy Database to SDcard</string>
+    <string name="service_enabled">Stop background service</string>
+    <string name="service_disabled">Start background service</string>
+    
+    <string name="app_service_enabled">Stop Service</string>
+    <string name="app_service_disabled">Start Service</string>
+
+    <string name="activity_unknown">Unknown</string>
+    <string name="activity_classified_charging">Charging</string>
+     <string name="activity_classified_end">END</string>
+    <string name="activity_classified_uncarried">Uncarried</string>
+    <string name="activity_classified_walking">Walking</string>
+    <string name="activity_classified_paddling">Paddling</string>
+    <string name="activity_classified_travelling">Travelling</string>
+    <string name="activity_classified_active">Active</string>
+    <string name="activity_off">OFF</string>
+    <!--     <string name="activity_waiting">Waiting</string> -->
+    
+    <string name="activity_classified_walking_stairs">Walking (stairs)</string> 
+	 <string name="activity_classified_walking_stairs_up">Walking (up stairs)</string> 
+	 <string name="activity_classified_walking_stairs_down">Walking (down stairs)</string> 
+	 <string name="activity_classified_dancing">Dancing</string> 
+	 <string name="activity_classified_idle">Idle</string> 
+	 <string name="activity_classified_idle_standing">Standing still</string> 
+	 <string name="activity_classified_idle_sitting">Sitting down</string> 
+	 <string name="activity_classified_vehicle">Travelling</string> 
+	 <string name="activity_classified_vehicle_bus">Travelling by bus</string> 
+	 <string name="activity_classified_vehicle_car">Travelling by car</string> 
+    
+
+<string name="activity_classified_stationary">Stationary</string>
+<string name="activity_classified_uncarried_travelling">Uncarried (Travelling)</string>
+<string name="activity_classified_charging_travelling">Charging (Travelling)</string>
+<string name="activity_end">End of Previous Classifications</string>
+</resources>

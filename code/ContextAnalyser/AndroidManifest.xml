@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+     package="uk.co.md87.android.contextanalyser" android:versionCode="1" android:versionName="0.0.1">
+    <application android:label="Context Analyser" android:icon="@drawable/icon">
+         <activity android:name=".IntroActivity" android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <service android:name=".ContextAnalyserService" android:label="Context Analyser Service"/>
+
+        <provider android:name="uk.co.md87.android.contextanalyser.PlacesContentProvider"
+            android:authorities="uk.co.md87.android.contextanalyser.placescontentprovider"
+            android:readPermission="uk.co.md87.android.contextanalyser.READ_PLACES"
+            android:writePermission="uk.co.md87.android.contextanalyser.WRITE_PLACES"/>
+
+        <provider android:name="uk.co.md87.android.contextanalyser.JourneysContentProvider"
+            android:authorities="uk.co.md87.android.contextanalyser.journeyscontentprovider"
+            android:readPermission="uk.co.md87.android.contextanalyser.READ_JOURNEYS"
+            android:writePermission="uk.co.md87.android.contextanalyser.WRITE_JOURNEYS"/>
+
+        <provider android:name="uk.co.md87.android.contextanalyser.ActivitiesContentProvider"
+            android:authorities="uk.co.md87.android.contextanalyser.activitiescontentprovider"/>
+
+        <provider android:name="uk.co.md87.android.contextanalyser.PredictionsContentProvider"
+            android:authorities="uk.co.md87.android.contextanalyser.predictionscontentprovider"/>
+    </application>
+
+    <permission-group android:description="@string/permgroupdesc"
+        android:icon="@drawable/icon" android:label="@string/permgrouplabel"
+        android:name="uk.co.md87.android.contextanalyser.CONTEXT"/>
+
+    <permission android:name="uk.co.md87.android.contextanalyser.RECEIVE_UPDATES"
+        android:label="@string/permlab_receiveUpdates"
+        android:description="@string/permdesc_receiveUpdates"
+        android:permissionGroup="uk.co.md87.android.contextanalyser.CONTEXT"
+        android:protectionLevel="dangerous" />
+    <permission android:name="uk.co.md87.android.contextanalyser.READ_PLACES"
+        android:label="@string/permlab_readPlaces"
+        android:description="@string/permdesc_readPlaces"
+        android:permissionGroup="uk.co.md87.android.contextanalyser.CONTEXT"
+        android:protectionLevel="dangerous" />
+    <permission android:name="uk.co.md87.android.contextanalyser.WRITE_PLACES"
+        android:label="@string/permlab_writePlaces"
+        android:description="@string/permdesc_writePlaces"
+        android:permissionGroup="uk.co.md87.android.contextanalyser.CONTEXT"
+        android:protectionLevel="dangerous" />
+    <permission android:name="uk.co.md87.android.contextanalyser.READ_JOURNEYS"
+        android:label="@string/permlab_readJourneys"
+        android:description="@string/permdesc_readJourneys"
+        android:permissionGroup="uk.co.md87.android.contextanalyser.CONTEXT"
+        android:protectionLevel="dangerous" />
+    <permission android:name="uk.co.md87.android.contextanalyser.WRITE_JOURNEYS"
+        android:label="@string/permlab_writeJourneys"
+        android:description="@string/permdesc_writeJourneys"
+        android:permissionGroup="uk.co.md87.android.contextanalyser.CONTEXT"
+        android:protectionLevel="dangerous" />
+    <permission android:name="uk.co.md87.android.contextanalyser.BROADCAST"
+        android:label="@string/permlab_broadcast"
+        android:description="@string/permdesc_broadcast"
+        android:permissionGroup="uk.co.md87.android.contextanalyser.CONTEXT"
+        android:protectionLevel="dangerous" />
+
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="uk.co.md87.android.contextanalyser.BROADCAST" />
+    <uses-sdk android:minSdkVersion="3" />
+</manifest>

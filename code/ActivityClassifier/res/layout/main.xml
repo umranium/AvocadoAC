@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+<!-- 
+    <Button
+        android:id="@+id/togglebutton"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/service_disabled"
+        android:layout_marginTop="5dip"
+        android:layout_marginBottom="5dip"
+        />
+         -->
+     <ListView
+        android:id="@+id/list"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="1"
+        android:drawSelectorOnTop="false"
+       
+        />
+        
+        <!--  
+            <Button
+        android:id="@+id/deletedata"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/delete"
+        android:layout_marginTop="5dip"
+        android:layout_marginBottom="5dip"
+        />
+        <Button
+        android:id="@+id/copydata"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/copy"
+        android:layout_marginTop="5dip"
+        android:layout_marginBottom="5dip"
+        />
+        -->
+
+</LinearLayout>
