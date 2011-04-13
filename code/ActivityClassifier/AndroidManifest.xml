@@ -5,8 +5,7 @@
 	<uses-permission android:name="android.permission.READ_LOGS"></uses-permission>
 	<uses-permission android:name="com.google.android.apps.mytracks.WRITE_TRACK_DATA"></uses-permission>
 	<uses-permission android:name="com.google.android.apps.mytracks.READ_TRACK_DATA"></uses-permission>
-	<application android:debuggable="true" android:label="Activity Classifier"
-		android:icon="@drawable/avocado2icons72">
+	<application android:debuggable="true" android:icon="@drawable/avocado2icons72" android:label="Avocado AC">
 		<activity android:screenOrientation="portrait" android:label="Activity Classifier"
 			android:name=".activity.MainTabActivity">
 			<intent-filter>

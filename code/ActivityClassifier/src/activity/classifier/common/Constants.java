@@ -33,7 +33,7 @@ public class Constants {
 	 * being debugged (i.e. plugged into the computer), and normal
 	 * usage.
 	 */
-	public final static boolean IS_DEBUGGING = false; 
+	public final static boolean IS_DEBUGGING = true; 
 	
 	/**
 	 * Should we or should we not output debugging information?

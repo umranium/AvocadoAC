@@ -61,6 +61,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 	private CheckBoxPreference aggregatePref;
 	private CheckBoxPreference fulltimeAccelPref;
 	private PreferenceScreen selectAccountPref;
+	private CheckBoxPreference fftOnPref; 
 	
 	private Handler mainLooperHandler;
 	
