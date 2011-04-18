@@ -538,8 +538,8 @@ public class RecorderService extends Service implements Runnable {
 		//	put on-going notification to show that service is running in the background
 		NotificationManager notificationManager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
-		int icon = R.drawable.avocado2icons72;
-		CharSequence tickerText = "Activity Classifier Running";
+		int icon = R.drawable.icon;
+		CharSequence tickerText = "Avocado AC Running";
 		long when = System.currentTimeMillis();
 		Notification notification = new Notification(icon, tickerText, when);
 		
@@ -547,8 +547,8 @@ public class RecorderService extends Service implements Runnable {
 		notification.flags = Notification.FLAG_NO_CLEAR | Notification.FLAG_ONGOING_EVENT;
 		
 		Context context = getApplicationContext();
-		CharSequence contentTitle = "Activity Classifier";
-		CharSequence contentText = "Activity Classifier service running";
+		CharSequence contentTitle = "Avocado AC";
+		CharSequence contentText = "Avocado AC service running";
 		Intent notificationIntent = new Intent(this, MainTabActivity.class);
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 		notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);

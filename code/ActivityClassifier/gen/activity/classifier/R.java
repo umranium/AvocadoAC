@@ -19,13 +19,14 @@ public final class R {
         public static final int arrow_icon=0x7f020001;
         public static final int avocado2icons72=0x7f020002;
         public static final int avocadoicons72=0x7f020003;
-        public static final int chart36=0x7f020004;
-        public static final int chart72=0x7f020005;
-        public static final int database36=0x7f020006;
-        public static final int database72=0x7f020007;
-        public static final int icon=0x7f020008;
-        public static final int settings36=0x7f020009;
-        public static final int settings72=0x7f02000a;
+        public static final int avocadoicons72_2=0x7f020004;
+        public static final int chart36=0x7f020005;
+        public static final int chart72=0x7f020006;
+        public static final int database36=0x7f020007;
+        public static final int database72=0x7f020008;
+        public static final int icon=0x7f020009;
+        public static final int settings36=0x7f02000a;
+        public static final int settings72=0x7f02000b;
     }
     public static final class id {
         public static final int LinearLayout01=0x7f07000d;

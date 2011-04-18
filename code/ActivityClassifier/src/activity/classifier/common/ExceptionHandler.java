@@ -63,7 +63,7 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
 
     private String appname, url, version, imei;
 
-    private String localPath= Environment.getExternalStorageDirectory() + File.separator + "activityclassifier";
+    private String localPath= Environment.getExternalStorageDirectory() + File.separator + "avocadoAC";
     
     private Context context;
     
@@ -125,7 +125,7 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
         	Log.v(Constants.DEBUG_TAG, "Output Trace File:"+outputFile);
         	if (!outputFile.getParentFile().exists()) {
         		if (!outputFile.getParentFile().mkdirs()) {
-                    Log.e("Activity Classifier Error", 
+                    Log.e("Avocado AC Error", 
                     		"Unable to create log file directory:\n"+
                     		outputFile.getParentFile()+
                     		"\nCaused when writing stack to file:\n"+
@@ -134,7 +134,7 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
         	}
         	if (!outputFile.exists()) {
         		if (!outputFile.createNewFile()) {
-                    Log.e("Activity Classifier Error", 
+                    Log.e("Avocado AC Error", 
                     		"Unable to create log file:\n"+
                     		outputFile.getParentFile()+
                     		"\nCaused when writing stack to file:\n"+

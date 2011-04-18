@@ -29,11 +29,11 @@ public class Constants {
 	public final static boolean IS_DEV_VERSION = false;
 	
 	/**
-	 * Used to differenciate between times when the application is
+	 * Used to differentiate between times when the application is
 	 * being debugged (i.e. plugged into the computer), and normal
 	 * usage.
 	 */
-	public final static boolean IS_DEBUGGING = true; 
+	public final static boolean IS_DEBUGGING = false; 
 	
 	/**
 	 * Should we or should we not output debugging information?
@@ -90,7 +90,7 @@ public class Constants {
 	/**
 	 * A tag that can be used to identify this application's log entries.
 	 */
-	public static final String DEBUG_TAG = "ActivityClassifier";
+	public static final String DEBUG_TAG = "AvocadoAC";
 	
 	/**
 	 * Records file name.
@@ -101,7 +101,7 @@ public class Constants {
 	 * Path to the location where this application stores files in the SD card
 	 */
 	public static final String PATH_SD_CARD_APP_LOC =
-		Environment.getExternalStorageDirectory() + File.separator + "activityclassifier"; 
+		Environment.getExternalStorageDirectory() + File.separator + "AvocadoAC"; 
 //		File.separator + "sdcard" + File.separator + "activityclassifier"; 
 	
 	/**
