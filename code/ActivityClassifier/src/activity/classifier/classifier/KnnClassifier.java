@@ -55,6 +55,12 @@ public class KnnClassifier implements Classifier {
 		{
 			this.add(FeatureExtractor.FEATURE_VER_MEAN);
 			this.add(FeatureExtractor.FEATURE_VER_RANGE);
+			
+			if (!Constants.USE_FFT) {
+				this.add(FeatureExtractor.FEATURE_HOR_MFA);
+				this.add(FeatureExtractor.FEATURE_VER_MFA);
+				Log.i(Constants.DEBUG_TAG, "FFT Ignored in KNN Classifier");
+			}
 		}
 	};
 

@@ -262,7 +262,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 						          );
 			}
 			
-			calibrator.processData(sampleTime, dataMeans, dataSd);
+			calibrator.processData(sampleTime, dataMeans, dataSd, rawSampleStatistics.getSum(), rawSampleStatistics.getSumSqr(), rawSampleStatistics.getCount());
 			
 			if (!isCalibrated && calibrator.isCalibrated()) {
 				Log.v(Constants.DEBUG_TAG, "Calibration just finished. Saving values to DB.");

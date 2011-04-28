@@ -186,39 +186,37 @@ public class Calibrator {
 	}
 
 	/**
-	 * Calculate standard deviation by Combining Standard Deviation method.
+	 * Computes the mean and the standard deviation given the sum of x square and
+	 * the sum of x
 	 * 
-	 * @see <a href="http://en.wikipedia.org/wiki/Standard_deviation">Combining
-	 *      Standard Deviation method</a>
+	 * @see <a href="http://en.wikipedia.org/wiki/Standard_deviation#Identities_and_mathematical_properties">Combining
+	 *      Standard Deviation: Identities and mathematical properties</a>
 	 * 
-	 * @param sampleMean
-	 *            Acceleration mean values
-	 * @param sampleSd
-	 *            Acceleration standard deviation values
+	 * @param sumOfX
+	 *            the sum of the samples for the 3 axis
+	 * @param sumOfXSqr
+	 *            the sum of the square of samples for the 3 axis
+	 * @param count
+	 *            the total number of samples used to obtain the sum and sum square
 	 */
-	private void doCalibration(float[] sampleMean, float[] sampleSd) {
+	private void doCalibration2(float[] sumOfX, float[] sumOfXSqr, int count) {
 		this.valueOfGravity = 0.0f;
 		
 		for (int i = 0; i < Constants.ACCEL_DIM; i++) {
-			float newMean, newSd;
 			
-			newMean = (count*this.mean[i] + sampleMean[i]) / (count+1);
+			this.mean[i] = sumOfX[i] / count;
+			this.sd[i] = (float)Math.sqrt( sumOfXSqr[i]/count - this.mean[i]*this.mean[i]);
 			
-			newSd = (float) Math.sqrt(
-					(count*sd[i]*sd[i] + sampleSd[i]*sampleSd[i]) / (count+1)
-					+
-					(count*(mean[i]-sampleMean[i])*(mean[i]-sampleMean[i])) / ((count+1)*(count+1))
-					);
-			
-			this.mean[i] = newMean;
-			this.sd[i] = newSd;
+			//	just in case...
+			if (Float.isNaN(this.sd[i])) {
+				this.sd[i] = 0.0f;
+			}
 			
 			this.valueOfGravity += this.mean[i]*this.mean[i];
 		}
 		
 		this.valueOfGravity = (float)Math.sqrt(this.valueOfGravity);
-		
-		++this.count;
+		this.count = count;
 	}
 	
 	/**
@@ -232,13 +230,10 @@ public class Calibrator {
 	 * @param measurement2
 	 * Second measurement
 	 * 
-	 * @param baseAllowedMeanDiff
-	 * Allowed difference between the measurements
-	 * 
 	 * @return
 	 * true if movement was detected, false if no movement was detected.
 	 */
-	private boolean hasMovement(Measurement measurement1, Measurement measurement2, float[] baseAllowedMeanDiff, float magnitude)
+	private boolean hasMovement(Measurement measurement1, Measurement measurement2)
 	{
 		boolean movementDetected = false;
 		for (int axis=0; axis<Constants.ACCEL_DIM; ++axis) {
@@ -246,8 +241,8 @@ public class Calibrator {
 			if (meanDif<0.0)
 				meanDif = -meanDif;
 			
-			if (meanDif>baseAllowedMeanDiff[axis]*magnitude &&
-					meanDif>Constants.CALIBARATION_MIN_ALLOWED_BASE_DEVIATION*magnitude) {
+			if (meanDif>resetSd[axis]*allowedMultiplesOfDeviation &&
+					meanDif>Constants.CALIBARATION_MIN_ALLOWED_BASE_DEVIATION*allowedMultiplesOfDeviation) {
 				movementDetected = true;
 				break;
 			}
@@ -262,19 +257,16 @@ public class Calibrator {
 	 * @param measurement
 	 * The measurement to check
 	 * 
-	 * @param baseAllowedSdDev
-	 * The deviation allowed
-	 * 
 	 * @return
 	 * true if motion was detected, false if no motion was detected.
 	 */
-	private boolean hasMotion(Measurement measurement, float[] baseAllowedSdDev, float magnitude) {
+	private boolean hasMotion(Measurement measurement) {
 		boolean motionDetected = false;
 		for (int axis=0; axis<Constants.ACCEL_DIM; ++axis) {
-			if (measurement.axisSd[axis]>baseAllowedSdDev[axis]*magnitude &&
-					measurement.axisSd[axis]>Constants.CALIBARATION_MIN_ALLOWED_BASE_DEVIATION*magnitude
+			if (measurement.axisSd[axis]>resetSd[axis]*allowedMultiplesOfDeviation &&
+					measurement.axisSd[axis]>Constants.CALIBARATION_MIN_ALLOWED_BASE_DEVIATION*allowedMultiplesOfDeviation
 					) {
-				Log.v(Constants.DEBUG_TAG, "Motion detected in current measurement, sd["+axis+"]="+measurement.axisSd[axis]+" max="+(baseAllowedSdDev[axis]*magnitude));
+				Log.v(Constants.DEBUG_TAG, "Motion detected in current measurement, sd["+axis+"]="+measurement.axisSd[axis]+" max="+(resetSd[axis]*allowedMultiplesOfDeviation));
 				motionDetected = true;
 				break;
 			}
@@ -341,7 +333,7 @@ public class Calibrator {
 	 * @throws InterruptedException
 	 */
 	synchronized
-	public void processData(long sampleTime, float[] mean, float[] sd) throws InterruptedException
+	public void processData(long sampleTime, float[] mean, float[] sd, float[] sum, float[] sumSqr, int count) throws InterruptedException
 	{
 //		Log.v(Constants.DEBUG_TAG, "Calibration/Uncarried process start: total instances="+measurementsBuffer.getTotalSize()+"/"+measurementsBuffer.getCapacity()+", empty="+measurementsBuffer.getEmptySize()+", filled="+measurementsBuffer.getFilledSize());
 		try {
@@ -350,8 +342,9 @@ public class Calibrator {
 	
 			//	assign mean and standard deviations to be returned
 			for (int i=0; i<Constants.ACCEL_DIM; ++i) {
-				currGravity.axisMean[i] = mean[i];
-				currGravity.axisSd[i] = sd[i];
+				currGravity.sum[i] = sum[i];
+				currGravity.sumSqr[i] = sumSqr[i];
+				currGravity.count = count;
 			}
 			
 			//	assign the time to the time the sample was taken
@@ -363,7 +356,7 @@ public class Calibrator {
 			Measurement lastGravity = null;
 			
 			//	check if there is any motion in the current found data
-			if (hasMotion(currGravity, resetSd, allowedMultiplesOfDeviation)) {
+			if (hasMotion(currGravity)) {
 	//			for (int i=0; i<data.length; ++i) {
 	//				String s = "";
 	//				for (int d=0; d<data[i].length; ++d)
@@ -382,7 +375,7 @@ public class Calibrator {
 				lastGravity = measurementsBuffer.peekFilledInstance();
 				
 				// check if there is any movement detected
-				while (lastGravity!=null && hasMovement(lastGravity, currGravity, resetSd, allowedMultiplesOfDeviation)) {
+				while (lastGravity!=null && hasMovement(lastGravity, currGravity)) {
 					movementDetected = true;
 					//	get rid of it
 					measurementsBuffer.returnEmptyInstance(measurementsBuffer.takeFilledInstance());
@@ -411,15 +404,25 @@ public class Calibrator {
 					} catch (RemoteException e) {
 					}
 					
+					float sSum[] = new float[Constants.ACCEL_DIM];
+					float sSumSqr[] = new float[Constants.ACCEL_DIM];
+					int sCount = 0;
+					
 					//	cycle through all the measurements and do calibration
 					int filledCount = measurementsBuffer.getPendingFilledInstances();
 					for (int i=0; i<filledCount; ++i) {
 						Measurement temp = measurementsBuffer.takeFilledInstance();
-						doCalibration(temp.axisMean, temp.axisSd);
-						//	the mean & sd will change after the calibration,
-						//		so don't bother to keep the measurements
+						//	add to sum, sum square, and count
+						for (int d=0; d<Constants.ACCEL_DIM; ++d) {
+							sSum[d] += temp.sum[d];
+							sSumSqr[d] += temp.sumSqr[d];
+						}
+						sCount += temp.count;
 						measurementsBuffer.returnEmptyInstance(temp);
 					}
+					
+					//	get the mean and sd from the sum, sum square, and count
+					doCalibration2(sSum, sSumSqr, sCount);
 					
 					setToCalibratedState();
 				}
@@ -446,11 +449,17 @@ public class Calibrator {
 		public long time;
 		public final float[] axisMean;
 		public final float[] axisSd;
+		public final float[] sumSqr;
+		public final float[] sum;
+		public int count;
 		
-		public Measurement(float[] axisMean, float[] axisSd) {
+		public Measurement() {
 			this.time = 0;
-			this.axisMean = axisMean;
-			this.axisSd = axisSd;
+			this.axisMean = new float[Constants.ACCEL_DIM];
+			this.axisSd = new float[Constants.ACCEL_DIM];
+			this.sumSqr = new float[Constants.ACCEL_DIM];
+			this.sum = new float[Constants.ACCEL_DIM];
+			this.count = 0; 
 		}
 		
 	}
@@ -463,10 +472,7 @@ public class Calibrator {
 
 		@Override
 		protected Measurement getNewInstance() {
-			return new Measurement(
-					new float[Constants.ACCEL_DIM],
-					new float[Constants.ACCEL_DIM]
-					);
+			return new Measurement();
 		}
 		
 	}

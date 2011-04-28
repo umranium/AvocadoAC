@@ -89,9 +89,11 @@ public class CalcStatistics {
 	 */
 	public void assign(float[][] arrayIn, int samples) {
 		
+		assert(samples>0);
+		
 		this.count = samples;
 		
-        for (int i=0; i<dimensions; ++i) {
+		for (int i=0; i<dimensions; ++i) {
             this.sum[i] = 0.0f;
             this.sumSqr[i] = 0.0f;
             this.min[i] = Float.POSITIVE_INFINITY;
@@ -117,11 +119,9 @@ public class CalcStatistics {
 		
 		for (int j = 0; j < dimensions; j++) {
 			mean[j] = sum[j] / (samples);
-		}
-
-		for (int j = 0; j < dimensions; j++) {
-			sd[j] = (float) Math.sqrt(sumSqr[j] / count
-					- mean[j] * mean[j]);
+			sd[j] = (float) Math.sqrt(
+					sumSqr[j] / count - mean[j] * mean[j]
+				);
 		}
 	}
 
@@ -141,6 +141,13 @@ public class CalcStatistics {
 		return sum;
 	}
 
+	/**
+	 * @return the sumSqr
+	 */
+	public float[] getSumSqr() {
+		return sumSqr;
+	}
+	
 	/**
 	 * 
 	 * @return average of all the items that have been entered. Value is
@@ -231,5 +238,6 @@ public class CalcStatistics {
     			vec[i] /= length;
         }
 	}
+
 	
 }

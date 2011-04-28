@@ -41,6 +41,11 @@ public class Constants {
 	public static final boolean OUTPUT_DEBUG_INFO = true;
 	
 	/**
+	 * Whether to use FFT or not
+	 */
+	public static final boolean USE_FFT = false;
+	
+	/**
 	 * The Id of the flurry session
 	 */
 	public static final String FLURRY_SESSION_ID = "VSE8KMFZDAKZJPJHH2RL";

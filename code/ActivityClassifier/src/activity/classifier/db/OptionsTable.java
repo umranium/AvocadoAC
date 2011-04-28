@@ -655,5 +655,4 @@ public class OptionsTable extends DbTableAdapter {
 		this.updatedKeys.add(KEY_INVOKE_MYTRACKS);
 	}
 	
-	
 }

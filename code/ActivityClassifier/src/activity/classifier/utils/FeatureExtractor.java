@@ -99,12 +99,15 @@ public class FeatureExtractor {
         float[] mean = sampleStats.getMean();
         float[] sd = sampleStats.getStandardDeviation();
         
-        //FFT calculations
-        float[] imagenary = new float[windowSize];
-        freqABSValues[0] = fftObj.fft(sampleTrasposed[0],imagenary);
-        imagenary = new float[windowSize];
-        freqABSValues[1] = fftObj.fft(sampleTrasposed[1],imagenary);
-        fftStats.assign(transpose(freqABSValues),windowSize);
+        
+        if (Constants.USE_FFT) {
+	        //FFT calculations
+	        float[] imagenary = new float[windowSize];
+	        freqABSValues[0] = fftObj.fft(sampleTrasposed[0],imagenary);
+	        imagenary = new float[windowSize];
+	        freqABSValues[1] = fftObj.fft(sampleTrasposed[1],imagenary);
+	        fftStats.assign(transpose(freqABSValues),windowSize);
+        }
 
 
         features[FEATURE_HOR_RANGE] = max[0] - min[0];
@@ -113,9 +116,16 @@ public class FeatureExtractor {
 		features[FEATURE_VER_MEAN] = mean[1];
 		features[FEATURE_HOR_SD] = sd[0];
 		features[FEATURE_VER_SD] = sd[1];
-		// The difference between MAX amp of freqs and the mean of the freqs ...
-        features[FEATURE_HOR_MFA] = fftStats.getMax()[0] - fftStats.getMean()[0]; 
-        features[FEATURE_VER_MFA] = fftStats.getMax()[1] - fftStats.getMean()[1];
+		
+		if (Constants.USE_FFT) {
+			// The difference between MAX amp of freqs and the mean of the freqs ...
+	        features[FEATURE_HOR_MFA] = fftStats.getMax()[0] - fftStats.getMean()[0]; 
+	        features[FEATURE_VER_MFA] = fftStats.getMax()[1] - fftStats.getMean()[1];
+		} else {
+			Log.i(Constants.DEBUG_TAG, "FFT Ignored in Feature Extractor");
+			features[FEATURE_HOR_MFA] = 0.0f;
+			features[FEATURE_VER_MFA] = 0.0f;
+		}
 
         
         return features;
