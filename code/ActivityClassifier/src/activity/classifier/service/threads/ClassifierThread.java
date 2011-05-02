@@ -212,6 +212,8 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	private String processData(SampleBatch batch) throws InterruptedException, RemoteException {
 		Log.v(Constants.DEBUG_TAG, "Processing batch.");
 		
+    	long start = System.currentTimeMillis();
+
 		try {
 			//	get local copies of the data
 			float[][] data = batch.data;
@@ -359,6 +361,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				debugDataTable.trim();
 				debugDataTable.insert();
 			}
+	        Log.i(Constants.DEBUG_TAG, "Processing Batch Took: "+(System.currentTimeMillis()-start)+"ms");	        
 		}
 	}
 	

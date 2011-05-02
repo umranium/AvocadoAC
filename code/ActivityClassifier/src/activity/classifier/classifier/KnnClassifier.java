@@ -78,9 +78,6 @@ public class KnnClassifier implements Classifier {
     //	used to obtain the counts of different activities within the K-nearest neighbours in the KNN
     private Map<String,Integer> activityCounts = new TreeMap<String,Integer>(new StringComparator(false));
     
-    //	statistics about each feature selected
-    private Map<String,CalcStatistics> activityFeatureStatistics;
-    
     /**
      * Set the clustered data set for classification.
      * @param model clustered data set
@@ -94,19 +91,22 @@ public class KnnClassifier implements Classifier {
         	this.distances[i] = new ClassificationDist();
         
         {
-        	this.activityFeatureStatistics = new TreeMap<String,CalcStatistics>(new StringComparator(false));
+            //	statistics about each feature selected
+            Map<String,CalcStatistics> activityFeatureStatistics;
+            
+        	activityFeatureStatistics = new TreeMap<String,CalcStatistics>(new StringComparator(false));
         	
         	for (Entry<Float[], Object[]> sample:model) {
         		String activity = (String)sample.getValue()[0];
-        		if (!this.activityFeatureStatistics.containsKey(activity)) {
-        			this.activityFeatureStatistics.put(activity, new CalcStatistics(FeatureExtractor.NUM_FEATURES));
+        		if (!activityFeatureStatistics.containsKey(activity)) {
+        			activityFeatureStatistics.put(activity, new CalcStatistics(FeatureExtractor.NUM_FEATURES));
         		}
         	}
         	
         	Log.v(Constants.DEBUG_TAG, "Feature Statistics:");
         	
-        	for (String activity:this.activityFeatureStatistics.keySet()) {
-        		CalcStatistics features = this.activityFeatureStatistics.get(activity);
+        	for (String activity:activityFeatureStatistics.keySet()) {
+        		CalcStatistics features = activityFeatureStatistics.get(activity);
         		
             	ArrayList<float[]> featureData = new ArrayList<float[]>(model.size());
             	for (Entry<Float[], Object[]> sample:model) {
@@ -151,7 +151,7 @@ public class KnnClassifier implements Classifier {
     
     private String internClassify(float[] features) {
     	float temp;
-
+    	
         /*
          *  Compare between the points from the sample data and the points from the clustered data set.
          *  Get the closest points in the clustered data set, and classify the activity.

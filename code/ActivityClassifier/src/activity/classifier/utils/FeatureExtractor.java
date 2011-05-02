@@ -51,8 +51,6 @@ public class FeatureExtractor {
     private float[][] freqABSValues;
     private CalcStatistics fftStats;
     private FFTLib fftObj;
-
-    
     
 
     public FeatureExtractor(int windowSize) {
@@ -92,23 +90,21 @@ public class FeatureExtractor {
 
     private float[] internExtract() {
         sampleStats.assign(twoDimSamples, windowSize);
-        float[][] sampleTrasposed = transpose(twoDimSamples);
 
         float[] min = sampleStats.getMin();
         float[] max = sampleStats.getMax();
         float[] mean = sampleStats.getMean();
         float[] sd = sampleStats.getStandardDeviation();
         
-        
         if (Constants.USE_FFT) {
 	        //FFT calculations
+            float[][] sampleTrasposed = transpose(twoDimSamples);
 	        float[] imagenary = new float[windowSize];
 	        freqABSValues[0] = fftObj.fft(sampleTrasposed[0],imagenary);
 	        imagenary = new float[windowSize];
 	        freqABSValues[1] = fftObj.fft(sampleTrasposed[1],imagenary);
 	        fftStats.assign(transpose(freqABSValues),windowSize);
         }
-
 
         features[FEATURE_HOR_RANGE] = max[0] - min[0];
 		features[FEATURE_VER_RANGE] = max[1] - min[1];
@@ -122,7 +118,6 @@ public class FeatureExtractor {
 	        features[FEATURE_HOR_MFA] = fftStats.getMax()[0] - fftStats.getMean()[0]; 
 	        features[FEATURE_VER_MFA] = fftStats.getMax()[1] - fftStats.getMean()[1];
 		} else {
-			Log.i(Constants.DEBUG_TAG, "FFT Ignored in Feature Extractor");
 			features[FEATURE_HOR_MFA] = 0.0f;
 			features[FEATURE_VER_MFA] = 0.0f;
 		}
