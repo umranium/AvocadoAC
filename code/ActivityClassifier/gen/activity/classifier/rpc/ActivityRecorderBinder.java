@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: C:\\android\\git-rep\\ContextApi\\code\\ActivityClassifier\\src\\activity\\classifier\\rpc\\ActivityRecorderBinder.aidl
+ * Original file: /Users/amir/Documents/workspace/MOBILE/ContextApi/code/ActivityClassifier/src/activity/classifier/rpc/ActivityRecorderBinder.aidl
  */
 package activity.classifier.rpc;
 /**

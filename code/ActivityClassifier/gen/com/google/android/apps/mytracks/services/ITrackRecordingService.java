@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Original file: C:\\android\\git-rep\\ContextApi\\code\\MyTracksLib\\src\\com\\google\\android\\apps\\mytracks\\services\\ITrackRecordingService.aidl
+ * Original file: /Users/amir/Documents/workspace/MOBILE/ContextApi/code/MyTracksLib/src/com/google/android/apps/mytracks/services/ITrackRecordingService.aidl
  */
 package com.google.android.apps.mytracks.services;
 /**

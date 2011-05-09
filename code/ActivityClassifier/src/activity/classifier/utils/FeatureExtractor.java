@@ -115,8 +115,10 @@ public class FeatureExtractor {
 		
 		if (Constants.USE_FFT) {
 			// The difference between MAX amp of freqs and the mean of the freqs ...
-	        features[FEATURE_HOR_MFA] = fftStats.getMax()[0] - fftStats.getMean()[0]; 
-	        features[FEATURE_VER_MFA] = fftStats.getMax()[1] - fftStats.getMean()[1];
+			//http://www.mathworks.com/help/techdoc/ref/fft.html the value should be divided by the 
+			// length of the sample that is the windowSize here.
+	        features[FEATURE_HOR_MFA] = (fftStats.getMax()[0] - fftStats.getMean()[0])/windowSize; 
+	        features[FEATURE_VER_MFA] = (fftStats.getMax()[1] - fftStats.getMean()[1])/windowSize;
 		} else {
 			features[FEATURE_HOR_MFA] = 0.0f;
 			features[FEATURE_VER_MFA] = 0.0f;
