@@ -22,6 +22,9 @@
 
 package activity.classifier.accel.async;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import activity.classifier.accel.SampleBatch;
 import activity.classifier.accel.Sampler;
 import activity.classifier.common.Constants;
@@ -37,7 +40,7 @@ import android.util.Log;
  *
  * @author chris
  */
-public class AsyncSampler implements Runnable, Sampler {
+public class AsyncSampler implements Sampler {
 
     private final Handler handler;
     private final AsyncAccelReader reader;
@@ -52,11 +55,48 @@ public class AsyncSampler implements Runnable, Sampler {
     private long maxTimeDelay;
     private long cummTimeError;
     */
+    private Timer timer;
+    
+    private TimerTask timerTask = new TimerTask() {
+		@Override
+		public void run() {
+	    	/*
+	    	long thisTime = System.currentTimeMillis();
+	    	
+	    	currTimeDelay = (thisTime-lastTime) - Constants.DELAY_BETWEEN_SAMPLES;
+	    	if (currTimeDelay<0) {
+	    		currTimeDelay = -currTimeDelay;
+	    	}
+	    	cummTimeError += currTimeDelay;
+	    	if (minTimeDelay>currTimeDelay)
+	    		minTimeDelay = currTimeDelay;
+	    	if (maxTimeDelay<currTimeDelay)
+	    		maxTimeDelay = currTimeDelay;
+	    	*/
+	    	reader.assignSample(currentBatch);
+	    	//Log.i("accel",currentBatch.getCurrentSample()[0]+" "+currentBatch.getCurrentSample()[1]+" "+currentBatch.getCurrentSample()[2]);
+	    	if (!currentBatch.nextSample()) {
+	    		/*
+	    		Log.v(Constants.DEBUG_TAG, "Cummulative Absolute Sampling Time Error: "+cummTimeError);
+	    		Log.v(Constants.DEBUG_TAG, "Min Absolute Sampling Time Error: "+minTimeDelay);
+	    		Log.v(Constants.DEBUG_TAG, "Max Absolute Sampling Time Error: "+maxTimeDelay);
+	    		*/
+	            reader.stopSampling();
+	            AsyncSampler.this.sampling = false;
+	            stop();
+	            finishedRunnable.run();
+	    	}
+	    	
+	    	//lastTime = thisTime;
+		}
+	};
+    
     public AsyncSampler(final Handler handler, final AsyncAccelReader reader,
             final Runnable finishedRunnable) {
         this.handler = handler;
         this.reader = reader;
         this.finishedRunnable = finishedRunnable;
+        this.timer = new Timer("Async Sampler");
     }
 
     public void start(SampleBatch currentBatch) {
@@ -72,7 +112,8 @@ public class AsyncSampler implements Runnable, Sampler {
         maxTimeDelay = Long.MIN_VALUE;
         lastTime = System.currentTimeMillis();
         */
-        handler.postDelayed(this, Constants.DELAY_BETWEEN_SAMPLES);
+        //handler.postDelayed(this, Constants.DELAY_BETWEEN_SAMPLES);
+        timer.scheduleAtFixedRate(timerTask, Constants.DELAY_BETWEEN_SAMPLES, Constants.DELAY_BETWEEN_SAMPLES);
         
         Log.i(Constants.DEBUG_TAG, "Started Sampling.");
     }
@@ -81,43 +122,9 @@ public class AsyncSampler implements Runnable, Sampler {
     	return currentBatch;
     }
     
-    /** {@inheritDoc} */
-//    @Override
-    public void run() {
-    	/*
-    	long thisTime = System.currentTimeMillis();
-    	
-    	currTimeDelay = (thisTime-lastTime) - Constants.DELAY_BETWEEN_SAMPLES;
-    	if (currTimeDelay<0) {
-    		currTimeDelay = -currTimeDelay;
-    	}
-    	cummTimeError += currTimeDelay;
-    	if (minTimeDelay>currTimeDelay)
-    		minTimeDelay = currTimeDelay;
-    	if (maxTimeDelay<currTimeDelay)
-    		maxTimeDelay = currTimeDelay;
-    	*/
-    	reader.assignSample(currentBatch);
-    	//Log.i("accel",currentBatch.getCurrentSample()[0]+" "+currentBatch.getCurrentSample()[1]+" "+currentBatch.getCurrentSample()[2]);
-    	if (!currentBatch.nextSample()) {
-    		/*
-    		Log.v(Constants.DEBUG_TAG, "Cummulative Absolute Sampling Time Error: "+cummTimeError);
-    		Log.v(Constants.DEBUG_TAG, "Min Absolute Sampling Time Error: "+minTimeDelay);
-    		Log.v(Constants.DEBUG_TAG, "Max Absolute Sampling Time Error: "+maxTimeDelay);
-    		*/
-            reader.stopSampling();
-            this.sampling = false;
-            stop();
-            finishedRunnable.run();
-    	} else {
-            handler.postDelayed(this, Constants.DELAY_BETWEEN_SAMPLES);
-    	}
-    	
-    	//lastTime = thisTime;
-    }
 
     public void stop() {
-        handler.removeCallbacks(this);
+    	timer.cancel();
         Log.i(Constants.DEBUG_TAG, "Finished Sampling.");
     }
 
