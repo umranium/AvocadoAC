@@ -99,7 +99,8 @@ public class FFTLib {
 	   {
 	     int i,j,k,n1,n2,a;
 	     float c,s,e,t1,t2;
-	     float[] absFreq = new float[x.length];
+	     int sigLength = x.length;
+	     float[] absFreq = new float[sigLength];
 
 	     // Bit-reverse
 	     j = 0;
@@ -147,8 +148,11 @@ public class FFTLib {
 	       }
 	     }
 
-	     for (i = 0;i<x.length;i++)
-	         absFreq[i] = (float)Math.sqrt((float)Math.pow((double)x[i],2.0) + Math.pow((double)y[i],2.0));
+	     for (i = 0;i<sigLength;i++)
+				// The difference between MAX amp of freqs and the mean of the freqs ...
+				//http://www.mathworks.com/help/techdoc/ref/fft.html the value should be divided by the 
+				// length of the sample that is the windowSize here.
+	         absFreq[i] = (float)Math.sqrt((float)Math.pow((double)x[i],2.0) + Math.pow((double)y[i],2.0))/sigLength;
 	     //The first values is too high and seams noisy. Creates an unnecassary pick.
 	     absFreq[0] = absFreq[1];
 	     return absFreq;
