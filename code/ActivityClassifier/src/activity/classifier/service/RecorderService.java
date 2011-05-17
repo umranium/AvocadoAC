@@ -302,6 +302,7 @@ public class RecorderService extends Service implements Runnable {
 					//	which is why it is important to start with a sufficient number of batches
 					//	and process the batches as fast as possible
 					SampleBatch batch = batchBuffer.takeEmptyInstance();
+					Log.i(Constants.DEBUG_TAG, "Sampling Batch");
 					sampler.start(batch);
 				} catch (InterruptedException e) {
 					e.printStackTrace();

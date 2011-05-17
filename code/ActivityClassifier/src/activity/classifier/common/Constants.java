@@ -43,7 +43,7 @@ public class Constants {
 	/**
 	 * Whether to use FFT or not
 	 */
-	public static final boolean USE_FFT = true;
+	public static final boolean USE_FFT = false;
 	
 	/**
 	 * The Id of the flurry session

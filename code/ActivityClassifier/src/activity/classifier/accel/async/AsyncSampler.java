@@ -37,6 +37,13 @@ import android.util.Log;
  * {@link AsyncAccelReader}. The Sampler takes 128 samples with a 50ms delay between
  * each sample. When the Sampler has finished, it executes a runnable so that
  * the data may be retrieved and analysed.
+ * 
+ * This class uses Timer and TimerTask classes to schedule sampling.
+ * Even though the Timer class introduces a new Thread hence incurs
+ * some performance penalty, but the Timer class's scheduleAtFixedRate()
+ * function guarantees a more consistent scheduling rate than the alternative:
+ * The Handler's postDelayed() function. The consistency is important for
+ * any FFT computations undertaken later.
  *
  * @author chris
  */
@@ -56,8 +63,10 @@ public class AsyncSampler implements Sampler {
     private long cummTimeError;
     */
     private Timer timer;
+    private SamplerTimerTask timerTask;
     
-    private TimerTask timerTask = new TimerTask() {
+    private class SamplerTimerTask extends TimerTask
+    {
 		@Override
 		public void run() {
 	    	/*
@@ -73,19 +82,23 @@ public class AsyncSampler implements Sampler {
 	    	if (maxTimeDelay<currTimeDelay)
 	    		maxTimeDelay = currTimeDelay;
 	    	*/
-	    	reader.assignSample(currentBatch);
-	    	//Log.i("accel",currentBatch.getCurrentSample()[0]+" "+currentBatch.getCurrentSample()[1]+" "+currentBatch.getCurrentSample()[2]);
-	    	if (!currentBatch.nextSample()) {
-	    		/*
-	    		Log.v(Constants.DEBUG_TAG, "Cummulative Absolute Sampling Time Error: "+cummTimeError);
-	    		Log.v(Constants.DEBUG_TAG, "Min Absolute Sampling Time Error: "+minTimeDelay);
-	    		Log.v(Constants.DEBUG_TAG, "Max Absolute Sampling Time Error: "+maxTimeDelay);
-	    		*/
-	            reader.stopSampling();
-	            AsyncSampler.this.sampling = false;
-	            stop();
-	            finishedRunnable.run();
-	    	}
+			//Log.d(Constants.DEBUG_TAG, "timer task called");
+			//	make sure we're sampling...
+			if (AsyncSampler.this.sampling) {
+		    	reader.assignSample(currentBatch);
+		    	//Log.i("accel",currentBatch.getCurrentSample()[0]+" "+currentBatch.getCurrentSample()[1]+" "+currentBatch.getCurrentSample()[2]);
+		    	if (!currentBatch.nextSample()) {
+		    		/*
+		    		Log.v(Constants.DEBUG_TAG, "Cummulative Absolute Sampling Time Error: "+cummTimeError);
+		    		Log.v(Constants.DEBUG_TAG, "Min Absolute Sampling Time Error: "+minTimeDelay);
+		    		Log.v(Constants.DEBUG_TAG, "Max Absolute Sampling Time Error: "+maxTimeDelay);
+		    		*/
+		            reader.stopSampling();
+		            AsyncSampler.this.sampling = false;
+		            stop();
+		            finishedRunnable.run();
+		    	}
+			}
 	    	
 	    	//lastTime = thisTime;
 		}
@@ -96,7 +109,8 @@ public class AsyncSampler implements Sampler {
         this.handler = handler;
         this.reader = reader;
         this.finishedRunnable = finishedRunnable;
-        this.timer = new Timer("Async Sampler");
+        this.timer = new Timer("Async Sampler Timer");
+        this.timerTask = new SamplerTimerTask();
     }
 
     public void start(SampleBatch currentBatch) {
@@ -113,8 +127,8 @@ public class AsyncSampler implements Sampler {
         lastTime = System.currentTimeMillis();
         */
         //handler.postDelayed(this, Constants.DELAY_BETWEEN_SAMPLES);
-        timer.scheduleAtFixedRate(timerTask, Constants.DELAY_BETWEEN_SAMPLES, Constants.DELAY_BETWEEN_SAMPLES);
-        
+        Log.i(Constants.DEBUG_TAG, "Starting Timer");
+        timer.scheduleAtFixedRate(this.timerTask, Constants.DELAY_BETWEEN_SAMPLES, Constants.DELAY_BETWEEN_SAMPLES);
         Log.i(Constants.DEBUG_TAG, "Started Sampling.");
     }
 
@@ -124,7 +138,11 @@ public class AsyncSampler implements Sampler {
     
 
     public void stop() {
-    	timer.cancel();
+        Log.i(Constants.DEBUG_TAG, "Cancelling Timer");
+    	timerTask.cancel();		//	cancel timer task
+    	timer.purge();			//	purge timer task
+    							//	replace timer task to make sure previous one is gc
+        this.timerTask = new SamplerTimerTask();
         Log.i(Constants.DEBUG_TAG, "Finished Sampling.");
     }
 
