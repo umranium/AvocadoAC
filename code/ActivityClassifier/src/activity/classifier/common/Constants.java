@@ -249,6 +249,13 @@ public class Constants {
 	 *		MY TRACKS INTERGRATION RELATED CONSTANTS
 	 ****************************************************************************************************************
 	 */
+	
+	/**
+	 * The duration to wait while someone is walking before starting the MyTracks application recording
+	 */
+	//	TODO: CHANGE BASED ON DEMAND
+	public final static boolean USE_MYTRACKS = false;
+	
 	/**
 	 * The duration to wait while someone is walking before starting the MyTracks application recording
 	 */

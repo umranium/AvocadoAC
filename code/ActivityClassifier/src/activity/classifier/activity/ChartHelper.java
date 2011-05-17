@@ -188,12 +188,23 @@ public class ChartHelper {
 		return true;
 	}
 	
-
-
+	
 	/**
-	 * The size of footer texts
+	 * Size of footer texts
 	 */
-	public final static int FOOTER_SIZE = 3;
+	//TODO: Need to CHANGE BASED ON PHONE! Should be fixed later.
+	//Different footer text sizes works for different phones.
+	//Wildfire and Xperia 
+	public final static int TEXT_SIZE = 12;
+	//SonyEricsson
+//	public final static int TEXT_SIZE = 17;
+
+
+	
+	/**
+	 * Number of footer texts
+	 */
+	public final static int NUMBER_OF_FOOTERS = 3;
 	
 	/**
 	 * The names of footers

@@ -96,6 +96,7 @@ public class AsyncSampler implements Sampler {
 		            reader.stopSampling();
 		            AsyncSampler.this.sampling = false;
 		            stop();
+		            if (finishedRunnable != null)
 		            finishedRunnable.run();
 		    	}
 			}

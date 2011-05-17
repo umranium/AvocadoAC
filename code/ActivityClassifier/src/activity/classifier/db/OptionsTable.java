@@ -203,7 +203,7 @@ public class OptionsTable extends DbTableAdapter {
 		setAccountSent(false);
 		setWakeLockSet(false);
 		setUseAggregator(true);
-		setInvokeMyTracks(false);
+		setInvokeMyTracks(Constants.USE_MYTRACKS);
 		setFullTimeAccel(true);
 		setAccelSensorRate(SensorManager.SENSOR_DELAY_NORMAL);
 		setUploadAccount(phoneInfo.getFirstAccountName());

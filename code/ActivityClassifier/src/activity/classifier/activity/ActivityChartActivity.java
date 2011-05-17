@@ -310,7 +310,8 @@ public class ActivityChartActivity extends Activity {
 
 		for(int i=0; i<textView.length;i++){
 			textView[i] = new TextView(this);
-			textView[i].setTextSize(17);
+			// +2: Needs to look bigger than the footer.
+			textView[i].setTextSize(ChartHelper.TEXT_SIZE+2);
 			if(i==0 || i==2){
 				textView[i].setText(" Now    : ");
 			}else if(i==1 || i==3){
@@ -379,9 +380,9 @@ public class ActivityChartActivity extends Activity {
 
 			paint.setColor(Color.WHITE);
 			paint.setAntiAlias(true);
-			paint.setTextSize(17);
-			float[] sizeOfFooters = new float[ChartHelper.FOOTER_SIZE];
-			for(int i=0;i<ChartHelper.FOOTER_SIZE;i++){
+			paint.setTextSize(ChartHelper.TEXT_SIZE);
+			float[] sizeOfFooters = new float[ChartHelper.NUMBER_OF_FOOTERS];
+			for(int i=0;i<ChartHelper.NUMBER_OF_FOOTERS;i++){
 				sizeOfFooters[i] = paint.measureText(ChartHelper.FOOTER_NAMES[i]);
 				canvas.drawText(ChartHelper.FOOTER_NAMES[i], i*width/3+((width/3)-sizeOfFooters[i])/2, height-(((height/6)-17)/2), paint);
 			}
