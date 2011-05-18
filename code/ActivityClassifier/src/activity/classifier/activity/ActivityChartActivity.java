@@ -311,7 +311,7 @@ public class ActivityChartActivity extends Activity {
 		for(int i=0; i<textView.length;i++){
 			textView[i] = new TextView(this);
 			// +2: Needs to look bigger than the footer.
-			textView[i].setTextSize(ChartHelper.TEXT_SIZE+2);
+			textView[i].setTextSize(TEXT_SIZE_HEADER);
 			if(i==0 || i==2){
 				textView[i].setText(" Now    : ");
 			}else if(i==1 || i==3){
@@ -338,11 +338,24 @@ public class ActivityChartActivity extends Activity {
 
 		setContentView(linearLayout[3]);
 	}
+	static int gScreenDensity = 0; 
+	int TEXT_SIZE_FOOTER;
+	int TEXT_SIZE_HEADER;
+	int TEXT_SIZE_ACTIVITYNAME;
 
 
 	private class ChartView extends View{
+		boolean densityMeasured = false;
+		boolean fontSizesSet = false;
+		
+		//TODO: There must be multiple paint objects for different parts of the canvas
+		// to save on painting task in the Avocado.
+		Paint paint;
+		
 		public ChartView(Context context){
 			super(context);
+			paint = new Paint();
+
 
 		}
 		@Override protected void onDraw(Canvas canvas) {
@@ -350,7 +363,38 @@ public class ActivityChartActivity extends Activity {
 			
 			if (chartData==null)
 				return;
+			// Measures the density of the screen to adjust the fonts.
+			// Density value is 240 for nexus s and 120 for wildfire and Xpreia.
+			// if is here is for performance reasons.
+			if (1 == 1)
+			{	
+				gScreenDensity = canvas.getDensity();
+				Log.d("saltfactory", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>gScreenDensity" + gScreenDensity);
 
+				densityMeasured = true;
+			}
+			
+			if(!fontSizesSet && gScreenDensity>150)
+			{
+				TEXT_SIZE_HEADER = ChartHelper.TEXT_SIZE_IN_HIGHRES_PHONES;
+				TEXT_SIZE_FOOTER = ChartHelper.TEXT_SIZE_IN_HIGHRES_PHONES+4;
+				TEXT_SIZE_ACTIVITYNAME = ChartHelper.TEXT_SIZE_IN_HIGHRES_PHONES+2;
+				fontSizesSet = true;
+				
+			}	
+			else if (!fontSizesSet && gScreenDensity<150)
+			{
+				TEXT_SIZE_HEADER  = ChartHelper.TEXT_SIZE_IN_LOWRES_PHONES + 4;
+				TEXT_SIZE_FOOTER = ChartHelper.TEXT_SIZE_IN_LOWRES_PHONES;
+				TEXT_SIZE_ACTIVITYNAME = ChartHelper.TEXT_SIZE_IN_LOWRES_PHONES - 2;
+				fontSizesSet = true;
+				
+			}
+			
+
+			
+			height = getHeight();
+			width = getWidth();
 			// custom drawing code here
 			// remember: y increases from top to bottom
 			// x increases from left to right
@@ -358,11 +402,9 @@ public class ActivityChartActivity extends Activity {
 			int y = 0;
 			//			DisplayMetrics displayMatrics = new DisplayMetrics();
 
-			height = getHeight();
-			width = getWidth();
 
 			//			Log.i("saltfactory", "width : " + width +", height : " + height);
-			Paint paint = new Paint();
+
 			paint.setStyle(Paint.Style.FILL);
 
 			//			Log.i("DB","onDraw");
@@ -380,7 +422,7 @@ public class ActivityChartActivity extends Activity {
 
 			paint.setColor(Color.WHITE);
 			paint.setAntiAlias(true);
-			paint.setTextSize(ChartHelper.TEXT_SIZE);
+			paint.setTextSize(TEXT_SIZE_FOOTER);
 			float[] sizeOfFooters = new float[ChartHelper.NUMBER_OF_FOOTERS];
 			for(int i=0;i<ChartHelper.NUMBER_OF_FOOTERS;i++){
 				sizeOfFooters[i] = paint.measureText(ChartHelper.FOOTER_NAMES[i]);
@@ -398,6 +440,9 @@ public class ActivityChartActivity extends Activity {
 			for(int i=0;i<tempActivityNames.length;i++){
 				activityNames[i] = activityNiceNames.get(tempActivityNames[i]);
 			}
+
+			
+			paint.setTextSize(TEXT_SIZE_ACTIVITYNAME);
 			
 			for(int i=0;i<chartData.numOfDurations;i++){
 				float percentageStack = 0;

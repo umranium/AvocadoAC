@@ -204,7 +204,7 @@ public class OptionsTable extends DbTableAdapter {
 		setWakeLockSet(false);
 		setUseAggregator(true);
 		setInvokeMyTracks(Constants.USE_MYTRACKS);
-		setFullTimeAccel(true);
+		setFullTimeAccel(false);
 		setAccelSensorRate(SensorManager.SENSOR_DELAY_NORMAL);
 		setUploadAccount(phoneInfo.getFirstAccountName());
 		Calibrator.resetCalibrationOptions(this);	// set calibration values to defaults

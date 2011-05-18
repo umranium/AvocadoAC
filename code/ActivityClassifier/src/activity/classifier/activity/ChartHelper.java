@@ -195,9 +195,9 @@ public class ChartHelper {
 	//TODO: Need to CHANGE BASED ON PHONE! Should be fixed later.
 	//Different footer text sizes works for different phones.
 	//Wildfire and Xperia 
-	public final static int TEXT_SIZE = 12;
-	//SonyEricsson
-//	public final static int TEXT_SIZE = 17;
+	public final static int TEXT_SIZE_IN_LOWRES_PHONES = 10;
+	//Such as NEXUS S
+	public final static int TEXT_SIZE_IN_HIGHRES_PHONES = 17;
 
 
 	
