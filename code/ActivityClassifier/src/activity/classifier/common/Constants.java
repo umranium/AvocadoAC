@@ -26,14 +26,14 @@ public class Constants {
 	 *		pick whether aggregation is used or not.
 	 *	</p> 
 	 */
-	public final static boolean IS_DEV_VERSION = false;
+	public final static boolean IS_DEV_VERSION = true;
 	
 	/**
 	 * Used to differentiate between times when the application is
 	 * being debugged (i.e. plugged into the computer), and normal
 	 * usage.
 	 */
-	public final static boolean IS_DEBUGGING = false; 
+	public final static boolean IS_DEBUGGING = true; 
 	
 	/**
 	 * Should we or should we not output debugging information?
