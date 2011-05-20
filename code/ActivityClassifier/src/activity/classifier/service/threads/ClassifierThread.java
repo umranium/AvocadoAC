@@ -68,22 +68,22 @@ import android.util.Log;
  * 
  */
 public class ClassifierThread extends Thread implements OptionUpdateHandler {
-	
+
 	private Context context;
 	private ActivityRecorderBinder service;
 	private SampleBatchBuffer batchBuffer;
-	
+
 	private Map<Float[],Object[]> model; 
-	
+
 	private SqlLiteAdapter sqlLiteAdapter;
 	private OptionsTable optionsTable;
 	private DebugDataTable debugDataTable;
 
 	private CalcStatistics rawSampleStatistics = new CalcStatistics(Constants.ACCEL_DIM);
-	
+
 	private float[][] rotatedMergedSamples = new float[Constants.NUM_OF_SAMPLES_PER_BATCH][2];
 	private CalcStatistics rotatedMergedSampleStatistics = new CalcStatistics(2);	
-	
+
 	private RotateSamplesToVerticalHorizontal rotateSamples = new RotateSamplesToVerticalHorizontal();
 	private Classifier classifier;
 	private Aggregator aggregator;
@@ -91,26 +91,26 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	private boolean bForceCaliberation;
 	private boolean isCalibrated;
 	private Calibrator calibrator;
-	
+
 	private volatile boolean shouldExit;
-	
+
 	public ClassifierThread(Context context, ActivityRecorderBinder service,
 			SampleBatchBuffer sampleBatchBuffer) {
-    	super(ClassifierThread.class.getName());
-    	
-    	this.context = context;
+		super(ClassifierThread.class.getName());
+
+		this.context = context;
 		this.service = service;
 		this.batchBuffer = sampleBatchBuffer;
-		
+
 		this.model = ModelReader.getModel(context, R.raw.basic_model);
-		
+
 		this.sqlLiteAdapter = SqlLiteAdapter.getInstance(context);
 		this.optionsTable = sqlLiteAdapter.getOptionsTable();
 		this.debugDataTable = sqlLiteAdapter.getDebugDataTable();
 
 		this.classifier = new KnnClassifier(this.model.entrySet());
 		this.aggregator = new Aggregator(null);
-		
+
 		this.isCalibrated = this.optionsTable.isCalibrated();
 		this.calibrator = new Calibrator(
 				service, 
@@ -120,8 +120,8 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				this.optionsTable.getSd().clone(),
 				this.optionsTable.getMean().clone(),
 				this.optionsTable.getValueOfGravity()
-			);
-		
+		);
+
 		this.shouldExit = false;
 	}
 
@@ -131,7 +131,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	public synchronized void exit() {
 		// signal the thread to exit
 		this.shouldExit = true;
-		
+
 		Log.v(Constants.DEBUG_TAG, "About to interrupt classifier thread");
 
 		// if the thread is blocked waiting for a filled batch
@@ -157,19 +157,19 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 						// issue an error if too many
 						service.showServiceToast("Unable to classify sensor data fast enough!");
 					}
-	
+
 					// this function blocks until a filled sample batch is obtained
 					SampleBatch batch = batchBuffer.takeFilledInstance();
-					
+
 					Log.v(Constants.DEBUG_TAG, "Classifier thread received batch");
-	
+
 					// process the sample batch to obtain the classification
 					long sampleTime = batch.sampleTime;
 					String classification = processData(batch);
-	
+
 					// return the sample batch to the buffer as an empty batch
 					batchBuffer.returnEmptyInstance(batch);
-					
+
 					//	submit the classification (if any)
 					if (classification!=null && classification.length()>0) {
 						Log.v(Constants.DEBUG_TAG, "Classification found: '"+classification+"'");
@@ -178,10 +178,10 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					}
 				} catch (RemoteException ex) {
 					Log.e(Constants.DEBUG_TAG,
-							"Exception error occured in connection in ClassifierService class");
+					"Exception error occured in connection in ClassifierService class");
 				} catch (InterruptedException e) {
-//					Log.d(Constants.DEBUG_TAG,
-//							"Interruption occured while performing classification", e);
+					//					Log.d(Constants.DEBUG_TAG,
+					//							"Interruption occured while performing classification", e);
 				}
 			}
 			Log.d(Constants.DEBUG_TAG, "Classifier thread exitting");
@@ -191,7 +191,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 		}
 
 	}
-	
+
 	@Override
 	public void onFieldChange(Set<String> updatedKeys) {
 		if (updatedKeys.contains(OptionsTable.KEY_IS_CALIBRATED)) {
@@ -205,141 +205,163 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 						this.optionsTable.getSd().clone(),
 						this.optionsTable.getMean().clone(),
 						this.optionsTable.getValueOfGravity()
-					);
+				);
 			}
 		}
 	}
 
 	private String processData(SampleBatch batch) throws InterruptedException, RemoteException {
 		Log.v(Constants.DEBUG_TAG, "Processing batch.");
-		
-    	long start = System.currentTimeMillis();
+
+		long start = System.currentTimeMillis();
 
 		try {
 			//	get local copies of the data
 			float[][] data = batch.data;
+			String classification = ActivityNames.UNKNOWN;
+
 			int size = batch.getSize();
 			long sampleTime = batch.sampleTime;
-			
+
 			boolean chargingState = !Constants.IS_DEBUGGING && batch.isCharging();
-			
+
 			if (Constants.OUTPUT_DEBUG_INFO) {
 				debugDataTable.reset(sampleTime);
 			}
-			
-			//	take out accelerometer axis offsets
-			if (calibrator.isCalibrated()) {
-				float[] offset = optionsTable.getOffset();
-				float[] scale = optionsTable.getScale();
-				
-				for (int i=0; i<size; ++i) {
-					data[i][Constants.ACCEL_X_AXIS] -= offset[Constants.ACCEL_X_AXIS]; 
-					data[i][Constants.ACCEL_X_AXIS] /= scale[Constants.ACCEL_X_AXIS]; 
-					
-					data[i][Constants.ACCEL_Y_AXIS] -= offset[Constants.ACCEL_Y_AXIS];
-					data[i][Constants.ACCEL_Y_AXIS] /= scale[Constants.ACCEL_Y_AXIS];
-					
-					data[i][Constants.ACCEL_Z_AXIS] -= offset[Constants.ACCEL_Z_AXIS];
-					data[i][Constants.ACCEL_Z_AXIS] /= scale[Constants.ACCEL_Z_AXIS];
-				}
-			}
-			
-			rawSampleStatistics.assign(data, size);
-			
-			float[] dataMin = rawSampleStatistics.getMin();
-			float[] dataMax = rawSampleStatistics.getMax();
-			float[] dataMeans = rawSampleStatistics.getMean();
-			float[] dataSd = rawSampleStatistics.getStandardDeviation();
-			
-			if (Constants.OUTPUT_DEBUG_INFO) {
-				debugDataTable.setUnrotatedStats(
-						dataMeans[Constants.ACCEL_X_AXIS],
-						dataMeans[Constants.ACCEL_Y_AXIS],
-						dataMeans[Constants.ACCEL_Z_AXIS],
-						dataSd[Constants.ACCEL_X_AXIS],
-						dataSd[Constants.ACCEL_Y_AXIS],
-						dataSd[Constants.ACCEL_Z_AXIS],
-						dataMax[Constants.ACCEL_X_AXIS]-dataMin[Constants.ACCEL_X_AXIS],
-						dataMax[Constants.ACCEL_Y_AXIS]-dataMin[Constants.ACCEL_Y_AXIS],
-						dataMax[Constants.ACCEL_Z_AXIS]-dataMin[Constants.ACCEL_Z_AXIS]
-						          );
-			}
-			
-			calibrator.processData(sampleTime, dataMeans, dataSd, rawSampleStatistics.getSum(), rawSampleStatistics.getSumSqr(), rawSampleStatistics.getCount());
-			
-			if (!isCalibrated && calibrator.isCalibrated()) {
-				Log.v(Constants.DEBUG_TAG, "Calibration just finished. Saving values to DB.");
-				
-				float[] sd = calibrator.getSd();
-				float[] mean = calibrator.getMean();
-				
-				optionsTable.setCalibrated(true);
-				optionsTable.setMean(mean);
-				optionsTable.setSd(sd);
-				optionsTable.setCount(calibrator.getCount());
-				optionsTable.setValueOfGravity(calibrator.getValueOfGravity());
-				
-				//mean[Constants.ACCEL_Z_AXIS] -= Constants.GRAVITY;
-				mean[Constants.ACCEL_Z_AXIS] = 0.0f;
-				optionsTable.setOffset(mean);
-				
-				optionsTable.save();
-				this.isCalibrated = true;
-			}
-			
-			String classification = ActivityNames.UNKNOWN;
-			
-			//	check the current gravity, rotate and perform classification
+			if(bForceCaliberation)
 			{
-				float gravity = calibrator.getValueOfGravity();
-				float calcGravity = rawSampleStatistics.calcMag(dataMeans);
-				float minGravity = gravity - gravity*Constants.MIN_GRAVITY_DEV;
-				float maxGravity = gravity + gravity*Constants.MIN_GRAVITY_DEV;
-				
-				if (calcGravity>=minGravity && calcGravity<=maxGravity) {
-					// first rotate samples to world-orientation
-					if (rotateSamples.rotateToWorldCoordinates(dataMeans, data)) {
-						classification = classifier.classifyRotated(data);
-						
-						Log.v(Constants.DEBUG_TAG, "Classifier Algorithm Output: "+classification);
-						
-						if (Constants.OUTPUT_DEBUG_INFO) {
-							logRotatedValues(dataMeans, data, size);
-							debugDataTable.setClassifierAlgoOutput(classification);
-						}
-						
-						if (optionsTable.getUseAggregator()) {
-							aggregator.addClassification(classification);
-							String aggrClassification = aggregator.getClassification();
-							if (aggrClassification!=null && aggrClassification.length()>0 &&
-									!ActivityNames.isSystemActivity(aggrClassification)) {
-								classification = aggrClassification;
-							}
-							
-							Log.v(Constants.DEBUG_TAG, "Aggregator Output: "+aggrClassification);
-	
-							if (Constants.OUTPUT_DEBUG_INFO) {
-								debugDataTable.setAggregatorAlgoOutput(aggrClassification);
-							}
-						} else {
-							if (Constants.OUTPUT_DEBUG_INFO) {
-								debugDataTable.setAggregatorAlgoOutput("NOT USING AGGREGATOR");
-							}
-						}
-						
-					} else {
-						Log.v(Constants.DEBUG_TAG, "Unable to perform classification, data could not be rotated!");
-						if (Constants.OUTPUT_DEBUG_INFO) {
-							debugDataTable.setClassifierAlgoOutput("ERROR: Unable to rotate gravity "+Arrays.toString(dataMeans));
-						}
+				classification = "Calibration in progress ...";
+				if(!calibrator.isCalibrated())
+				{
+					rawSampleStatistics.assign(data, size);
+					calibrator.processData(sampleTime, 
+							rawSampleStatistics.getMean(), 
+							rawSampleStatistics.getStandardDeviation(), 
+							rawSampleStatistics.getSum(), 
+							rawSampleStatistics.getSumSqr(), 
+							rawSampleStatistics.getCount());
+				}
+				else
+				{	
+					bForceCaliberation = false;
+				}
+
+			}
+			else
+			{
+				//	take out accelerometer axis offsets
+				if (calibrator.isCalibrated()) {
+					float[] offset = optionsTable.getOffset();
+					float[] scale = optionsTable.getScale();
+
+					for (int i=0; i<size; ++i) {
+						data[i][Constants.ACCEL_X_AXIS] -= offset[Constants.ACCEL_X_AXIS]; 
+						data[i][Constants.ACCEL_X_AXIS] /= scale[Constants.ACCEL_X_AXIS]; 
+
+						data[i][Constants.ACCEL_Y_AXIS] -= offset[Constants.ACCEL_Y_AXIS];
+						data[i][Constants.ACCEL_Y_AXIS] /= scale[Constants.ACCEL_Y_AXIS];
+
+						data[i][Constants.ACCEL_Z_AXIS] -= offset[Constants.ACCEL_Z_AXIS];
+						data[i][Constants.ACCEL_Z_AXIS] /= scale[Constants.ACCEL_Z_AXIS];
 					}
-				} else {
-					if (Constants.OUTPUT_DEBUG_INFO) {
-						debugDataTable.setClassifierAlgoOutput("ERROR: Gravity "+calcGravity+" not within limits: ["+minGravity+","+maxGravity+"]");
+				}
+
+				rawSampleStatistics.assign(data, size);
+
+				float[] dataMin = rawSampleStatistics.getMin();
+				float[] dataMax = rawSampleStatistics.getMax();
+				float[] dataMeans = rawSampleStatistics.getMean();
+				float[] dataSd = rawSampleStatistics.getStandardDeviation();
+
+				if (Constants.OUTPUT_DEBUG_INFO) {
+					debugDataTable.setUnrotatedStats(
+							dataMeans[Constants.ACCEL_X_AXIS],
+							dataMeans[Constants.ACCEL_Y_AXIS],
+							dataMeans[Constants.ACCEL_Z_AXIS],
+							dataSd[Constants.ACCEL_X_AXIS],
+							dataSd[Constants.ACCEL_Y_AXIS],
+							dataSd[Constants.ACCEL_Z_AXIS],
+							dataMax[Constants.ACCEL_X_AXIS]-dataMin[Constants.ACCEL_X_AXIS],
+							dataMax[Constants.ACCEL_Y_AXIS]-dataMin[Constants.ACCEL_Y_AXIS],
+							dataMax[Constants.ACCEL_Z_AXIS]-dataMin[Constants.ACCEL_Z_AXIS]
+					);
+				}
+
+				if(!isCalibrated)
+					calibrator.processData(sampleTime, dataMeans, dataSd, rawSampleStatistics.getSum(), rawSampleStatistics.getSumSqr(), rawSampleStatistics.getCount());
+
+				else if (!isCalibrated && calibrator.isCalibrated()) {
+					Log.v(Constants.DEBUG_TAG, "Calibration just finished. Saving values to DB.");
+
+					float[] sd = calibrator.getSd();
+					float[] mean = calibrator.getMean();
+
+					optionsTable.setCalibrated(true);
+					optionsTable.setMean(mean);
+					optionsTable.setSd(sd);
+					optionsTable.setCount(calibrator.getCount());
+					optionsTable.setValueOfGravity(calibrator.getValueOfGravity());
+
+					//mean[Constants.ACCEL_Z_AXIS] -= Constants.GRAVITY;
+					mean[Constants.ACCEL_Z_AXIS] = 0.0f;
+					optionsTable.setOffset(mean);
+
+					optionsTable.save();
+					this.isCalibrated = true;
+				}
+
+
+				//	check the current gravity, rotate and perform classification
+				{
+					float gravity = calibrator.getValueOfGravity();
+					float calcGravity = rawSampleStatistics.calcMag(dataMeans);
+					float minGravity = gravity - gravity*Constants.MIN_GRAVITY_DEV;
+					float maxGravity = gravity + gravity*Constants.MIN_GRAVITY_DEV;
+
+					if (calcGravity>=minGravity && calcGravity<=maxGravity) {
+						// first rotate samples to world-orientation
+						if (rotateSamples.rotateToWorldCoordinates(dataMeans, data)) {
+							classification = classifier.classifyRotated(data);
+
+							Log.v(Constants.DEBUG_TAG, "Classifier Algorithm Output: "+classification);
+
+							if (Constants.OUTPUT_DEBUG_INFO) {
+								logRotatedValues(dataMeans, data, size);
+								debugDataTable.setClassifierAlgoOutput(classification);
+							}
+
+							if (optionsTable.getUseAggregator()) {
+								aggregator.addClassification(classification);
+								String aggrClassification = aggregator.getClassification();
+								if (aggrClassification!=null && aggrClassification.length()>0 &&
+										!ActivityNames.isSystemActivity(aggrClassification)) {
+									classification = aggrClassification;
+								}
+
+								Log.v(Constants.DEBUG_TAG, "Aggregator Output: "+aggrClassification);
+
+								if (Constants.OUTPUT_DEBUG_INFO) {
+									debugDataTable.setAggregatorAlgoOutput(aggrClassification);
+								}
+							} else {
+								if (Constants.OUTPUT_DEBUG_INFO) {
+									debugDataTable.setAggregatorAlgoOutput("NOT USING AGGREGATOR");
+								}
+							}
+
+						} else {
+							Log.v(Constants.DEBUG_TAG, "Unable to perform classification, data could not be rotated!");
+							if (Constants.OUTPUT_DEBUG_INFO) {
+								debugDataTable.setClassifierAlgoOutput("ERROR: Unable to rotate gravity "+Arrays.toString(dataMeans));
+							}
+						}
+					} else {
+						if (Constants.OUTPUT_DEBUG_INFO) {
+							debugDataTable.setClassifierAlgoOutput("ERROR: Gravity "+calcGravity+" not within limits: ["+minGravity+","+maxGravity+"]");
+						}
 					}
 				}
 			}
-			
 			if (chargingState) {
 				if (classification.contains("TRAVELLING"))
 					classification = ActivityNames.CHARGING_TRAVELLING;
@@ -350,22 +372,22 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					classification = ActivityNames.UNCARRIED;
 				}
 			}
-			
+
 			if (Constants.OUTPUT_DEBUG_INFO) {
 				debugDataTable.setFinalClassifierOutput(classification);
 			}
 			Log.v(Constants.DEBUG_TAG, "Final Classifier Output: "+classification);
-			
+
 			return classification;
 		} finally {
 			if (Constants.OUTPUT_DEBUG_INFO) {
 				debugDataTable.trim();
 				debugDataTable.insert();
 			}
-	        Log.i(Constants.DEBUG_TAG, "Processing Batch Took: "+(System.currentTimeMillis()-start)+"ms");	        
+			Log.i(Constants.DEBUG_TAG, "Processing Batch Took: "+(System.currentTimeMillis()-start)+"ms");	        
 		}
 	}
-	
+
 	private void logRotatedValues(float[] dataMeans, float[][] rotatedData, int dataSize)
 	{
 		for (int j=0; j<Constants.NUM_OF_SAMPLES_PER_BATCH; ++j) {
@@ -374,25 +396,25 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					rotatedData[j][1]*rotatedData[j][1]);
 			rotatedMergedSamples[j][1] = rotatedData[j][2];
 		}
-		
+
 		rotatedMergedSampleStatistics.assign(rotatedMergedSamples, dataSize);
-		
+
 		float[] rotatedMin = rotatedMergedSampleStatistics.getMin();
 		float[] rotatedMax = rotatedMergedSampleStatistics.getMax();
 		float[] rotatedMeans = rotatedMergedSampleStatistics.getMean();
 		float[] rotatedSd = rotatedMergedSampleStatistics.getStandardDeviation();
-		
+
 		debugDataTable.setRotatedStats(
 				rotatedMeans[0],
 				rotatedMeans[1],
-				
+
 				rotatedMax[0]-rotatedMin[0],
 				rotatedMax[1]-rotatedMin[1],
-				
+
 				rotatedSd[0],
 				rotatedSd[1]
-				);
-		
+		);
+
 	}
-	
+
 }

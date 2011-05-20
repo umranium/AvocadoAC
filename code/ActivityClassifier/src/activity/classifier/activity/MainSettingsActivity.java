@@ -46,6 +46,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 	private static final int DIALOG_YES_NO_MESSAGE_FOR_DELETION = 0;
 	private static final int DIALOG_YES_NO_MESSAGE_FOR_RESET_CALIBRATION = 1;
+	private static final int DIALOG_YES_NO_MESSAGE_FOR_CALIBRATION_START = 2;
 	
 	
 	ActivityRecorderBinder service = null;
@@ -283,7 +284,24 @@ public class MainSettingsActivity extends PreferenceActivity {
 			}
 
 		});
+		
+		PreferenceScreen forceCalibPref = getPreferenceManager().createPreferenceScreen(this);
+		forceCalibPref.setKey("screen_preference");
+		forceCalibPref.setTitle("Start Calibration now");
+		forceCalibPref.setSummary("Initiate calibration task now.");
+		forceCalibPref.setOnPreferenceClickListener(new PreferenceScreen.OnPreferenceClickListener(){
+
+			public boolean onPreferenceClick(Preference preference) {
+				showDialog(DIALOG_YES_NO_MESSAGE_FOR_CALIBRATION_START);
+				
+				return false;
+			}
+
+		});
+
+		
 		calibrationSettingsCat.addPreference(resetPref);
+		calibrationSettingsCat.addPreference(forceCalibPref);
 
 		this.calibrationSummary =  new CheckBoxPreferenceWithLongSummary(this);
 		calibrationSummary.setKey("cali_preference");
@@ -445,7 +463,26 @@ public class MainSettingsActivity extends PreferenceActivity {
 			return new AlertDialog.Builder(this)
 			.setIcon(R.drawable.arrow_down_float)
 			.setTitle("Warning")
-			.setMessage("Do you really want to reset the calibration values?")
+			.setMessage("Proceed with reseting the calibration values?")
+			.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int whichButton) {
+					Calibrator.resetCalibrationOptions(optionsTable);
+					optionsTable.save();
+					calibrationSummary.setSummary(getScreenSummary());
+				}
+			})
+			.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int whichButton) {
+
+					/* User clicked Cancel so do some stuff */
+				}
+			})
+			.create();
+		case DIALOG_YES_NO_MESSAGE_FOR_CALIBRATION_START:
+			return new AlertDialog.Builder(this)
+			.setIcon(R.drawable.arrow_down_float)
+			.setTitle("Warning")
+			.setMessage("Start the calibration now?")
 			.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int whichButton) {
 					Calibrator.resetCalibrationOptions(optionsTable);
