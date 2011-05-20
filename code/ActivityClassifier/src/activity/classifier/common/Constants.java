@@ -38,12 +38,22 @@ public class Constants {
 	/**
 	 * Should we or should we not output debugging information?
 	 */
-	public static final boolean OUTPUT_DEBUG_INFO = true;
+	public static final boolean OUTPUT_DEBUG_INFO = false;
 	
 	/**
 	 * Whether to use FFT or not
 	 */
 	public static final boolean USE_FFT = false;
+	
+	/**
+	 * Default value for Full Time accelerometer option
+	 */
+	public static final boolean DEF_USE_FULLTIME_ACCEL = true;
+	
+	/**
+	 * Default value to the "Invoke MyTracks" option
+	 */
+	public final static boolean DEF_USE_MYTRACKS = false;
 	
 	/**
 	 * The Id of the flurry session
@@ -249,12 +259,6 @@ public class Constants {
 	 *		MY TRACKS INTERGRATION RELATED CONSTANTS
 	 ****************************************************************************************************************
 	 */
-	
-	/**
-	 * The duration to wait while someone is walking before starting the MyTracks application recording
-	 */
-	//	TODO: CHANGE BASED ON DEMAND
-	public final static boolean USE_MYTRACKS = false;
 	
 	/**
 	 * The duration to wait while someone is walking before starting the MyTracks application recording
