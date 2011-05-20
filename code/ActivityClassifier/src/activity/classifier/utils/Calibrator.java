@@ -344,6 +344,8 @@ public class Calibrator {
 			for (int i=0; i<Constants.ACCEL_DIM; ++i) {
 				currGravity.sum[i] = sum[i];
 				currGravity.sumSqr[i] = sumSqr[i];
+				currGravity.axisSd[i] = sd[i];
+				currGravity.axisMean[i] = mean[i];
 				currGravity.count = count;
 			}
 			
