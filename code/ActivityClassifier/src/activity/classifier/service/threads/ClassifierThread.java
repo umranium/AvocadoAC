@@ -88,6 +88,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	private Classifier classifier;
 	private Aggregator aggregator;
 
+	private boolean bForceCaliberation;
 	private boolean isCalibrated;
 	private Calibrator calibrator;
 	
