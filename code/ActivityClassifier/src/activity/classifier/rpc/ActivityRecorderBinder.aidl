@@ -26,5 +26,9 @@ interface ActivityRecorderBinder {
     */
     void showServiceToast(String message);
     
+    //public boolean ForceCalibration();
+    
+    //public boolean isCalibrationForced();
+    
 
 }

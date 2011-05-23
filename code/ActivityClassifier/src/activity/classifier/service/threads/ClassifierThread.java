@@ -12,6 +12,7 @@ import java.util.Set;
 import activity.classifier.R;
 import activity.classifier.accel.SampleBatch;
 import activity.classifier.accel.SampleBatchBuffer;
+import activity.classifier.activity.MainTabActivity;
 import activity.classifier.aggregator.Aggregator;
 import activity.classifier.classifier.Classifier;
 import activity.classifier.classifier.KnnClassifier;
@@ -29,7 +30,12 @@ import activity.classifier.service.RecorderService;
 import activity.classifier.utils.CalcStatistics;
 import activity.classifier.utils.Calibrator;
 import activity.classifier.utils.RotateSamplesToVerticalHorizontal;
+import android.R.string;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -88,7 +94,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	private Classifier classifier;
 	private Aggregator aggregator;
 
-	private boolean bForceCaliberation;
+	public static boolean bForceCalibration;
 	private boolean isCalibrated;
 	private Calibrator calibrator;
 
@@ -139,6 +145,68 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 		this.interrupt();
 	}
 
+	/*
+	 * Calibrates the sensor based on the input data. This will be called instead of the classification process.
+	 */
+	public void StartCalibration(SampleBatch batch) throws InterruptedException, RemoteException
+	{
+		int size = batch.getSize();
+		long sampleTime = batch.sampleTime;
+		float[][] data = batch.data;
+
+
+		if(!calibrator.isCalibrated())
+		{
+			rawSampleStatistics.assign(data, size);
+			calibrator.processData(sampleTime, 
+					rawSampleStatistics.getMean(), 
+					rawSampleStatistics.getStandardDeviation(), 
+					rawSampleStatistics.getSum(), 
+					rawSampleStatistics.getSumSqr(), 
+					rawSampleStatistics.getCount());
+			
+			float[] sd = calibrator.getSd();
+			float[] mean = calibrator.getMean();
+
+			optionsTable.setCalibrated(true);
+			optionsTable.setMean(mean);
+			optionsTable.setSd(sd);
+			optionsTable.setCount(calibrator.getCount());
+			optionsTable.setValueOfGravity(calibrator.getValueOfGravity());
+
+			//mean[Constants.ACCEL_Z_AXIS] -= Constants.GRAVITY;
+			mean[Constants.ACCEL_Z_AXIS] = 0.0f;
+			optionsTable.setOffset(mean);
+
+			optionsTable.save();
+
+			this.isCalibrated = true;
+			bForceCalibration = false;
+			
+			String ns = this.context.NOTIFICATION_SERVICE;
+			NotificationManager notificationManager = (NotificationManager)this.context.getSystemService(ns);
+
+			int icon = R.drawable.icon;
+			CharSequence tickerText = "Avocado AC Calibration";
+			long when = System.currentTimeMillis();
+			Notification notification = new Notification(icon, tickerText, when);
+			
+			notification.defaults = 0;
+			notification.flags = Notification.DEFAULT_SOUND | Notification.FLAG_ONLY_ALERT_ONCE;
+			
+			Context context = this.context.getApplicationContext();
+			CharSequence contentTitle = "Avocado AC";
+			CharSequence contentText = "Avocado AC colibration is finished.";
+			Intent notificationIntent = new Intent(this.context, MainTabActivity.class);
+			PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent, 0);
+			notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
+			
+			notificationManager.notify(notification.flags, notification);
+			//service.s.startForeground(1, notification);
+
+		}
+
+	}
 	/**
 	 * Classification start
 	 */
@@ -165,17 +233,24 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 
 					// process the sample batch to obtain the classification
 					long sampleTime = batch.sampleTime;
-					String classification = processData(batch);
+					if(bForceCalibration)
+						StartCalibration(batch);
+					else
+					{
+						String classification = processData(batch);
 
+
+						//	submit the classification (if any)
+						if (classification!=null && classification.length()>0) {
+							Log.v(Constants.DEBUG_TAG, "Classification found: '"+classification+"'");
+							// submit the classification
+							service.submitClassification(sampleTime, classification);
+						}
+					}
+					
 					// return the sample batch to the buffer as an empty batch
 					batchBuffer.returnEmptyInstance(batch);
 
-					//	submit the classification (if any)
-					if (classification!=null && classification.length()>0) {
-						Log.v(Constants.DEBUG_TAG, "Classification found: '"+classification+"'");
-						// submit the classification
-						service.submitClassification(sampleTime, classification);
-					}
 				} catch (RemoteException ex) {
 					Log.e(Constants.DEBUG_TAG,
 					"Exception error occured in connection in ClassifierService class");
@@ -228,26 +303,6 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			if (Constants.OUTPUT_DEBUG_INFO) {
 				debugDataTable.reset(sampleTime);
 			}
-			if(bForceCaliberation)
-			{
-				classification = "Calibration in progress ...";
-				if(!calibrator.isCalibrated())
-				{
-					rawSampleStatistics.assign(data, size);
-					calibrator.processData(sampleTime, 
-							rawSampleStatistics.getMean(), 
-							rawSampleStatistics.getStandardDeviation(), 
-							rawSampleStatistics.getSum(), 
-							rawSampleStatistics.getSumSqr(), 
-							rawSampleStatistics.getCount());
-				}
-				else
-				{	
-					bForceCaliberation = false;
-				}
-
-			}
-			else
 			{
 				//	take out accelerometer axis offsets
 				if (calibrator.isCalibrated()) {
@@ -287,10 +342,10 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					);
 				}
 
-				if(!isCalibrated)
+				//if(!isCalibrated)
 					calibrator.processData(sampleTime, dataMeans, dataSd, rawSampleStatistics.getSum(), rawSampleStatistics.getSumSqr(), rawSampleStatistics.getCount());
 
-				else if (!isCalibrated && calibrator.isCalibrated()) {
+				/*else*/ if (!isCalibrated && calibrator.isCalibrated()) {
 					Log.v(Constants.DEBUG_TAG, "Calibration just finished. Saving values to DB.");
 
 					float[] sd = calibrator.getSd();

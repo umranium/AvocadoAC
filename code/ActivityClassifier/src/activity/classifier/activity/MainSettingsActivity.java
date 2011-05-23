@@ -14,6 +14,7 @@ import activity.classifier.db.OptionsTable;
 import activity.classifier.db.SqlLiteAdapter;
 import activity.classifier.rpc.ActivityRecorderBinder;
 import activity.classifier.service.RecorderService;
+import activity.classifier.service.threads.ClassifierThread;
 import activity.classifier.utils.Calibrator;
 import activity.classifier.utils.MyTracksIntergration;
 import android.app.AlertDialog;
@@ -488,6 +489,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 					Calibrator.resetCalibrationOptions(optionsTable);
 					optionsTable.save();
 					calibrationSummary.setSummary(getScreenSummary());
+					ClassifierThread.bForceCalibration =true;
 				}
 			})
 			.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {

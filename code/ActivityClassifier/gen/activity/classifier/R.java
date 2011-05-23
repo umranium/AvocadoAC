@@ -49,11 +49,12 @@ public final class R {
     public static final class layout {
         public static final int account=0x7f030000;
         public static final int alert_dialog_text_entry=0x7f030001;
-        public static final int item=0x7f030002;
-        public static final int list_item=0x7f030003;
-        public static final int main=0x7f030004;
-        public static final int menu=0x7f030005;
-        public static final int setting=0x7f030006;
+        public static final int calibrationbtn=0x7f030002;
+        public static final int item=0x7f030003;
+        public static final int list_item=0x7f030004;
+        public static final int main=0x7f030005;
+        public static final int menu=0x7f030006;
+        public static final int setting=0x7f030007;
     }
     public static final class raw {
         public static final int basic_model=0x7f050000;

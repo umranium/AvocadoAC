@@ -5,42 +5,18 @@
 
 package activity.classifier.service;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.FileEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
 
 import activity.classifier.R;
-import activity.classifier.R.raw;
 import activity.classifier.accel.SampleBatch;
 import activity.classifier.accel.SampleBatchBuffer;
 import activity.classifier.accel.Sampler;
-import activity.classifier.activity.ActivityListActivity;
 import activity.classifier.activity.MainTabActivity;
 import activity.classifier.accel.async.AsyncAccelReader;
 import activity.classifier.accel.async.AsyncAccelReaderFactory;
 import activity.classifier.accel.async.AsyncSampler;
-import activity.classifier.accel.sync.SyncAccelReader;
-import activity.classifier.accel.sync.SyncAccelReaderFactory;
-import activity.classifier.accel.sync.SyncSampler;
-import activity.classifier.aggregator.Aggregator;
 import activity.classifier.common.ActivityNames;
 import activity.classifier.common.Constants;
 import activity.classifier.common.ExceptionHandler;
@@ -48,18 +24,13 @@ import activity.classifier.db.ActivitiesTable;
 import activity.classifier.db.DebugDataTable;
 import activity.classifier.db.OptionsTable;
 import activity.classifier.db.SqlLiteAdapter;
-import activity.classifier.model.ModelReader;
-import activity.classifier.repository.ActivityQueries;
 import activity.classifier.rpc.ActivityRecorderBinder;
 import activity.classifier.rpc.Classification;
 import activity.classifier.service.threads.AccountThread;
 import activity.classifier.service.threads.ClassifierThread;
 import activity.classifier.service.threads.UploadActivityHistoryThread;
 import activity.classifier.utils.ActivityWatcher;
-import activity.classifier.utils.LogRedirect;
 import activity.classifier.utils.PhoneInfo;
-import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -549,7 +520,16 @@ public class RecorderService extends Service implements Runnable {
 		
 		Context context = getApplicationContext();
 		CharSequence contentTitle = "Avocado AC";
-		CharSequence contentText = "Avocado AC service running";
+		
+		CharSequence contentText;
+		
+		if (ClassifierThread.bForceCalibration)
+		{
+			contentText = "Avocado AC calibration is running";
+		}
+		else
+			contentText = "Avocado AC service is running";
+		
 		Intent notificationIntent = new Intent(this, MainTabActivity.class);
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 		notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
