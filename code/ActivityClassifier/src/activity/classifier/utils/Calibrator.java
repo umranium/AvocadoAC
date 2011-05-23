@@ -3,6 +3,7 @@ package activity.classifier.utils;
 import activity.classifier.common.Constants;
 import activity.classifier.db.OptionsTable;
 import activity.classifier.rpc.ActivityRecorderBinder;
+import activity.classifier.service.threads.ClassifierThread;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -370,6 +371,7 @@ public class Calibrator {
 				measurementsBuffer.returnEmptyInstance(currGravity);
 				//	reset data
 				reset();
+				int i = 1;
 			} else {
 				boolean movementDetected = false;
 				
@@ -399,7 +401,7 @@ public class Calibrator {
 				
 				//	check and perhaps do calibration
 				//	is the stationary period more than the required stationary period for calibration
-				if (!isCalibrated && sampleTime-lastGravity.time>Constants.DURATION_OF_CALIBRATION) {
+				if (!isCalibrated && (sampleTime-lastGravity.time>Constants.DURATION_OF_CALIBRATION || ClassifierThread.bForceCalibration)) {
 					Log.d(Constants.DEBUG_TAG, "Performing calibration.");
 					try {
 						service.showServiceToast("Performing calibration. Please keep the phone still.");
@@ -427,6 +429,7 @@ public class Calibrator {
 					doCalibration2(sSum, sSumSqr, sCount);
 					
 					setToCalibratedState();
+					 ClassifierThread.bForceCalibration = false;
 				}
 				
 				//	check uncarried state

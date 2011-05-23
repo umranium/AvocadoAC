@@ -181,7 +181,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			optionsTable.save();
 
 			this.isCalibrated = true;
-			bForceCalibration = false;
+			//bForceCalibration = false;
 			
 			String ns = this.context.NOTIFICATION_SERVICE;
 			NotificationManager notificationManager = (NotificationManager)this.context.getSystemService(ns);
