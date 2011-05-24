@@ -300,7 +300,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 		});
 
-
 		calibrationSettingsCat.addPreference(resetPref);
 		calibrationSettingsCat.addPreference(forceCalibPref);
 
