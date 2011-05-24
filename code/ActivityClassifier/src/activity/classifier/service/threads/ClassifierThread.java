@@ -158,7 +158,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 		if(!calibrator.isCalibrated())
 		{
 			rawSampleStatistics.assign(data, size);
-			calibrator.processData(sampleTime, 
+			calibrator.MainForceCalibrationProcess(sampleTime, 
 					rawSampleStatistics.getMean(), 
 					rawSampleStatistics.getStandardDeviation(), 
 					rawSampleStatistics.getSum(), 
