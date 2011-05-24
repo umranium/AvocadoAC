@@ -164,7 +164,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					rawSampleStatistics.getSum(), 
 					rawSampleStatistics.getSumSqr(), 
 					rawSampleStatistics.getCount());
-			
+
 			float[] sd = calibrator.getSd();
 			float[] mean = calibrator.getMean();
 
@@ -182,26 +182,33 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 
 			this.isCalibrated = true;
 			//bForceCalibration = false;
-			
-			String ns = this.context.NOTIFICATION_SERVICE;
-			NotificationManager notificationManager = (NotificationManager)this.context.getSystemService(ns);
 
-			int icon = R.drawable.icon;
-			CharSequence tickerText = "Avocado AC Calibration";
-			long when = System.currentTimeMillis();
-			Notification notification = new Notification(icon, tickerText, when);
-			
-			notification.defaults = 0;
-			notification.flags = Notification.DEFAULT_SOUND | Notification.FLAG_ONLY_ALERT_ONCE;
-			
-			Context context = this.context.getApplicationContext();
-			CharSequence contentTitle = "Avocado AC";
-			CharSequence contentText = "Avocado AC colibration is finished.";
-			Intent notificationIntent = new Intent(this.context, MainTabActivity.class);
-			PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent, 0);
-			notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
-			
-			notificationManager.notify(notification.flags, notification);
+			/*	If the bForceCalibration is false it implies the calibrator has finished the 
+			 	calibration and made the bForceCalibration false.
+			 */
+			if(!bForceCalibration)
+			{
+				String ns = this.context.NOTIFICATION_SERVICE;
+
+				NotificationManager notificationManager = (NotificationManager)this.context.getSystemService(ns);
+
+				int icon = R.drawable.icon;
+				CharSequence tickerText = "Avocado AC Calibration";
+				long when = System.currentTimeMillis();
+				Notification notification = new Notification(icon, tickerText, when);
+
+				notification.defaults = 0;
+				notification.flags = Notification.DEFAULT_SOUND | Notification.FLAG_ONLY_ALERT_ONCE;
+
+				Context context = this.context.getApplicationContext();
+				CharSequence contentTitle = "Avocado AC";
+				CharSequence contentText = "Avocado AC colibration is finished.";
+				Intent notificationIntent = new Intent(this.context, MainTabActivity.class);
+				PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent, 0);
+				notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
+
+				notificationManager.notify(notification.flags, notification);
+			}
 			//service.s.startForeground(1, notification);
 
 		}
@@ -247,7 +254,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 							service.submitClassification(sampleTime, classification);
 						}
 					}
-					
+
 					// return the sample batch to the buffer as an empty batch
 					batchBuffer.returnEmptyInstance(batch);
 
@@ -343,7 +350,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				}
 
 				//if(!isCalibrated)
-					calibrator.processData(sampleTime, dataMeans, dataSd, rawSampleStatistics.getSum(), rawSampleStatistics.getSumSqr(), rawSampleStatistics.getCount());
+				calibrator.processData(sampleTime, dataMeans, dataSd, rawSampleStatistics.getSum(), rawSampleStatistics.getSumSqr(), rawSampleStatistics.getCount());
 
 				/*else*/ if (!isCalibrated && calibrator.isCalibrated()) {
 					Log.v(Constants.DEBUG_TAG, "Calibration just finished. Saving values to DB.");

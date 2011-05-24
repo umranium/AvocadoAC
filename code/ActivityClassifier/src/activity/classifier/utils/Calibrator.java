@@ -403,10 +403,13 @@ public class Calibrator {
 				//	is the stationary period more than the required stationary period for calibration
 				if (!isCalibrated && (sampleTime-lastGravity.time>Constants.DURATION_OF_CALIBRATION || ClassifierThread.bForceCalibration)) {
 					Log.d(Constants.DEBUG_TAG, "Performing calibration.");
-					try {
-						service.showServiceToast("Performing calibration. Please keep the phone still.");
-					} catch (RemoteException e) {
-					}
+					/* It is too late to show this toast here. The data is already collected here.
+					 * Therefore keeping the phone still would help to get better a calibration.
+					 */
+//					try {
+//						service.showServiceToast("Performing calibration. Please keep the phone still.");
+//					} catch (RemoteException e) {
+//					}
 					
 					float sSum[] = new float[Constants.ACCEL_DIM];
 					float sSumSqr[] = new float[Constants.ACCEL_DIM];

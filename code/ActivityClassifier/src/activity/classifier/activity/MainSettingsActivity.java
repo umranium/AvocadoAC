@@ -48,8 +48,8 @@ public class MainSettingsActivity extends PreferenceActivity {
 	private static final int DIALOG_YES_NO_MESSAGE_FOR_DELETION = 0;
 	private static final int DIALOG_YES_NO_MESSAGE_FOR_RESET_CALIBRATION = 1;
 	private static final int DIALOG_YES_NO_MESSAGE_FOR_CALIBRATION_START = 2;
-	
-	
+
+
 	ActivityRecorderBinder service = null;
 	CheckBox checkBox;
 
@@ -58,17 +58,17 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 	private SqlLiteAdapter sqlLiteAdapter;
 	private OptionsTable optionsTable;
-	
+
 	private CheckBoxPreferenceWithLongSummary calibrationSummary; 
 	private CheckBoxPreference aggregatePref;
 	private CheckBoxPreference fulltimeAccelPref;
 	private PreferenceScreen selectAccountPref;
 	private CheckBoxPreference fftOnPref; 
-	
+
 	private Handler mainLooperHandler;
-	
+
 	private AccountChooser accountChooser;
-	
+
 	private OptionUpdateHandler optionUpdateHandler = new OptionUpdateHandler() {
 		@Override
 		public void onFieldChange(Set<String> updatedKeys) {
@@ -195,9 +195,9 @@ public class MainSettingsActivity extends PreferenceActivity {
 			throw new IllegalStateException("Binding to service failed " + intent);
 		}
 	}
-	
+
 	private PreferenceScreen createPreferenceHierarchy() {
-		
+
 		PreferenceScreen root = getPreferenceManager().createPreferenceScreen(this);
 
 		// Inline preferences 
@@ -214,8 +214,8 @@ public class MainSettingsActivity extends PreferenceActivity {
 		Log.i("wake",wakelock+"");
 		screenPref.setChecked(wakelock);  
 		Log.i("wake",screenPref.isChecked()+"");
-//		getApplicationContext().bindService(new Intent(this, RecorderService.class),
-//				connection, Context.BIND_AUTO_CREATE);
+		//		getApplicationContext().bindService(new Intent(this, RecorderService.class),
+		//				connection, Context.BIND_AUTO_CREATE);
 		screenPref.setOnPreferenceChangeListener(new CheckBoxPreference.OnPreferenceChangeListener(){
 
 			public boolean onPreferenceChange(Preference arg0, Object arg1) {
@@ -225,9 +225,9 @@ public class MainSettingsActivity extends PreferenceActivity {
 					//update Wake Lock state to 1 (true)
 					optionsTable.setWakeLockSet(true);
 					optionsTable.save();
-//					getApplicationContext().unbindService(connection);
-//					getApplicationContext().bindService(new Intent(getBaseContext(), RecorderService.class),
-//							connection, Context.BIND_AUTO_CREATE);
+					//					getApplicationContext().unbindService(connection);
+					//					getApplicationContext().bindService(new Intent(getBaseContext(), RecorderService.class),
+					//							connection, Context.BIND_AUTO_CREATE);
 
 				}
 				else{
@@ -240,7 +240,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 				getApplicationContext().bindService(new Intent(getBaseContext(), RecorderService.class),
 						connection, Context.BIND_AUTO_CREATE);
 				screenPref.setChecked(wakelock);
-				
+
 				return false;
 			}
 
@@ -265,8 +265,8 @@ public class MainSettingsActivity extends PreferenceActivity {
 			invokeMyTracksPref.setSummary(invokeMyTracksPref.getSummary()+"\nGoogle MyTracks is not installed yet.");
 		}
 		inlinePrefCat.addPreference(invokeMyTracksPref);
-		
-		
+
+
 		// Dialog based preferences
 		PreferenceCategory calibrationSettingsCat = new PreferenceCategory(this);
 		calibrationSettingsCat.setTitle("Calibration Settings");
@@ -280,12 +280,12 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 			public boolean onPreferenceClick(Preference preference) {
 				showDialog(DIALOG_YES_NO_MESSAGE_FOR_RESET_CALIBRATION);
-				
+
 				return false;
 			}
 
 		});
-		
+
 		PreferenceScreen forceCalibPref = getPreferenceManager().createPreferenceScreen(this);
 		forceCalibPref.setKey("screen_preference");
 		forceCalibPref.setTitle("Start Calibration now");
@@ -294,13 +294,13 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 			public boolean onPreferenceClick(Preference preference) {
 				showDialog(DIALOG_YES_NO_MESSAGE_FOR_CALIBRATION_START);
-				
+
 				return false;
 			}
 
 		});
 
-		
+
 		calibrationSettingsCat.addPreference(resetPref);
 		calibrationSettingsCat.addPreference(forceCalibPref);
 
@@ -315,19 +315,19 @@ public class MainSettingsActivity extends PreferenceActivity {
 		dataPrefCat.setTitle("Data settings");
 		root.addPreference(dataPrefCat);
 
-//		PreferenceScreen deletePref = getPreferenceManager().createPreferenceScreen(this);
-//		deletePref.setKey("delete_preference");
-//		deletePref.setTitle("Delete Database");
-//		deletePref.setSummary("Delete all activity data and user information.");
-//		deletePref.setOnPreferenceClickListener(new PreferenceScreen.OnPreferenceClickListener(){
-//
-//			public boolean onPreferenceClick(Preference preference) {
-//				showDialog(DIALOG_YES_NO_MESSAGE_FOR_DELETION);
-//				return false;
-//			}
-//
-//		});
-//		dataPrefCat.addPreference(deletePref);
+		//		PreferenceScreen deletePref = getPreferenceManager().createPreferenceScreen(this);
+		//		deletePref.setKey("delete_preference");
+		//		deletePref.setTitle("Delete Database");
+		//		deletePref.setSummary("Delete all activity data and user information.");
+		//		deletePref.setOnPreferenceClickListener(new PreferenceScreen.OnPreferenceClickListener(){
+		//
+		//			public boolean onPreferenceClick(Preference preference) {
+		//				showDialog(DIALOG_YES_NO_MESSAGE_FOR_DELETION);
+		//				return false;
+		//			}
+		//
+		//		});
+		//		dataPrefCat.addPreference(deletePref);
 
 		this.selectAccountPref = getPreferenceManager().createPreferenceScreen(this);
 		selectAccountPref.setKey("select_account_preference");
@@ -341,7 +341,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 			}
 		});
 		dataPrefCat.addPreference(selectAccountPref);
-		
+
 		PreferenceScreen copyPref = getPreferenceManager().createPreferenceScreen(this);
 		copyPref.setKey("copy_preference");
 		copyPref.setTitle("Copy Database to SDcard");
@@ -359,7 +359,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 						Log.d(Constants.DEBUG_TAG, "Create DB directory. " + dbDstFile.getParentFile().getAbsolutePath());
 						dbDstFile.getParentFile().mkdirs();
 					}
-	
+
 					copy(dbSrcFile, dbDstFile);
 					Toast.makeText(getBaseContext(), "Database copied into " + dbDstFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
 				}
@@ -373,13 +373,13 @@ public class MainSettingsActivity extends PreferenceActivity {
 		if (Constants.IS_DEV_VERSION) {
 			PreferenceCategory developerPrefCat = new PreferenceCategory(this);
 			developerPrefCat.setTitle("Developer Settings");
-	
+
 			aggregatePref = new CheckBoxPreference(this);
 			aggregatePref.setKey("aggregate_preference");
 			aggregatePref.setTitle("Aggregate Activities");
 			aggregatePref.setSummary("Smoothen activity classification\n(requires service restart)");
 			aggregatePref.setOnPreferenceChangeListener(new CheckBoxPreference.OnPreferenceChangeListener(){
-	
+
 				public boolean onPreferenceChange(Preference arg0, Object arg1) {
 					boolean checked = (Boolean) arg1; 
 					optionsTable.setUseAggregator(checked);
@@ -387,7 +387,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 					aggregatePref.setChecked(checked);
 					return false;
 				}
-	
+
 			});
 			aggregatePref.setChecked(optionsTable.getUseAggregator());
 
@@ -396,7 +396,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 			fulltimeAccelPref.setTitle("Keep Accelerometer On");
 			fulltimeAccelPref.setSummary("Keep accelerometer on all the time\n(requires service restart)");
 			fulltimeAccelPref.setOnPreferenceChangeListener(new CheckBoxPreference.OnPreferenceChangeListener(){
-	
+
 				public boolean onPreferenceChange(Preference arg0, Object arg1) {
 					boolean checked = (Boolean) arg1; 
 					optionsTable.setFullTimeAccel(checked);
@@ -404,10 +404,10 @@ public class MainSettingsActivity extends PreferenceActivity {
 					fulltimeAccelPref.setChecked(checked);
 					return false;
 				}
-	
+
 			});
 			fulltimeAccelPref.setChecked(optionsTable.getFullTimeAccel());
-			
+
 			root.addPreference(developerPrefCat);
 			developerPrefCat.addPreference(aggregatePref);
 			developerPrefCat.addPreference(fulltimeAccelPref);
@@ -449,8 +449,8 @@ public class MainSettingsActivity extends PreferenceActivity {
 					} catch (RemoteException ex) {
 						Log.e(Constants.DEBUG_TAG, "Unable to get service state", ex);
 					}
-					
-					
+
+
 				}
 			})
 			.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -467,6 +467,12 @@ public class MainSettingsActivity extends PreferenceActivity {
 			.setMessage("Proceed with reseting the calibration values?")
 			.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int whichButton) {
+					try {
+					service.showServiceToast("Calibration values reseted. Auto calibration will take place" +
+							" when the phone is still for more that a minute.");
+				} catch (RemoteException e) {
+				}
+
 					Calibrator.resetCalibrationOptions(optionsTable);
 					optionsTable.save();
 					calibrationSummary.setSummary(getScreenSummary());
@@ -486,6 +492,11 @@ public class MainSettingsActivity extends PreferenceActivity {
 			.setMessage("Start the calibration now?")
 			.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int whichButton) {
+					try {
+						service.showServiceToast("Performing calibration. Please keep the phone still.");
+					} catch (RemoteException e) {
+					}
+
 					Calibrator.resetCalibrationOptions(optionsTable);
 					optionsTable.save();
 					calibrationSummary.setSummary(getScreenSummary());
@@ -502,7 +513,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 		}
 		return null;
 	}
-	
+
 	private String getScreenSummary(){
 		float[] sd = optionsTable.getSd();
 		float[] offSet = optionsTable.getOffset();
@@ -514,7 +525,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 		"Offset Y                        : "+offSet[Constants.ACCEL_Y_AXIS]+"\n" +
 		"Offset Z                        : "+offSet[Constants.ACCEL_Z_AXIS]+"\n";
 	}
-	
+
 	private void copy(File sourceFile, File destinationFile) {
 		try {
 			InputStream lm_oInput = new FileInputStream(sourceFile);
@@ -537,25 +548,25 @@ public class MainSettingsActivity extends PreferenceActivity {
 	}
 	public class CheckBoxPreferenceWithLongSummary extends CheckBoxPreference{
 
-	    public CheckBoxPreferenceWithLongSummary(Context context) {
-	        super(context);
-	    }
+		public CheckBoxPreferenceWithLongSummary(Context context) {
+			super(context);
+		}
 
-	    public CheckBoxPreferenceWithLongSummary(Context context, AttributeSet attrs) {
-	        super(context, attrs);
-	    }
-	    public CheckBoxPreferenceWithLongSummary(Context context, AttributeSet attrs, int defStyle) {
-	        super(context, attrs, defStyle);
-	    }
+		public CheckBoxPreferenceWithLongSummary(Context context, AttributeSet attrs) {
+			super(context, attrs);
+		}
+		public CheckBoxPreferenceWithLongSummary(Context context, AttributeSet attrs, int defStyle) {
+			super(context, attrs, defStyle);
+		}
 
-	    @Override
-	    protected void onBindView(View view) {
-	        super.onBindView(view);
-	        TextView summaryView = (TextView) view.findViewById(android.R.id.summary);
-	        summaryView.setMaxLines(10);
-	        CheckBox checkBox = (CheckBox) view.findViewById(android.R.id.checkbox);
-	        checkBox.setVisibility(view.GONE);
-	    }
+		@Override
+		protected void onBindView(View view) {
+			super.onBindView(view);
+			TextView summaryView = (TextView) view.findViewById(android.R.id.summary);
+			summaryView.setMaxLines(10);
+			CheckBox checkBox = (CheckBox) view.findViewById(android.R.id.checkbox);
+			checkBox.setVisibility(view.GONE);
+		}
 	}
 
 }
