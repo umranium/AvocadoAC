@@ -293,11 +293,28 @@ public class MainSettingsActivity extends PreferenceActivity {
 		forceCalibPref.setOnPreferenceClickListener(new PreferenceScreen.OnPreferenceClickListener(){
 
 			public boolean onPreferenceClick(Preference preference) {
-				showDialog(DIALOG_YES_NO_MESSAGE_FOR_CALIBRATION_START);
+//				showDialog(DIALOG_YES_NO_MESSAGE_FOR_CALIBRATION_START);
+//
+//				return false;
+				
+				try {
+					service.showServiceToast("Performing calibration. Please keep the phone still.");
+				} catch (RemoteException e) {
+				}
 
+				ClassifierThread.bForceCalibration = true;
+				Calibrator.isCalibrated = false;
+				
+				Calibrator.resetCalibrationOptions(optionsTable);
+				//optionsTable.save();
+				calibrationSummary.setSummary(getScreenSummary());
+				
 				return false;
+
 			}
 
+			
+			
 		});
 
 //		calibrationSettingsCat.addPreference(resetPref);
@@ -472,7 +489,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 				} catch (RemoteException e) {
 				}
 
-					Calibrator.resetCalibrationOptions(optionsTable);
+					Calibrator.optionsTable = optionsTable;
 					optionsTable.save();
 					calibrationSummary.setSummary(getScreenSummary());
 				}
@@ -496,10 +513,12 @@ public class MainSettingsActivity extends PreferenceActivity {
 					} catch (RemoteException e) {
 					}
 
-					Calibrator.resetCalibrationOptions(optionsTable);
-					optionsTable.save();
+					ClassifierThread.bForceCalibration = true;
+					Calibrator.isCalibrated = false;
+					
+					//Calibrator.resetCalibrationOptions(optionsTable);
+					//optionsTable.save();
 					calibrationSummary.setSummary(getScreenSummary());
-					ClassifierThread.bForceCalibration =true;
 				}
 			})
 			.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {

@@ -155,7 +155,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 		float[][] data = batch.data;
 
 
-		if(!calibrator.isCalibrated())
+		//if(!calibrator.isCalibrated())
 		{
 			rawSampleStatistics.assign(data, size);
 			calibrator.MainForceCalibrationProcess(sampleTime, 
@@ -175,7 +175,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			optionsTable.setValueOfGravity(calibrator.getValueOfGravity());
 
 			//mean[Constants.ACCEL_Z_AXIS] -= Constants.GRAVITY;
-			mean[Constants.ACCEL_Z_AXIS] = 0.0f;
+			//mean[Constants.ACCEL_Z_AXIS] = 0.0f;
 			optionsTable.setOffset(mean);
 
 			optionsTable.save();
@@ -186,7 +186,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			/*	If the bForceCalibration is false it implies the calibrator has finished the 
 			 	calibration and made the bForceCalibration false.
 			 */
-			if(!bForceCalibration)
+			if(!bForceCalibration && calibrator.CalibrationAttempts <= 3)
 			{
 				String ns = this.context.NOTIFICATION_SERVICE;
 
@@ -209,6 +209,9 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 
 				notificationManager.notify(notification.flags, notification);
 			}
+			else
+				//Reseting the calibration attemps count.
+				calibrator.CalibrationAttempts = 0;
 			//service.s.startForeground(1, notification);
 
 		}
