@@ -192,7 +192,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 
 				NotificationManager notificationManager = (NotificationManager)this.context.getSystemService(ns);
 
-				int icon = R.drawable.icon;
+				int icon = R.drawable.calibration;
 				CharSequence tickerText = "Avocado AC Calibration";
 				long when = System.currentTimeMillis();
 				Notification notification = new Notification(icon, tickerText, when);
@@ -202,7 +202,19 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 
 				Context context = this.context.getApplicationContext();
 				CharSequence contentTitle = "Avocado AC";
-				CharSequence contentText = "Avocado AC colibration is finished.";
+				CharSequence contentText;
+				if (calibrator.GetLastOrientation() == 0)
+				{
+					contentText = "X and Y axes calibration is finished.";
+					service.showServiceToast("Put your phone on the side in a vertical" +
+							"position and press Start Calibration for Z axis calibration.");
+				}
+				else
+				{
+					contentText = "Z axis calibration is finished.";
+						service.showServiceToast("Put your phone in a flat" +
+					"position and press Start Calibration for X and Y axes calibration.");
+				}
 				Intent notificationIntent = new Intent(this.context, MainTabActivity.class);
 				PendingIntent contentIntent = PendingIntent.getActivity(context, 0, notificationIntent, 0);
 				notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);

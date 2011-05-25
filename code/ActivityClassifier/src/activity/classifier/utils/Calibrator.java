@@ -234,9 +234,9 @@ public class Calibrator {
 	 *            the total number of samples used to obtain the sum and sum square
 	 */
 	private void PerformeCalibration(float[] sumOfX, float[] sumOfXSqr,OrientationState state, int count) {
-		this.valueOfGravity = 0.0f;
 		switch (state) {
 		case XYCALIBRATION:
+			this.valueOfGravity = 0.0f;
 			for (int i = 0; i < Constants.ACCEL_DIM; i++) {
 
 				this.mean[i] = sumOfX[i] / count;
@@ -247,12 +247,14 @@ public class Calibrator {
 				if (Float.isNaN(this.sd[i])) {
 					this.sd[i] = 0.0f;
 				}
-				
 				this.valueOfGravity += this.mean[i]*this.mean[i];
 			}
-			
+			//reseting z mean since it is XY calibration.
 			this.mean[Constants.ACCEL_Z_AXIS]  = this.resetMean[Constants.ACCEL_Z_AXIS];
-			this.valueOfGravity += this.mean[Constants.ACCEL_Z_AXIS]*this.mean[Constants.ACCEL_Z_AXIS];
+			
+			//TODO: This was wrong. Should be done by the collected values of Z in flat orientation 
+			// that is in the for loop.
+			//this.valueOfGravity += this.mean[Constants.ACCEL_Z_AXIS]*this.mean[Constants.ACCEL_Z_AXIS];
 			this.valueOfGravity = (float)Math.sqrt(this.valueOfGravity);
 			break;
 
@@ -399,12 +401,25 @@ public class Calibrator {
 	{
 		switch (calibrationState) {
 		case XYCALIBRATION:
-			service.showServiceToast("Phone is in flat orientation. XY calibration initiated.");
+			service.showServiceToast("Phone is in flat orientation. XY calibration finished.");
 			break;
 
 		default:
-			service.showServiceToast("Phone is in vertical orientation. Z calibration initiated.");
+			service.showServiceToast("Phone is in vertical orientation. Z calibration finished.");
 			break;
+		}
+	}
+	public int GetLastOrientation()
+	{
+		switch (calibrationState) {
+		case XYCALIBRATION:
+			return 0;
+
+		case ZCALIBRATION:
+			return 1;
+
+		default:
+			return -1;
 		}
 	}
 	
