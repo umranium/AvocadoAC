@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
      android:versionCode="17" android:versionName="0.2.4" package="aus.csiro.justin.sensorlogger">
-    <application android:label="Sensor Logger" android:icon="@drawable/icon">
-        <activity android:name=".activities.IntroActivity" android:label="Sensor Logger">
+   	<application android:debuggable="true" android:icon="@drawable/icon_logger" android:label="Avocado Logger">
+    
+        <activity android:name=".activities.IntroActivity" android:screenOrientation="portrait" android:label="Avocado Logger">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -10,27 +11,28 @@
         </activity>
 
         <activity
-            android:name=".activities.CountdownActivity"
-            android:label="Sensor Logger &gt; Countdown"/>
+            android:name=".activities.CountdownActivity" android:screenOrientation="portrait" android:label="Avocado Logger &gt; Countdown"/>
         <activity
-            android:name=".activities.RecordingActivity"
-            android:label="Sensor Logger &gt; Recording"/>
+            android:name=".activities.RecordingActivity" android:screenOrientation="portrait" android:label="Avocado Logger &gt; Recording"/>
         <activity
-            android:name=".activities.ResultsActivity"
-            android:label="Sensor Logger &gt; Results"/>
+            android:name=".activities.ResultsActivity" android:screenOrientation="portrait" android:label="Avocado Logger &gt; Results"/>
+        <activity 
+        	android:name=".activities.SubmitRecordedData" android:screenOrientation="portrait" android:label="Avocado Logger &gt; Submit"></activity>
         <activity
-            android:name=".activities.ThanksActivity"
-            android:label="Sensor Logger &gt; Thanks"/>
+            android:name=".activities.ThanksActivity" android:screenOrientation="portrait" android:label="Avocado Logger &gt; Thanks"></activity>
 
-        <service android:name=".SensorLoggerService" android:label="Sensor Logger Service"/>
-        <service android:name=".RecorderService" android:label="Sensor Logger Service"/>
-        <service android:name=".ClassifierService" android:label="Sensor Classifier Service"/>
-        <service android:name=".UploaderService" android:label="Sensor Uploader Service"/>
+        <service android:name=".SensorLoggerService" android:label="Avocado Logger Service"></service>
+        <service android:name=".RecorderService" android:label="Avocado Logger Service"></service>
+        <service android:name=".ClassifierService" android:label="Avocado Classifier Service"></service>
+        <service android:name=".UploaderService" android:label="Avocado Uploader Service"></service>
+        <activity android:name=".activities.PrefActivity"></activity>
+        
     </application>
 
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
 
-    <uses-sdk android:minSdkVersion="3" />
+    <uses-sdk android:minSdkVersion="2" />
 </manifest>

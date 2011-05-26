@@ -6,6 +6,7 @@
 package aus.csiro.justin.sensorlogger.activities;
 
 import android.app.Activity;
+import android.app.ListActivity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;

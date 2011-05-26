@@ -18,7 +18,7 @@ import aus.csiro.justin.sensorlogger.rpc.SensorLoggerBinder;
  *
  * @author chris
  */
-public abstract class BoundService extends Service {
+public abstract class BoundService extends Service{
 
     SensorLoggerBinder service = null;
 

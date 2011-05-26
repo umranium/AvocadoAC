@@ -13,14 +13,13 @@
     <string name="intro3">
         When you click Begin there will be a 10 second delay to allow you
         to put the phone in your pocket or usual carrying place. After that,
-        data will be recorded until you click the Stop button. You\'ll hear a
-        beep when it\'s done.
+        data will be recorded until you click the Stop button. 
     </string>
     <string name="continuebutton">Begin</string>
 
     <string name="countdownheader">Starting in...</string>
     <string name="countdowninitial"></string>
-    <string name="countdownblurb">Put the phone away and wait for the beep!</string>
+    <string name="countdownblurb">Recording starts after the phone vibration.</string>
 
     <string name="error_disconnected">Error: disconnected from service</string>
 
@@ -56,6 +55,34 @@
     <string name="activity_dancing">Dancing</string>
     <string name="activity_idle_standing">Standing still</string>
     <string name="activity_idle_sitting">Sitting down</string>
-    <string name="activity_vehicle_bus">Travelling by bus</string>
-    <string name="activity_vehicle_car">Travelling by car</string>
+    <string name="activity_vehicle_bus">Traveling by bus</string>
+    <string name="activity_vehicle_car">Traveling by car</string>
+    <string name="main_no_items">No items</string>
+    
+    <string-array name="activity_list">
+        <item>Stationary</item>
+        <item>Walking</item>
+        <item>Jogging</item>
+        <item>Running</item>
+        <item>Traveling by car</item>
+        <item>Paddling</item>
+        <item>Cycling</item>
+        <item>Other</item>
+        <item>Cancel</item>
+    </string-array>
+
+    <string-array name="handset_location">
+        <item>Top pocket</item>
+        <item>Front pants pocket</item>
+        <item>Back pants pocket</item>
+        <item>Backpack</item>
+        <item>Belt</item>
+        <item>Handbag</item>
+        <item>In the car</item>
+        <item>Other</item>
+    </string-array>
+        <string name="Submitbtn">Submit</string>
+        <string name="user_name">Default</string>
+        <string name="prefbtn">Preferences</string>
+        <string name="exitbtn">Exit</string>
 </resources>

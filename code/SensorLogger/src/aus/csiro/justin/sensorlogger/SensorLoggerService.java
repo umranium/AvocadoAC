@@ -5,6 +5,7 @@
 
 package aus.csiro.justin.sensorlogger;
 
+import android.R.string;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -32,8 +33,13 @@ import aus.csiro.justin.sensorlogger.rpc.SensorLoggerBinder;
 public class SensorLoggerService extends Service {
 
 	private int index=0;
-    private final SensorLoggerBinder.Stub binder = new SensorLoggerBinder.Stub() {
-
+	
+	public String phoneLocation = "Pants front pocket";
+	public String usrComment = "Empty";
+	
+	private final SensorLoggerBinder.Stub binder = new SensorLoggerBinder.Stub() {
+    	
+  
         public void setState(int newState) throws RemoteException {
             doSetState(newState);
         }
@@ -78,41 +84,46 @@ public class SensorLoggerService extends Service {
             return bestName;
         }
 
-        public void submitWithCorrection(String newCorrection) throws RemoteException {
+        public void submitWithCorrection(String newCorrection,String location, String comment) throws RemoteException {
             correction = newCorrection;
+            phoneLocation = location;
+            usrComment = comment;
             submit();
         }
 
         public void submit() throws RemoteException {
             final Intent intent = new Intent(SensorLoggerService.this, UploaderService.class);
-            intent.putExtra("correction", correction);
-            intent.putExtra("activity", getClassification());
-            intent.putExtra("version", getVersionName());
-            intent.putExtra("application", "SensorLogger");
-            intent.putExtra("imei", getIMEI());
+            intent.putExtra("x-correction", correction);
+            intent.putExtra("x-activity", getClassification());
+            intent.putExtra("x-version", getVersionName());
+            intent.putExtra("x-application", "SensorLogger");
+            intent.putExtra("x-imei", getIMEI());
+            intent.putExtra("location", phoneLocation);
+            intent.putExtra("comment", usrComment);
             setState(6);
             startService(intent);
         }
+		@Override
+		public void setClassfication(String strClss) throws RemoteException {
+			correction = strClss;
+		}
+		@Override
+		public void setLocation(String loc) throws RemoteException {
+			phoneLocation = loc;
+		}
+		@Override
+		public void setComment(String cmnt) throws RemoteException {
+			usrComment = cmnt;
+		}
         
     };
 
     final Handler handler = new Handler();
-    final TimerTask countdownTask = new TimerTask() {
-
-        @Override
-        public void run() {
-            if (--countdown > 0) {
-                handler.postDelayed(countdownTask, 1000);
-            } else {
-                doSetState(3);
-            }
-        }
-    };
 
     Map<String, Integer> classifications = new HashMap<String, Integer>();
     String correction = "UNCLASSIFIED/NOTCORRECTED";
     int classCount = 0;
-    int countdown = 10;
+    int countdown;
     int state = 1;
 
     public String getIMEI() {
@@ -161,15 +172,6 @@ public class SensorLoggerService extends Service {
     }
     void doSetState(final int newState) {
         switch (newState) {
-            case 2:
-                countdown = 10;
-
-                handler.removeCallbacks(countdownTask);
-                handler.postDelayed(countdownTask, 1000);
-                break;
-            case 3:
-                startService(new Intent(SensorLoggerService.this, RecorderService.class));
-                break;
             case 8:
                 ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).cancel(0);
                 stopSelf();

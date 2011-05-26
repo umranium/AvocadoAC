@@ -24,6 +24,5 @@
     <TextView
         android:id="@+id/countdownblurb"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/countdownblurb"/>
+        android:layout_height="wrap_content" android:text="@string/countdownblurb"/>
 </LinearLayout>

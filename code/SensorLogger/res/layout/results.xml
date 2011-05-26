@@ -18,7 +18,7 @@
         android:text="@string/resultsblurb"
         android:layout_marginBottom="15dip"/>
     <TextView
-        android:id="@+id/resultsresult"
+        android:id="@+id/resultsresultaaa"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:text="@string/resultsresult"

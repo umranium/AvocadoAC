@@ -83,7 +83,7 @@ public class UploaderService extends BoundService implements Runnable {
 		            final FileEntity entity = new FileEntity(file, "text/plain");
 
 		            for (Map.Entry<String, String> entry : headers.entrySet()) {
-		                post.setHeader("x-" + entry.getKey(), entry.getValue());
+		                post.setHeader(entry.getKey(), entry.getValue());
 		            }
 
 		            post.setEntity(entity);

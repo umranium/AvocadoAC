@@ -42,9 +42,6 @@
                 android:layout_marginBottom="15dip"/>
         </RelativeLayout>
     </ScrollView>
-    <Button
-        android:id="@+id/introstart"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/continuebutton"/>
+   <!--  <Button android:layout_width="match_parent" android:id="@+id/Preferences" android:text="@string/prefbtn" android:layout_height="70dip"></Button> -->
+    <Button android:text="@string/continuebutton" android:id="@+id/introstart" android:layout_width="fill_parent" android:layout_height="70dip"></Button>
 </LinearLayout>
