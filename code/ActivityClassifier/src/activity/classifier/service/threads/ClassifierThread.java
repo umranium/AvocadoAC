@@ -12,6 +12,7 @@ import java.util.Set;
 import activity.classifier.R;
 import activity.classifier.accel.SampleBatch;
 import activity.classifier.accel.SampleBatchBuffer;
+import activity.classifier.activity.MainSettingsActivity;
 import activity.classifier.activity.MainTabActivity;
 import activity.classifier.aggregator.Aggregator;
 import activity.classifier.classifier.Classifier;
@@ -173,9 +174,6 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			optionsTable.setSd(sd);
 			optionsTable.setCount(calibrator.getCount());
 			optionsTable.setValueOfGravity(calibrator.getValueOfGravity());
-
-			//mean[Constants.ACCEL_Z_AXIS] -= Constants.GRAVITY;
-			//mean[Constants.ACCEL_Z_AXIS] = 0.0f;
 			optionsTable.setOffset(mean);
 
 			optionsTable.save();
@@ -220,6 +218,13 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
 
 				notificationManager.notify(notification.flags, notification);
+				
+				//Enables the calibration preference in settings tab.
+				MainSettingsActivity.forceCalibPref.setEnabled(true);
+				MainSettingsActivity.forceCalibPref.setTitle("Start Calibration now");
+				MainSettingsActivity.forceCalibPref.setSelectable(true);
+
+
 			}
 			else
 				//Reseting the calibration attemps count.
@@ -256,7 +261,10 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					// process the sample batch to obtain the classification
 					long sampleTime = batch.sampleTime;
 					if(bForceCalibration)
+					{
 						StartCalibration(batch);
+					}
+					
 					else
 					{
 						String classification = processData(batch);

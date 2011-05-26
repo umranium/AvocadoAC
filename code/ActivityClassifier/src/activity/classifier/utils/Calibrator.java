@@ -43,7 +43,7 @@ public class Calibrator {
 	private ActivityRecorderBinder service;
 	private float allowedMultiplesOfDeviation;
 	private boolean isUncarried;
-	
+
 	public static boolean isCalibrated;
 	private OrientationState calibrationState;
 	/**
@@ -241,7 +241,7 @@ public class Calibrator {
 
 				this.mean[i] = sumOfX[i] / count;
 
-				this.sd[i] = (float)Math.sqrt( sumOfXSqr[i]/count - this.mean[i]*this.mean[i]);
+				this.sd[i] = (float)Math.sqrt( Math.abs(sumOfXSqr[i]/count - this.mean[i]*this.mean[i]));
 
 				//	just in case...
 				if (Float.isNaN(this.sd[i])) {
@@ -251,7 +251,9 @@ public class Calibrator {
 			}
 			//reseting z mean since it is XY calibration.
 			this.mean[Constants.ACCEL_Z_AXIS]  = this.resetMean[Constants.ACCEL_Z_AXIS];
-			
+			//this.sd[Constants.ACCEL_Z_AXIS] = (float)Math.sqrt( Math.abs(sumOfXSqr[Constants.ACCEL_Z_AXIS]/count 
+			//		- Math.pow(this.mean[Constants.ACCEL_Z_AXIS],2)));
+
 			//TODO: This was wrong. Should be done by the collected values of Z in flat orientation 
 			// that is in the for loop.
 			//this.valueOfGravity += this.mean[Constants.ACCEL_Z_AXIS]*this.mean[Constants.ACCEL_Z_AXIS];
@@ -260,6 +262,8 @@ public class Calibrator {
 
 		case ZCALIBRATION:
 			this.mean[Constants.ACCEL_Z_AXIS] = sumOfX[Constants.ACCEL_Z_AXIS] / count;
+			/*this.sd[Constants.ACCEL_Z_AXIS] = 0;/*(float)Math.sqrt( Math.abs(sumOfXSqr[Constants.ACCEL_Z_AXIS]/count 
+					- Math.pow(this.mean[Constants.ACCEL_Z_AXIS],2)));*/
 
 			break;
 
@@ -397,6 +401,29 @@ public class Calibrator {
 		}
 	}
 
+	private void emptyAllBeforeTheTimeStamp(long lTimeStamp)
+	{
+		try {
+			//	peek at the last item in the queue
+			Measurement last = measurementsBuffer.peekFilledInstance();
+			while (last!=null) {	//	if an item was found
+				//	check if the item is was taken in the past
+				if (lTimeStamp-last.time>=0) {
+					//	remove item
+					measurementsBuffer.returnEmptyInstance(measurementsBuffer.takeFilledInstance());
+				} else {
+					break;
+				}
+				//	check the next item
+				last = measurementsBuffer.peekFilledInstance();
+			}
+		} catch (InterruptedException e) {
+			Log.e(Constants.DEBUG_TAG, 
+					"Exception while attempting to find latest measurement " +
+					"taken before the period "+(lTimeStamp/1000)+"s", 
+					e);
+		}
+	}
 	private void ToastPhoneOrientation() throws RemoteException
 	{
 		switch (calibrationState) {
@@ -422,322 +449,383 @@ public class Calibrator {
 			return -1;
 		}
 	}
-	
+
 	public static int CalibrationAttempts = 0;
 	synchronized
 	public void MainForceCalibrationProcess(long sampleTime, float[] mean, float[] sd, float[] sum, float[] sumSqr, int count) throws InterruptedException, RemoteException
 	{
-		Measurement currGravity = UpdateGravity(sampleTime,mean,sd,sum,sumSqr,count);
-		calibrationState = PhoneOriantation(currGravity);
-		//resetCalibrationOptionsBasedOnOrientation(calibrationState);
-//		if(CalibrationAttempts>3)
-//		{
-//			ClassifierThread.bForceCalibration = false;
-//			service.showServiceToast("Calibration failed due to phone not being still.");
-//			//	reset data
-//			reset();
-//
-//		}	
-		
-//		if (hasMotion(currGravity)) {
-//
-//			//CalibrationAttempts++;
-//			service.showServiceToast(/*"Attempt " + Integer.toString(CalibrationAttempts) +*/ "Calibration is failed. Please hold the phone still.");
-//			//	return the current sample as unusable
-//			measurementsBuffer.returnEmptyInstance(currGravity);
-//			ClassifierThread.bForceCalibration = false;
-//
-//			////	reset data
-//			//reset();
-//		}
-//		else 
-//		{
+		if(ClassifierThread.bForceCalibration)
+		{
+			Measurement currGravity = UpdateGravity(sampleTime,mean,sd,sum,sumSqr,count);
+			//resetCalibrationOptionsBasedOnOrientation(calibrationState);
+			//		if(CalibrationAttempts>3)
+			//		{
+			//			ClassifierThread.bForceCalibration = false;
+			//			service.showServiceToast("Calibration failed due to phone not being still.");
+			//			//	reset data
+			//			reset();
+			//
+			//		}	
+
+			//		if (hasMotion(currGravity)) {
+			//
+			//			//CalibrationAttempts++;
+			//			service.showServiceToast(/*"Attempt " + Integer.toString(CalibrationAttempts) +*/ "Calibration is failed. Please hold the phone still.");
+			//			//	return the current sample as unusable
+			//			measurementsBuffer.returnEmptyInstance(currGravity);
+			//			ClassifierThread.bForceCalibration = false;
+			//
+			//			////	reset data
+			//			//reset();
+			//		}
+			//		else 
+			//		{
 			Measurement lastGravity = UpdateSecondSampleBatch(currGravity);
-			ToastPhoneOrientation();
-//		}
-		
-		if(currGravity!=null)
-		{//	get the mean and sd from the sum, sum square, and count based on phone orientation.
+			//		}
 
-			float sSum[] = new float[Constants.ACCEL_DIM];
-			float sSumSqr[] = new float[Constants.ACCEL_DIM];
-			int sCount = 0;
-
-			sCount = CalculateMeanForCollectedSamples(sSum,sSumSqr);
-			
-			PerformeCalibration(sSum, sSumSqr, calibrationState, count);
-
-			setToCalibratedStateBasedOnOrientation(calibrationState);
-
-			ClassifierThread.bForceCalibration = false;
-
-			//	get rid of extra measurements...
-			// emptyAllBefore(sampleTime, Math.max(Constants.DURATION_OF_CALIBRATION, Constants.DURATION_WAIT_FOR_UNCARRIED)*2);
-
-		}
-
-
-
-}
-/*
- * Identifies the orientation of the phone for calibration.
- */
-private OrientationState PhoneOriantation(Measurement gravity)
-{
-	if (gravity.axisMean[Constants.ACCEL_Z_AXIS] < Constants.GRAVITY/2 && gravity.axisMean[Constants.ACCEL_Z_AXIS] > -Constants.GRAVITY/2)
-		return OrientationState.ZCALIBRATION;
-
-	return OrientationState.XYCALIBRATION;
-}
-
-private Measurement UpdateGravity(long sampleTime, float[] mean, float[] sd, float[] sum, float[] sumSqr, int count) throws InterruptedException
-{
-	Measurement Gravity = measurementsBuffer.takeEmptyInstance();
-
-	//	assign mean and standard deviations to be returned
-	for (int i = 0; i<Constants.ACCEL_DIM; ++i) {
-		Gravity.sum[i] = sum[i];
-		Gravity.sumSqr[i] = sumSqr[i];
-		Gravity.axisSd[i] = sd[i];
-		Gravity.axisMean[i] = mean[i];
-		Gravity.count = count;
-	}
-
-	//	assign the time to the time the sample was taken
-	Gravity.time = sampleTime;
-	return Gravity;
-
-}
-private Measurement UpdateSecondSampleBatch(Measurement currGravity) throws InterruptedException
-{
-	//	get the last item in the buffer
-	Measurement lastGravity = measurementsBuffer.peekFilledInstance();
-
-	// check if there is any movement detected
-	while (lastGravity!=null && hasMovement(lastGravity, currGravity)) {
-		//	get rid of it
-		measurementsBuffer.returnEmptyInstance(measurementsBuffer.takeFilledInstance());
-		//	get the next
-		lastGravity = measurementsBuffer.peekFilledInstance();
-	}
-
-	//	return the current sample as a usable sample
-	measurementsBuffer.returnFilledInstance(currGravity);
-	return lastGravity;
-
-}
-private int CalculateMeanForCollectedSamples(float[] sSum, float[] sSumSqr) throws InterruptedException
-{
-
-	int sCount = 0;
-
-	//	cycle through all the measurements and do calibration
-	int filledCount = measurementsBuffer.getPendingFilledInstances();
-	for (int i=0; i<filledCount; ++i) {
-		Measurement temp = measurementsBuffer.takeFilledInstance();
-		//	add to sum, sum square, and count
-		for (int d=0; d<Constants.ACCEL_DIM; ++d) {
-			sSum[d] += temp.sum[d];
-			sSumSqr[d] += temp.sumSqr[d];
-		}
-		sCount += temp.count;
-		measurementsBuffer.returnEmptyInstance(temp);
-	}
-	return sCount;
-
-
-}
-
-/**
- * Processes the sample data, updating any necessary statistical attributes,
- * performing calibration, and detecting uncarried states.
- * 
- * @param sampleTime
- * The time the data sample was taken
- * 
- * @param data
- * The data taken in the sampling window
- *  
- * @param size
- * The number of samples taken in the sampling window.
- * 
- * @param returnedMeans
- * The means of the different axi of the data taken in the sampling window.
- * 
- * @param returnedSd
- * The standard deviation of the different axi of the data given 
- * 
- * @throws InterruptedException
- */
-synchronized
-public void processData(long sampleTime, float[] mean, float[] sd, float[] sum, float[] sumSqr, int count) throws InterruptedException
-{
-	//		Log.v(Constants.DEBUG_TAG, "Calibration/Uncarried process start: total instances="+measurementsBuffer.getTotalSize()+"/"+measurementsBuffer.getCapacity()+", empty="+measurementsBuffer.getEmptySize()+", filled="+measurementsBuffer.getFilledSize());
-	try {
-		//	current found gravity
-		Measurement currGravity = UpdateGravity(sampleTime,mean,sd,sum,sumSqr,count);
-
-		//	this is supposed to be the last item in the buffer that gives a continous
-		//		phone stationary period to the current sample. if null, then
-		//		none was found.
-		Measurement lastGravity = null;
-
-		//	check if there is any motion in the current found data
-		if (hasMotion(currGravity)) {
-
-			//	return the current sample as unusable
-			measurementsBuffer.returnEmptyInstance(currGravity);
-			//	reset data
-			reset();
-
-		} else {
-			boolean movementDetected = false;
-
-			lastGravity = UpdateSecondSampleBatch(currGravity);
-
-			if (movementDetected)
-				Log.v(Constants.DEBUG_TAG, "Some movement detected in current measurement");
-			else
-				Log.v(Constants.DEBUG_TAG, "No movement detected in current measurement");
-		}
-
-		if (lastGravity!=null) {
-			Log.d(Constants.DEBUG_TAG, "Stationary period: "+((sampleTime-lastGravity.time)/1000)+"s");
-
-			//	check and perhaps do calibration
-			//	is the stationary period more than the required stationary period for calibration
-			if (!isCalibrated && (sampleTime-lastGravity.time>Constants.DURATION_OF_CALIBRATION /*|| ClassifierThread.bForceCalibration*/)) {
-				Log.d(Constants.DEBUG_TAG, "Performing calibration.");
-				/* TODO: Removed, because it is too late to show this toast here. The data is already collected here.
-				 * Therefore keeping the phone still would help to get better a calibration.
-				 */
-				//					try {
-				//						service.showServiceToast("Performing calibration. Please keep the phone still.");
-				//					} catch (RemoteException e) {
-				//					}
+			if(lastGravity != null)
+			{//	get the mean and sd from the sum, sum square, and count based on phone orientation.
+				calibrationState = PhoneOriantation(lastGravity);
+				ToastPhoneOrientation();
 
 				float sSum[] = new float[Constants.ACCEL_DIM];
 				float sSumSqr[] = new float[Constants.ACCEL_DIM];
 				int sCount = 0;
 
-				sCount = CalculateMeanForCollectedSamples(sSum,sSumSqr);
+				sCount = CalculateMeanForASample(sSum,sSumSqr,lastGravity);
 
-				//	get the mean and sd from the sum, sum square, and count
-				doCalibration(sSum, sSumSqr, sCount);
+				PerformeCalibration(sSum, sSumSqr, calibrationState, count);
 
-				setToCalibratedState();
+				setToCalibratedStateBasedOnOrientation(calibrationState);
+
 				ClassifierThread.bForceCalibration = false;
+
+				//	get rid of extra measurements...
+				emptyAllBeforeTheTimeStamp(sampleTime);
+
+			}
+		}
+
+
+	}
+	/*
+	 * Identifies the orientation of the phone for calibration.
+	 */
+	private OrientationState PhoneOriantation(Measurement gravity)
+	{
+		if (gravity.axisMean[Constants.ACCEL_Z_AXIS] < Constants.GRAVITY/2 && gravity.axisMean[Constants.ACCEL_Z_AXIS] > -Constants.GRAVITY/2)
+			return OrientationState.ZCALIBRATION;
+
+		return OrientationState.XYCALIBRATION;
+	}
+
+	private Measurement UpdateGravity(long sampleTime, float[] mean, float[] sd, float[] sum, float[] sumSqr, int count) throws InterruptedException
+	{
+		//	get rid of it
+
+		//emptyAllBefore(sampleTime, Math.max(Constants.DURATION_OF_CALIBRATION, Constants.DURATION_WAIT_FOR_UNCARRIED)*2);
+
+		Measurement Gravity = measurementsBuffer.takeEmptyInstance();
+
+		//	assign mean and standard deviations to be returned
+		for (int i = 0; i<Constants.ACCEL_DIM; ++i) {
+			Gravity.sum[i] = sum[i];
+			Gravity.sumSqr[i] = sumSqr[i];
+			Gravity.axisSd[i] = sd[i];
+			Gravity.axisMean[i] = mean[i];
+			Gravity.count = count;
+		}
+
+		//	assign the time to the time the sample was taken
+		Gravity.time = sampleTime;
+		return Gravity;
+
+	}
+	private Measurement UpdateSecondSampleBatch(Measurement currGravity) throws InterruptedException
+	{
+		//	get the last item in the buffer
+		Measurement lastGravity = measurementsBuffer.peekFilledInstance();
+
+		// check if there is any movement detected
+		while (lastGravity!=null && (hasMovement(lastGravity, currGravity) /* || !ClassifierThread.bForceCalibration*/)) {
+			//	get rid of it
+			measurementsBuffer.returnEmptyInstance(measurementsBuffer.takeFilledInstance());
+			//	get the next
+			lastGravity = measurementsBuffer.peekFilledInstance();
+		}
+
+		//	return the current sample as a usable sample
+		measurementsBuffer.returnFilledInstance(currGravity);
+		return lastGravity;
+
+	}
+
+	private Measurement UpdateWithTheLatestSampleBatch(Measurement currMeasurement) throws InterruptedException
+	{
+		Measurement lastGravity = measurementsBuffer.peekFilledInstance();
+
+		// check if there is any movement detected
+		while (lastGravity!=null && currMeasurement.time > lastGravity.time /* || !ClassifierThread.bForceCalibration*/)
+		{
+			//	get rid of it
+			measurementsBuffer.returnEmptyInstance(measurementsBuffer.takeFilledInstance());
+			//	get the next
+			lastGravity = measurementsBuffer.peekFilledInstance();
+		}
+
+		//	return the latest sample as a usable sample
+		measurementsBuffer.returnFilledInstance(currMeasurement);
+		return lastGravity;
+
+	}
+	private int CalculateMeanForASample(float[] sSum, float[] sSumSqr,Measurement sample)
+	{
+		for (int d=0; d<Constants.ACCEL_DIM; ++d) {
+			sSum[d] = sample.sum[d];
+			sSumSqr[d] = sample.sumSqr[d];
+		}
+
+		return sample.count;
+
+
+	}
+
+	private int CalculateMeanForCollectedSamples(float[] sSum, float[] sSumSqr) throws InterruptedException
+	{
+
+		int sCount = 0;
+
+		//	cycle through all the measurements and do calibration
+		int filledCount = measurementsBuffer.getPendingFilledInstances();
+		for (int i=0; i<filledCount; ++i) {
+			Measurement temp = measurementsBuffer.takeFilledInstance();
+			//	add to sum, sum square, and count
+			for (int d=0; d<Constants.ACCEL_DIM; ++d) {
+				sSum[d] += temp.sum[d];
+				sSumSqr[d] += temp.sumSqr[d];
+			}
+			sCount += temp.count;
+			measurementsBuffer.returnEmptyInstance(temp);
+		}
+		return sCount;
+
+
+	}
+
+	/**
+	 * Processes the sample data, updating any necessary statistical attributes,
+	 * performing calibration, and detecting uncarried states.
+	 * 
+	 * @param sampleTime
+	 * The time the data sample was taken
+	 * 
+	 * @param data
+	 * The data taken in the sampling window
+	 *  
+	 * @param size
+	 * The number of samples taken in the sampling window.
+	 * 
+	 * @param returnedMeans
+	 * The means of the different axi of the data taken in the sampling window.
+	 * 
+	 * @param returnedSd
+	 * The standard deviation of the different axi of the data given 
+	 * 
+	 * @throws InterruptedException
+	 */
+	synchronized
+	public void processData(long sampleTime, float[] mean, float[] sd, float[] sum, float[] sumSqr, int count) throws InterruptedException
+	{
+		//		Log.v(Constants.DEBUG_TAG, "Calibration/Uncarried process start: total instances="+measurementsBuffer.getTotalSize()+"/"+measurementsBuffer.getCapacity()+", empty="+measurementsBuffer.getEmptySize()+", filled="+measurementsBuffer.getFilledSize());
+		try {
+			//	current found gravity
+			Measurement currGravity = UpdateGravity(sampleTime,mean,sd,sum,sumSqr,count);
+
+			//	this is supposed to be the last item in the buffer that gives a continous
+			//		phone stationary period to the current sample. if null, then
+			//		none was found.
+			Measurement lastGravity = null;
+
+			//	check if there is any motion in the current found data
+			if (hasMotion(currGravity)) {
+
+				//	return the current sample as unusable
+				measurementsBuffer.returnEmptyInstance(currGravity);
+				//	reset data
+				reset();
+
+			} else {
+				boolean movementDetected = false;
+
+				lastGravity = UpdateSecondSampleBatch(currGravity);
+
+				if (movementDetected)
+					Log.v(Constants.DEBUG_TAG, "Some movement detected in current measurement");
+				else
+					Log.v(Constants.DEBUG_TAG, "No movement detected in current measurement");
 			}
 
-			//	check uncarried state
-			isUncarried = sampleTime-lastGravity.time>Constants.DURATION_WAIT_FOR_UNCARRIED;
+			if (lastGravity!=null) {
+				Log.d(Constants.DEBUG_TAG, "Stationary period: "+((sampleTime-lastGravity.time)/1000)+"s");
 
-			//	get rid of extra measurements...
-			emptyAllBefore(sampleTime, Math.max(Constants.DURATION_OF_CALIBRATION, Constants.DURATION_WAIT_FOR_UNCARRIED)*2);
+				//	check and perhaps do calibration
+				//	is the stationary period more than the required stationary period for calibration
+				if (!isCalibrated && (sampleTime-lastGravity.time>Constants.DURATION_OF_CALIBRATION /*|| ClassifierThread.bForceCalibration*/)) {
+					Log.d(Constants.DEBUG_TAG, "Performing calibration.");
+					/* TODO: Removed, because it is too late to show this toast here. The data is already collected here.
+					 * Therefore keeping the phone still would help to get better a calibration.
+					 */
+					//					try {
+					//						service.showServiceToast("Performing calibration. Please keep the phone still.");
+					//					} catch (RemoteException e) {
+					//					}
 
-		} else {
-			Log.d(Constants.DEBUG_TAG, "No stationary period found.");
-			//	set uncarried state
-			isUncarried = false;
+					float sSum[] = new float[Constants.ACCEL_DIM];
+					float sSumSqr[] = new float[Constants.ACCEL_DIM];
+					int sCount = 0;
+
+					sCount = CalculateMeanForCollectedSamples(sSum,sSumSqr);
+
+					//	get the mean and sd from the sum, sum square, and count
+					doCalibration(sSum, sSumSqr, sCount);
+
+					setToCalibratedState();
+					ClassifierThread.bForceCalibration = false;
+				}
+
+				//	check uncarried state
+				isUncarried = sampleTime-lastGravity.time>Constants.DURATION_WAIT_FOR_UNCARRIED;
+
+				//	get rid of extra measurements...
+				emptyAllBefore(sampleTime, Math.max(Constants.DURATION_OF_CALIBRATION, Constants.DURATION_WAIT_FOR_UNCARRIED)*2);
+
+			} else {
+				Log.d(Constants.DEBUG_TAG, "No stationary period found.");
+				//	set uncarried state
+				isUncarried = false;
+			}
+		} finally {
+			measurementsBuffer.assertAllAvailable();
+			//			Log.v(Constants.DEBUG_TAG, "Calibration/Uncarried process total instances: "+measurementsBuffer.getTotalSize()+"/"+measurementsBuffer.getCapacity()+", empty="+measurementsBuffer.getEmptySize()+", filled="+measurementsBuffer.getFilledSize());
 		}
-	} finally {
-		measurementsBuffer.assertAllAvailable();
-		//			Log.v(Constants.DEBUG_TAG, "Calibration/Uncarried process total instances: "+measurementsBuffer.getTotalSize()+"/"+measurementsBuffer.getCapacity()+", empty="+measurementsBuffer.getEmptySize()+", filled="+measurementsBuffer.getFilledSize());
+
 	}
 
-}
+	private static class Measurement {
+		public long time;
+		public final float[] axisMean;
+		public final float[] axisSd;
+		public final float[] sumSqr;
+		public final float[] sum;
+		public int count;
 
-private static class Measurement {
-	public long time;
-	public final float[] axisMean;
-	public final float[] axisSd;
-	public final float[] sumSqr;
-	public final float[] sum;
-	public int count;
+		public Measurement() {
+			this.time = 0;
+			this.axisMean = new float[Constants.ACCEL_DIM];
+			this.axisSd = new float[Constants.ACCEL_DIM];
+			this.sumSqr = new float[Constants.ACCEL_DIM];
+			this.sum = new float[Constants.ACCEL_DIM];
+			this.count = 0; 
+		}
 
-	public Measurement() {
-		this.time = 0;
-		this.axisMean = new float[Constants.ACCEL_DIM];
-		this.axisSd = new float[Constants.ACCEL_DIM];
-		this.sumSqr = new float[Constants.ACCEL_DIM];
-		this.sum = new float[Constants.ACCEL_DIM];
-		this.count = 0; 
 	}
 
-}
+	private class MeasurementsBuffer extends TwoWayBlockingQueue<Measurement> {
 
-private class MeasurementsBuffer extends TwoWayBlockingQueue<Measurement> {
+		public MeasurementsBuffer(int totalBatchCount) {
+			super(totalBatchCount);
+		}
 
-	public MeasurementsBuffer(int totalBatchCount) {
-		super(totalBatchCount);
+		@Override
+		protected Measurement getNewInstance() {
+			return new Measurement();
+		}
+
 	}
 
-	@Override
-	protected Measurement getNewInstance() {
-		return new Measurement();
+	public static void resetCalibrationOptionsBasedOnOrientation(OrientationState state)
+	{
+		float[] mean = new float[Constants.ACCEL_DIM];
+		float[] sd = new float[Constants.ACCEL_DIM];
+		float[] offset = new float[Constants.ACCEL_DIM];
+		float[] scale = new float[Constants.ACCEL_DIM];
+
+		switch (state) {
+		case XYCALIBRATION:
+			mean[Constants.ACCEL_Z_AXIS] = optionsTable.getMean()[Constants.ACCEL_Z_AXIS];
+			break;
+
+		case ZCALIBRATION:
+			mean = optionsTable.getMean();
+			sd = optionsTable.getSd();
+			mean[Constants.ACCEL_Z_AXIS] = 0;
+			break;
+		default:
+			break;
+		}
+
+
+		optionsTable.setCalibrated(false);
+		optionsTable.setValueOfGravity(Constants.GRAVITY);
+		optionsTable.setSd(sd);
+		optionsTable.setMean(mean);
+		optionsTable.setOffset(offset);
+		optionsTable.setScale(scale);
+		optionsTable.setAllowedMultiplesOfSd(Constants.CALIBARATION_ALLOWED_MULTIPLES_DEVIATION);
+		optionsTable.setCount(0);
+
 	}
 
-}
+	/**
+	 * A centralised way of reseting calibration values in the options 
+	 * {@link OptionsTable}.
+	 * 
+	 * @param optionsTable
+	 */
+	public static void resetCalibrationOptions(OptionsTable optionsTable) {
+		float[] mean = new float[Constants.ACCEL_DIM];
+		float[] sd = new float[Constants.ACCEL_DIM];
+		float[] offset = new float[Constants.ACCEL_DIM];
+		float[] scale = new float[Constants.ACCEL_DIM];
 
-public static void resetCalibrationOptionsBasedOnOrientation(OrientationState state)
-{
-	float[] mean = new float[Constants.ACCEL_DIM];
-	float[] sd = new float[Constants.ACCEL_DIM];
-	float[] offset = new float[Constants.ACCEL_DIM];
-	float[] scale = new float[Constants.ACCEL_DIM];
+		for (int i=0; i<Constants.ACCEL_DIM; ++i) {
+			mean[i] = 0.0f;
+			sd[i] = Constants.CALIBARATION_ALLOWED_BASE_DEVIATION;
+			offset[i] = 0.0f;
+			scale[i] = 1.0f;
+		}
 
-	switch (state) {
-	case XYCALIBRATION:
-		mean[Constants.ACCEL_Z_AXIS] = optionsTable.getMean()[Constants.ACCEL_Z_AXIS];
-		break;
-
-	case ZCALIBRATION:
-		mean = optionsTable.getMean();
-		sd = optionsTable.getSd();
-		mean[Constants.ACCEL_Z_AXIS] = 0;
-		break;
-	default:
-		break;
-	}
-	
-	
-	optionsTable.setCalibrated(false);
-	optionsTable.setValueOfGravity(Constants.GRAVITY);
-	optionsTable.setSd(sd);
-	optionsTable.setMean(mean);
-	optionsTable.setOffset(offset);
-	optionsTable.setScale(scale);
-	optionsTable.setAllowedMultiplesOfSd(Constants.CALIBARATION_ALLOWED_MULTIPLES_DEVIATION);
-	optionsTable.setCount(0);
-	
-}
-
-/**
- * A centralised way of reseting calibration values in the options 
- * {@link OptionsTable}.
- * 
- * @param optionsTable
- */
-public static void resetCalibrationOptions(OptionsTable optionsTable) {
-	float[] mean = new float[Constants.ACCEL_DIM];
-	float[] sd = new float[Constants.ACCEL_DIM];
-	float[] offset = new float[Constants.ACCEL_DIM];
-	float[] scale = new float[Constants.ACCEL_DIM];
-
-	for (int i=0; i<Constants.ACCEL_DIM; ++i) {
-		mean[i] = 0.0f;
-		sd[i] = Constants.CALIBARATION_ALLOWED_BASE_DEVIATION;
-		offset[i] = 0.0f;
-		scale[i] = 1.0f;
+		optionsTable.setCalibrated(false);
+		optionsTable.setValueOfGravity(Constants.GRAVITY);
+		optionsTable.setSd(sd);
+		optionsTable.setMean(mean);
+		optionsTable.setOffset(offset);
+		optionsTable.setScale(scale);
+		optionsTable.setAllowedMultiplesOfSd(Constants.CALIBARATION_ALLOWED_MULTIPLES_DEVIATION);
+		optionsTable.setCount(0);
 	}
 
-	optionsTable.setCalibrated(false);
-	optionsTable.setValueOfGravity(Constants.GRAVITY);
-	//optionsTable.setSd(sd);
-	//optionsTable.setMean(mean);
-	//optionsTable.setOffset(offset);
-	//optionsTable.setScale(scale);
-	//optionsTable.setAllowedMultiplesOfSd(Constants.CALIBARATION_ALLOWED_MULTIPLES_DEVIATION);
-	optionsTable.setCount(0);
-}
+	public static void resetCalibrationOptionsForForceCalib(OptionsTable optionsTable) {
+		float[] mean = new float[Constants.ACCEL_DIM];
+		float[] sd = new float[Constants.ACCEL_DIM];
+		float[] offset = new float[Constants.ACCEL_DIM];
+		float[] scale = new float[Constants.ACCEL_DIM];
+
+		for (int i=0; i<Constants.ACCEL_DIM; ++i) {
+			mean[i] = 0.0f;
+			sd[i] = Constants.CALIBARATION_ALLOWED_BASE_DEVIATION;
+			offset[i] = 0.0f;
+			scale[i] = 1.0f;
+		}
+
+		optionsTable.setCalibrated(false);
+		optionsTable.setValueOfGravity(Constants.GRAVITY);
+		//optionsTable.setSd(sd);
+		//optionsTable.setMean(mean);
+		//optionsTable.setOffset(offset);
+		//optionsTable.setScale(scale);
+		//optionsTable.setAllowedMultiplesOfSd(Constants.CALIBARATION_ALLOWED_MULTIPLES_DEVIATION);
+		optionsTable.setCount(0);
+	}
+
 }

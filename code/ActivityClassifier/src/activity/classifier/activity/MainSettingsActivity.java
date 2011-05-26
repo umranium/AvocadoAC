@@ -195,7 +195,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 			throw new IllegalStateException("Binding to service failed " + intent);
 		}
 	}
-
+	static public PreferenceScreen forceCalibPref;
 	private PreferenceScreen createPreferenceHierarchy() {
 
 		PreferenceScreen root = getPreferenceManager().createPreferenceScreen(this);
@@ -286,10 +286,10 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 		});
 
-		PreferenceScreen forceCalibPref = getPreferenceManager().createPreferenceScreen(this);
+		forceCalibPref = getPreferenceManager().createPreferenceScreen(this);
 		forceCalibPref.setKey("screen_preference");
 		forceCalibPref.setTitle("Start Calibration now");
-		forceCalibPref.setSummary("Initiate calibration task now.");
+		forceCalibPref.setSummary("Tab to initiate calibration task now.");
 		forceCalibPref.setOnPreferenceClickListener(new PreferenceScreen.OnPreferenceClickListener(){
 
 			public boolean onPreferenceClick(Preference preference) {
@@ -303,9 +303,13 @@ public class MainSettingsActivity extends PreferenceActivity {
 				}
 
 				ClassifierThread.bForceCalibration = true;
-				Calibrator.isCalibrated = false;
+				//Calibrator.isCalibrated = false;
 				
-				Calibrator.resetCalibrationOptions(optionsTable);
+				preference.setEnabled(false);
+				preference.setTitle("Calibration in progress ...");
+				preference.setSelectable(false);
+				
+				Calibrator.resetCalibrationOptionsForForceCalib(optionsTable);
 				//optionsTable.save();
 				calibrationSummary.setSummary(getScreenSummary());
 				
