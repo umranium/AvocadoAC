@@ -255,6 +255,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 			public boolean onPreferenceChange(Preference arg0, Object arg1) {
 				boolean newValue = (Boolean) arg1;
 				optionsTable.setInvokeMyTracks(newValue);
+				optionsTable.save();
 				invokeMyTracksPref.setChecked(optionsTable.getInvokeMyTracks());
 				return false;
 			}

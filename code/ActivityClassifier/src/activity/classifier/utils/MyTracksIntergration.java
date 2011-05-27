@@ -5,6 +5,7 @@ package activity.classifier.utils;
 
 import java.util.List;
 
+import com.google.android.apps.mytracks.content.Sensor;
 import com.google.android.apps.mytracks.content.WaypointCreationRequest;
 import com.google.android.apps.mytracks.content.WaypointCreationRequest.WaypointType;
 import com.google.android.apps.mytracks.services.ITrackRecordingService;
@@ -34,7 +35,6 @@ public class MyTracksIntergration {
 	private Context context;
 	private ITrackRecordingService service;
 	private long currentTrackId;
-	private boolean startedCurrentTrack = false;
 
 	/**
 	 * Performs necessary tasks when the connection to the service is
@@ -48,12 +48,12 @@ public class MyTracksIntergration {
 				service = ITrackRecordingService.Stub.asInterface(iBinder);
 				try {
 					if (!service.isRecording()) {
+						Log.i(Constants.DEBUG_TAG, "Starting new MyTracks Track");
 						currentTrackId = service.startNewTrack();
-						startedCurrentTrack = true;
 					}
 					else {
+						Log.i(Constants.DEBUG_TAG, "Found Tracks already recording a Track");
 						currentTrackId = service.getRecordingTrackId();
-						startedCurrentTrack = false;
 					}
 				} catch (RemoteException e) {
 					e.printStackTrace();
@@ -100,8 +100,10 @@ public class MyTracksIntergration {
 	private void disconnect() {
 		if (service!=null) {
 			try {
-				if (service.isRecording() && startedCurrentTrack)
+				if (service.isRecording()){
+					Log.i(Constants.DEBUG_TAG, "End MyTracks from recording track");
 					service.endCurrentTrack();
+				}
 			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
@@ -121,6 +123,19 @@ public class MyTracksIntergration {
 			return service!=null && service.isRecording();
 		} catch (RemoteException e) {
 			return false;
+		}
+	}
+	
+	/**
+	 * 
+	 */
+	public void isConnectedToSensor() {
+		try {
+			if (service!=null) {
+				Sensor.SensorState sensorState = Sensor.SensorState.valueOf(service.getSensorState());
+				Log.i("MY TRACKS SENSOR STATE", "MyTracks Sensor State: "+sensorState.toString());
+			}
+		} catch (RemoteException e) {
 		}
 	}
 
