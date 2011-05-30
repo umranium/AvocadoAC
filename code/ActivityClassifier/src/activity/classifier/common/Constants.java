@@ -33,7 +33,7 @@ public class Constants {
 	 * being debugged (i.e. plugged into the computer), and normal
 	 * usage.
 	 */
-	public final static boolean IS_DEBUGGING = true; 
+	public final static boolean IS_DEBUGGING = false; 
 	
 	/**
 	 * Should we or should we not output debugging information?
@@ -48,7 +48,7 @@ public class Constants {
 	/**
 	 * Default value for Full Time accelerometer option
 	 */
-	public static final boolean DEF_USE_FULLTIME_ACCEL = true;
+	public static final boolean DEF_USE_FULLTIME_ACCEL = false;
 	
 	/**
 	 * Default value to the "Invoke MyTracks" option
@@ -259,20 +259,29 @@ public class Constants {
 	 *		MY TRACKS INTERGRATION RELATED CONSTANTS
 	 ****************************************************************************************************************
 	 */
-	public static boolean USE_MYTRACKS = false;
 	
 	/**
 	 * The duration to wait while someone is walking before starting the MyTracks application recording
 	 */
-	//	TODO: CHANGE THIS BEFORE COMMIT
-	public final static long DURATION_BEFORE_START_MYTRACKS = 5*60*1000L;
-//	public final static long DURATION_BEFORE_START_MYTRACKS = 20*1000L;
+	public final static long DURATION_BEFORE_START_MYTRACKS = IS_DEBUGGING?(20*1000L):(3*60*1000L);
 	
 	/**
-	 * The duration to wait while someone has stopped walking before stopping the MyTracks application recording
+	 * The duration to monitor waiting for someone to stop for a 
+	 * given duration {@link #DURATION_MIN_KEEP_MYTRACKS}
 	 */
-	//	TODO: CHANGE THIS BEFORE COMMIT
-	public final static long DURATION_BEFORE_STOP_MYTRACKS = 5*60*1000L;
-//	public final static long DURATION_BEFORE_STOP_MYTRACKS = 20*1000L;
+	public final static long DURATION_MONITOR_MYTRACKS = IS_DEBUGGING?(40*1000L):(3*60*1000L);
+	
+	/**
+	 * Minimum duration required for a person to walk, within 
+	 * the monitoring duration {@link #DURATION_MONITOR_MYTRACKS},
+	 * for MyTracks to stay on. If a person walks any less than this,
+	 * then MyTracks is turned off based on the assumption that he might be 
+	 * walking around indoors.
+	 * 
+	 * Note: The minimum should be more than 1 sampling period from the
+	 * duration {@link #DURATION_MONITOR_MYTRACKS}, otherwise MyTracks 
+	 * will be stopped when the first non-walking activity is met. 
+	 */
+	public final static long DURATION_MIN_KEEP_MYTRACKS = IS_DEBUGGING?(20*1000L):(2*60*1000L);
 
 }

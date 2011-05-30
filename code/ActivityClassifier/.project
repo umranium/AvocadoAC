@@ -3,6 +3,7 @@
 	<name>ActivityClassifier</name>
 	<comment></comment>
 	<projects>
+		<project>MyTracksLib</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
