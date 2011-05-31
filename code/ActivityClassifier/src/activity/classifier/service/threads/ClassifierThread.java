@@ -39,6 +39,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.RemoteException;
 import android.util.Log;
+import android.widget.TabHost;
 
 /**
  * ClassifierService class is a Service analyse the sensor data to classify
@@ -178,7 +179,6 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 
 			optionsTable.save();
 
-			this.isCalibrated = true;
 			//bForceCalibration = false;
 
 			/*	If the bForceCalibration is false it implies the calibrator has finished the 
@@ -205,12 +205,12 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				{
 					contentText = "X and Y axes calibration is finished.";
 					service.showServiceToast("Put your phone on the side in a vertical" +
-							"position and press Start Calibration for Z axis calibration.");
+					"position and press Start Calibration for Z axis calibration.");
 				}
 				else
 				{
 					contentText = "Z axis calibration is finished.";
-						service.showServiceToast("Put your phone in a flat" +
+					service.showServiceToast("Put your phone in a flat" +
 					"position and press Start Calibration for X and Y axes calibration.");
 				}
 				Intent notificationIntent = new Intent(this.context, MainTabActivity.class);
@@ -218,13 +218,8 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
 
 				notificationManager.notify(notification.flags, notification);
-				
-				//Enables the calibration preference in settings tab.
-				MainSettingsActivity.forceCalibPref.setEnabled(true);
-				MainSettingsActivity.forceCalibPref.setTitle("Start Calibration now");
-				MainSettingsActivity.forceCalibPref.setSelectable(true);
-
-
+				this.isCalibrated = true;
+				optionsTable.setCalibrated(true);
 			}
 			else
 				//Reseting the calibration attemps count.
@@ -242,7 +237,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler(context));
 			Log.v(Constants.DEBUG_TAG, "Classification thread started.");
 			this.optionsTable.registerUpdateHandler(this);
-			while (!this.shouldExit) {
+			while (optionsTable.isServiceStarted() && !this.shouldExit) {
 				try {
 					// in case of too sampling too fast, or too slow CPU, or the
 					// classification taking too long
@@ -264,7 +259,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					{
 						StartCalibration(batch);
 					}
-					
+
 					else
 					{
 						String classification = processData(batch);
@@ -313,6 +308,9 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				);
 			}
 		}
+		if (updatedKeys.contains(OptionsTable.KEY_IS_SERVICE_STARTED)) {
+			}
+
 	}
 
 	private String processData(SampleBatch batch) throws InterruptedException, RemoteException {

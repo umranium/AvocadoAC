@@ -79,6 +79,12 @@ public class MainSettingsActivity extends PreferenceActivity {
 						public void run() {
 							String summary = getScreenSummary();
 							calibrationSummary.setSummary(summary);
+							if(!ClassifierThread.bForceCalibration)
+							{
+								forceCalibPref.setEnabled(true);
+								forceCalibPref.setTitle("Start Calibration now");
+								forceCalibPref.setSelectable(true);
+							}
 						}
 					});
 				}
@@ -88,8 +94,35 @@ public class MainSettingsActivity extends PreferenceActivity {
 					mainLooperHandler.post(new Runnable() {
 						@Override
 						public void run() {
+
 							String summary = optionsTable.getUploadAccount();
 							selectAccountPref.setSummary(summary==null?"":summary);
+
+						}
+					});
+				}
+			}
+			if (updatedKeys.contains(OptionsTable.KEY_IS_SERVICE_STARTED)) {
+				if (forceCalibPref!=null) {
+					mainLooperHandler.post(new Runnable() {
+						@Override
+						public void run() {
+							//In case of any changes to the service the force calibration should become false
+							// This is to re initiate the manual calibration process.
+							ClassifierThread.bForceCalibration = false;
+
+							if(!optionsTable.isServiceStarted())
+							{
+								forceCalibPref.setTitle("First, start the service.");
+								forceCalibPref.setEnabled(false);
+								forceCalibPref.setSelectable(false);
+							}
+							else if (optionsTable.isServiceStarted())
+							{
+								forceCalibPref.setEnabled(true);
+								forceCalibPref.setTitle("Start Calibration now");
+								forceCalibPref.setSelectable(true);
+							}
 						}
 					});
 				}
@@ -132,6 +165,9 @@ public class MainSettingsActivity extends PreferenceActivity {
 		this.mainLooperHandler = new Handler(this.getMainLooper());
 		this.accountChooser = new AccountChooser(this);
 		wakelock=false;
+		
+		optionsTable.registerUpdateHandler(optionUpdateHandler);
+
 		setPreferenceScreen(createPreferenceHierarchy());
 	}
 	/**
@@ -196,7 +232,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 		}
 	}
 	static public PreferenceScreen forceCalibPref;
-	private PreferenceScreen createPreferenceHierarchy() {
+	private PreferenceScreen createPreferenceHierarchy(){
 
 		PreferenceScreen root = getPreferenceManager().createPreferenceScreen(this);
 
@@ -289,15 +325,32 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 		forceCalibPref = getPreferenceManager().createPreferenceScreen(this);
 		forceCalibPref.setKey("screen_preference");
-		forceCalibPref.setTitle("Start Calibration now");
+
+		//TODO: Check whether the service is running.
+		if(!optionsTable.isServiceStarted())
+		{
+			forceCalibPref.setTitle("First, start the service.");
+			forceCalibPref.setEnabled(false);
+			forceCalibPref.setSelectable(false);
+		}
+		else if(!ClassifierThread.bForceCalibration)
+			forceCalibPref.setTitle("Start Calibration now");
+		else
+		{
+			forceCalibPref.setTitle("Calibration in progress ...");
+			forceCalibPref.setEnabled(false);
+			forceCalibPref.setSelectable(false);
+
+		}
+
 		forceCalibPref.setSummary("Tab to initiate calibration task now.");
 		forceCalibPref.setOnPreferenceClickListener(new PreferenceScreen.OnPreferenceClickListener(){
 
 			public boolean onPreferenceClick(Preference preference) {
-//				showDialog(DIALOG_YES_NO_MESSAGE_FOR_CALIBRATION_START);
-//
-//				return false;
-				
+				//				showDialog(DIALOG_YES_NO_MESSAGE_FOR_CALIBRATION_START);
+				//
+				//				return false;
+
 				try {
 					service.showServiceToast("Performing calibration. Please keep the phone still.");
 				} catch (RemoteException e) {
@@ -305,24 +358,24 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 				ClassifierThread.bForceCalibration = true;
 				//Calibrator.isCalibrated = false;
-				
+
 				preference.setEnabled(false);
 				preference.setTitle("Calibration in progress ...");
 				preference.setSelectable(false);
-				
+
 				Calibrator.resetCalibrationOptionsForForceCalib(optionsTable);
 				//optionsTable.save();
 				calibrationSummary.setSummary(getScreenSummary());
-				
+
 				return false;
 
 			}
 
-			
-			
+
+
 		});
 
-//		calibrationSettingsCat.addPreference(resetPref);
+		//		calibrationSettingsCat.addPreference(resetPref);
 		calibrationSettingsCat.addPreference(forceCalibPref);
 
 		this.calibrationSummary =  new CheckBoxPreferenceWithLongSummary(this);
@@ -489,10 +542,10 @@ public class MainSettingsActivity extends PreferenceActivity {
 			.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int whichButton) {
 					try {
-					service.showServiceToast("Calibration values reseted. Auto calibration will take place" +
-							" when the phone is still for more that a minute.");
-				} catch (RemoteException e) {
-				}
+						service.showServiceToast("Calibration values reseted. Auto calibration will take place" +
+						" when the phone is still for more that a minute.");
+					} catch (RemoteException e) {
+					}
 
 					Calibrator.optionsTable = optionsTable;
 					optionsTable.save();
@@ -520,7 +573,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 					ClassifierThread.bForceCalibration = true;
 					Calibrator.isCalibrated = false;
-					
+
 					//Calibrator.resetCalibrationOptions(optionsTable);
 					//optionsTable.save();
 					calibrationSummary.setSummary(getScreenSummary());

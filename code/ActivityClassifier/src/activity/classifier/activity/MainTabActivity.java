@@ -208,6 +208,11 @@ public class MainTabActivity extends TabActivity {
 			FlurryAgent.onEvent("recording_start");
 			startServiceRunnable.startService();
 			
+			//Amir: Was missing!
+			optionsTable.setServiceStarted(true);
+			optionsTable.save();
+
+			
 		} catch (Exception ex) {
 			Log.e(Constants.DEBUG_TAG, "Unable to get service state", ex);
 		}
@@ -259,6 +264,8 @@ public class MainTabActivity extends TabActivity {
 					"Starting service",
 					"Please wait...", true);			
 			nextStep = DISPLAY_START_DIALOG;
+			
+
 			handler.postDelayed(this, 100);
 		}
 
