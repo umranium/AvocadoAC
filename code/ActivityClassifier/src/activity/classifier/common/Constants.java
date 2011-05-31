@@ -26,7 +26,7 @@ public class Constants {
 	 *		pick whether aggregation is used or not.
 	 *	</p> 
 	 */
-	public final static boolean IS_DEV_VERSION = true;
+	public final static boolean IS_DEV_VERSION = false;
 	
 	/**
 	 * Used to differentiate between times when the application is
@@ -36,9 +36,9 @@ public class Constants {
 	public final static boolean IS_DEBUGGING = false; 
 	
 	/**
-	 * Should we or should we not output debugging information?
+	 * Should we or should we not output debugging data to the database?
 	 */
-	public static final boolean OUTPUT_DEBUG_INFO = false;
+	public static final boolean OUTPUT_DEBUG_INFO = true;
 	
 	/**
 	 * Whether to use FFT or not
