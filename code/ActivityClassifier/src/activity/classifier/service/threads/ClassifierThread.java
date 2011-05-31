@@ -413,25 +413,6 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 								debugDataTable.setClassifierAlgoOutput(classification);
 							}
 
-							if (optionsTable.getUseAggregator()) {
-								aggregator.addClassification(classification);
-								String aggrClassification = aggregator.getClassification();
-								if (aggrClassification!=null && aggrClassification.length()>0 &&
-										!ActivityNames.isSystemActivity(aggrClassification)) {
-									classification = aggrClassification;
-								}
-
-								Log.v(Constants.DEBUG_TAG, "Aggregator Output: "+aggrClassification);
-
-								if (Constants.OUTPUT_DEBUG_INFO) {
-									debugDataTable.setAggregatorAlgoOutput(aggrClassification);
-								}
-							} else {
-								if (Constants.OUTPUT_DEBUG_INFO) {
-									debugDataTable.setAggregatorAlgoOutput("NOT USING AGGREGATOR");
-								}
-							}
-
 						} else {
 							Log.v(Constants.DEBUG_TAG, "Unable to perform classification, data could not be rotated!");
 							if (Constants.OUTPUT_DEBUG_INFO) {
@@ -453,6 +434,25 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			} else {
 				if (calibrator.isUncarried()) {
 					classification = ActivityNames.UNCARRIED;
+				}
+			}
+
+			if (optionsTable.getUseAggregator()) {
+				aggregator.addClassification(classification);
+				String aggrClassification = aggregator.getClassification();
+				if (aggrClassification!=null && aggrClassification.length()>0 &&
+						!ActivityNames.isSystemActivity(aggrClassification)) {
+					classification = aggrClassification;
+				}
+
+				Log.v(Constants.DEBUG_TAG, "Aggregator Output: "+aggrClassification);
+
+				if (Constants.OUTPUT_DEBUG_INFO) {
+					debugDataTable.setAggregatorAlgoOutput(aggrClassification);
+				}
+			} else {
+				if (Constants.OUTPUT_DEBUG_INFO) {
+					debugDataTable.setAggregatorAlgoOutput("NOT USING AGGREGATOR");
 				}
 			}
 
