@@ -2,14 +2,11 @@ package activity.classifier.common;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
-import java.util.Map;
-import java.util.TreeMap;
 
 import activity.classifier.activity.ActivityChartActivity;
 import activity.classifier.service.RecorderService;
 import activity.classifier.service.threads.AccountThread;
 import activity.classifier.service.threads.UploadActivityHistoryThread;
-import android.graphics.Color;
 import android.os.Environment;
 
 /**
@@ -36,9 +33,9 @@ public class Constants {
 	public final static boolean IS_DEBUGGING = false; 
 	
 	/**
-	 * Should we or should we not output debugging information?
+	 * Should we or should we not output debugging data to the database?
 	 */
-	public static final boolean OUTPUT_DEBUG_INFO = false;
+	public static final boolean OUTPUT_DEBUG_INFO = true;
 	
 	/**
 	 * Whether to use FFT or not
@@ -63,7 +60,6 @@ public class Constants {
 	/**
 	 * The delay between two consecutive sampling batches.
 	 */
-	//	TODO: CHANGE THIS BEFORE COMMIT
 	public static final int DELAY_SAMPLE_BATCH = IS_DEBUGGING?(10*1000):(30*1000); //	30 secs in ms
 	
 	/**
@@ -284,4 +280,25 @@ public class Constants {
 	 */
 	public final static long DURATION_MIN_KEEP_MYTRACKS = IS_DEBUGGING?(20*1000L):(2*60*1000L);
 
+	
+	/*
+	 ****************************************************************************************************************
+	 *		NOTIFICATIONS
+	 ****************************************************************************************************************
+	 */
+	public static final int NOTIFICATION_ID_ONGOING_SERVICE = 1;
+	public static final int NOTIFICATION_ID_HARDWARE_FAULT = 2;
+ 
+	/*
+	 ****************************************************************************************************************
+	 *		HARDWARE FAULTS
+	 ****************************************************************************************************************
+	 */
+	/**
+	 * Amount of time between the service being stopped
+	 * and turning it on again, after a hardware fault occurs.
+	 */
+	public static final long DURATION_SLEEP_AFTER_FAULT = 10*60*1000L;
+	
+	
 }

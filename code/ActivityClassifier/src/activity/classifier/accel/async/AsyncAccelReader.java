@@ -24,6 +24,7 @@ package activity.classifier.accel.async;
 
 import activity.classifier.accel.SampleBatch;
 import activity.classifier.accel.sync.SyncAccelReader;
+import activity.classifier.exception.HardwareFaultException;
 
 /**
  * Interface implemented by classes which can sample accelerometer data.
@@ -46,6 +47,6 @@ public interface AsyncAccelReader {
 
     void stopSampling();
 
-    public void assignSample(SampleBatch batch);
+    void assignSample(SampleBatch batch) throws HardwareFaultException;
 
 }

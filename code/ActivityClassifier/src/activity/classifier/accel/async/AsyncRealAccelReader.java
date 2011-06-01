@@ -29,6 +29,7 @@ import activity.classifier.common.Constants;
 import activity.classifier.db.OptionUpdateHandler;
 import activity.classifier.db.OptionsTable;
 import activity.classifier.db.SqlLiteAdapter;
+import activity.classifier.exception.HardwareFaultException;
 import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -161,7 +162,7 @@ public class AsyncRealAccelReader implements AsyncAccelReader {
     	}
     }
 	
-	public void assignSample(SampleBatch batch) {
+	public void assignSample(SampleBatch batch) throws HardwareFaultException {
     	//	sometimes values are requested before the first
     	//		accelerometer sensor change event has occurred,
     	//		so wait for the sensor to change.
@@ -172,8 +173,9 @@ public class AsyncRealAccelReader implements AsyncAccelReader {
 	    	while (valuesAssigned<2) {
 	    		Thread.yield();
 	    		current = System.currentTimeMillis();
-	    		if (current-startWait>Constants.DELAY_SAMPLE_BATCH) {
-	    			throw new RuntimeException("Unable to start accelerometer. Faulty accelerometer.");
+	    		if (current-startWait>Constants.DELAY_SAMPLE_BATCH)
+	    		{
+	    			throw new HardwareFaultException("Unable to start accelerometer");
 	    		}
 	    	}
 	    	Log.v(Constants.DEBUG_TAG, "Done, waited for "+((current-startWait)/1000)+"s");

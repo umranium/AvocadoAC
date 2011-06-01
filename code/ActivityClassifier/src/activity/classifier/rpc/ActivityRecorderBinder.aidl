@@ -14,7 +14,7 @@ import activity.classifier.rpc.Classification;
 interface ActivityRecorderBinder {
 
     boolean isRunning();
-
+    
     void submitClassification(long sampleTime, String classification);
 
     List<Classification> getClassifications();
@@ -30,5 +30,6 @@ interface ActivityRecorderBinder {
     
     //public boolean isCalibrationForced();
     
+    void handleHardwareFaultException(String title, String msg);
 
 }
