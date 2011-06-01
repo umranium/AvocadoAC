@@ -31,6 +31,7 @@ import activity.classifier.service.threads.ClassifierThread;
 import activity.classifier.service.threads.UploadActivityHistoryThread;
 import activity.classifier.utils.ActivityWatcher;
 import activity.classifier.utils.PhoneInfo;
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -251,6 +252,13 @@ public class RecorderService extends Service implements Runnable {
 				}
 			});
 		}
+		
+		@Override
+		public void handleHardwareFaultException(String title, String msg)
+				throws RemoteException {
+			RecorderService.this.handleHardwareFaultException(title, msg);
+		}
+		
 	};
 
 	private final Runnable registerRunnable = new Runnable() {
@@ -386,6 +394,10 @@ public class RecorderService extends Service implements Runnable {
 
 		Log.v(Constants.DEBUG_TAG, "RecorderService.onDestroy()");
 
+		stopService();
+	}
+	
+	public void stopService() {
 		if (running) {
 			running = false;
 
@@ -480,7 +492,7 @@ public class RecorderService extends Service implements Runnable {
 		}
 
 		AsyncAccelReader reader = new AsyncAccelReaderFactory().getReader(this);
-		sampler = new AsyncSampler(handler, reader, analyseRunnable);
+		sampler = new AsyncSampler(binder, handler, reader, analyseRunnable);
 
 		//        SyncAccelReader reader = new SyncAccelReaderFactory().getReader(this);
 		//		sampler = new SyncSampler(reader, analyseRunnable);
@@ -509,7 +521,7 @@ public class RecorderService extends Service implements Runnable {
 		optionsTable.save();
 
 		//	put on-going notification to show that service is running in the background
-		NotificationManager notificationManager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+		NotificationManager nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
 		int icon = R.drawable.icon;
 		CharSequence tickerText = "Avocado AC Running";
@@ -525,9 +537,7 @@ public class RecorderService extends Service implements Runnable {
 		CharSequence contentText;
 
 		if (ClassifierThread.bForceCalibration)
-		{
 			contentText = "Avocado AC calibration is running";
-		}
 		else
 			contentText = "Avocado AC service is running";
 
@@ -584,6 +594,38 @@ public class RecorderService extends Service implements Runnable {
 			SCREEN_DIM_WAKE_LOCK_MANAGER = null;
 		}
 
+	}
+
+	protected void handleHardwareFaultException(String title, String msg) {
+		NotificationManager nm = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+		AlarmManager am = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+		Context context = getApplicationContext();
+		
+		// put up the fault notification
+		Intent notificationIntent = new Intent(this, MainTabActivity.class);
+		PendingIntent pendingNotIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+		
+		Notification notification = new Notification(
+				R.drawable.icon,
+				title,
+				System.currentTimeMillis());
+		notification.defaults = Notification.DEFAULT_ALL;
+		notification.flags = Notification.FLAG_ONLY_ALERT_ONCE;
+		notification.setLatestEventInfo(context, title, msg, pendingNotIntent);
+		nm.notify(Constants.NOTIFICATION_ID_HARDWARE_FAULT, notification);
+		
+		//	turn off the service
+		this.stopSelf();
+		stopService();
+		optionsTable.setServiceStarted(false);
+		optionsTable.save();
+		
+		//	set an alarm to turn it on after a short while
+		Intent alarmIntent = new Intent(this, RecorderService.class);
+		PendingIntent pendingAlarmIntent = PendingIntent.getService(this, 0, alarmIntent, 0);
+		am.set(	AlarmManager.RTC,
+				System.currentTimeMillis()+Constants.DURATION_SLEEP_AFTER_FAULT,
+				pendingAlarmIntent	);
 	}
 
 }

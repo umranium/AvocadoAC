@@ -28,8 +28,11 @@ import java.util.TimerTask;
 import activity.classifier.accel.SampleBatch;
 import activity.classifier.accel.Sampler;
 import activity.classifier.common.Constants;
+import activity.classifier.exception.HardwareFaultException;
+import activity.classifier.rpc.ActivityRecorderBinder;
 import activity.classifier.rpc.Classification;
 import android.os.Handler;
+import android.os.RemoteException;
 import android.util.Log;
 
 /**
@@ -48,20 +51,15 @@ import android.util.Log;
  * @author chris
  */
 public class AsyncSampler implements Sampler {
-
-    private final Handler handler;
+	
+	private final ActivityRecorderBinder service;
+	private final Handler handler;
     private final AsyncAccelReader reader;
     private final Runnable finishedRunnable;
     
     private SampleBatch currentBatch;
     private boolean sampling;
-    /*
-    private long lastTime;
-    private long currTimeDelay;
-    private long minTimeDelay;
-    private long maxTimeDelay;
-    private long cummTimeError;
-    */
+    
     private Timer timer;
     private SamplerTimerTask timerTask;
     
@@ -69,44 +67,35 @@ public class AsyncSampler implements Sampler {
     {
 		@Override
 		public void run() {
-	    	/*
-	    	long thisTime = System.currentTimeMillis();
-	    	
-	    	currTimeDelay = (thisTime-lastTime) - Constants.DELAY_BETWEEN_SAMPLES;
-	    	if (currTimeDelay<0) {
-	    		currTimeDelay = -currTimeDelay;
-	    	}
-	    	cummTimeError += currTimeDelay;
-	    	if (minTimeDelay>currTimeDelay)
-	    		minTimeDelay = currTimeDelay;
-	    	if (maxTimeDelay<currTimeDelay)
-	    		maxTimeDelay = currTimeDelay;
-	    	*/
-			//Log.d(Constants.DEBUG_TAG, "timer task called");
 			//	make sure we're sampling...
 			if (AsyncSampler.this.sampling) {
-		    	reader.assignSample(currentBatch);
-		    	//Log.i("accel",currentBatch.getCurrentSample()[0]+" "+currentBatch.getCurrentSample()[1]+" "+currentBatch.getCurrentSample()[2]);
-		    	if (!currentBatch.nextSample()) {
-		    		/*
-		    		Log.v(Constants.DEBUG_TAG, "Cummulative Absolute Sampling Time Error: "+cummTimeError);
-		    		Log.v(Constants.DEBUG_TAG, "Min Absolute Sampling Time Error: "+minTimeDelay);
-		    		Log.v(Constants.DEBUG_TAG, "Max Absolute Sampling Time Error: "+maxTimeDelay);
-		    		*/
-		            reader.stopSampling();
-		            AsyncSampler.this.sampling = false;
-		            stop();
-		            if (finishedRunnable != null)
-		            finishedRunnable.run();
-		    	}
+		    	try {
+					reader.assignSample(currentBatch);
+			    	if (!currentBatch.nextSample()) {
+			            stop();
+			            if (finishedRunnable != null)
+			            	finishedRunnable.run();
+			    	}
+				} catch (HardwareFaultException e) {
+					Log.e(Constants.DEBUG_TAG, "Hardware Fault While Sampling", e);
+					stop();
+					try {
+						service.handleHardwareFaultException("Faulty Accelerometer", e.getMessage());
+					} catch (RemoteException e1) {
+						e1.printStackTrace();
+					}
+				}
+				
 			}
-	    	
-	    	//lastTime = thisTime;
 		}
 	};
     
-    public AsyncSampler(final Handler handler, final AsyncAccelReader reader,
+    public AsyncSampler(
+    		final ActivityRecorderBinder service, 
+    		final Handler handler,
+    		final AsyncAccelReader reader,
             final Runnable finishedRunnable) {
+    	this.service = service;
         this.handler = handler;
         this.reader = reader;
         this.finishedRunnable = finishedRunnable;
@@ -121,13 +110,7 @@ public class AsyncSampler implements Sampler {
     	
         reader.startSampling();
         this.sampling = true;
-        /*
-        cummTimeError = 0L;
-        minTimeDelay = Long.MAX_VALUE;
-        maxTimeDelay = Long.MIN_VALUE;
-        lastTime = System.currentTimeMillis();
-        */
-        //handler.postDelayed(this, Constants.DELAY_BETWEEN_SAMPLES);
+        
         Log.i(Constants.DEBUG_TAG, "Starting Timer");
         timer.scheduleAtFixedRate(this.timerTask, Constants.DELAY_BETWEEN_SAMPLES, Constants.DELAY_BETWEEN_SAMPLES);
         Log.i(Constants.DEBUG_TAG, "Started Sampling.");
@@ -139,6 +122,9 @@ public class AsyncSampler implements Sampler {
     
 
     public void stop() {
+    	reader.stopSampling();
+        this.sampling = false;
+        
         Log.i(Constants.DEBUG_TAG, "Cancelling Timer");
     	timerTask.cancel();		//	cancel timer task
     	timer.purge();			//	purge timer task

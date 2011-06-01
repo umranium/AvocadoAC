@@ -455,7 +455,11 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					debugDataTable.setAggregatorAlgoOutput("NOT USING AGGREGATOR");
 				}
 			}
+<<<<<<< HEAD
 
+=======
+			
+>>>>>>> 7052b1d39ec7dbb32cb3409c4ed80a2e0a97ca9e
 			if (Constants.OUTPUT_DEBUG_INFO) {
 				debugDataTable.setFinalClassifierOutput(classification);
 			}
