@@ -32,6 +32,8 @@ public class DebugDataTable extends DbTableAdapter {
 	public static final String KEY_VER_RANGE = "range_ver";
 	public static final String KEY_HOR_SD = "sd_hor";
 	public static final String KEY_VER_SD = "sd_ver";
+	public static final String KEY_EE_ACT = "ee_act";
+	public static final String KEY_MET = "met";
 	public static final String KEY_CLASSIFIER_ALGO_OUTPUT = "classifier_algo_output";
 	public static final String KEY_AGGREGATOR_ALGO_OUTPUT = "aggregator_algo_output";
 	public static final String KEY_FINAL_CLASSIFIER_OUTPUT = "final_classifier_output";
@@ -58,6 +60,8 @@ public class DebugDataTable extends DbTableAdapter {
 	private Float verRange;
 	private Float horSd;
 	private Float verSd;
+	private Float eeAct;
+	private Float met;
 	private String classifierAlgoOutput;
 	private String aggregatorAlgoOutput;
 	private String finalClassifierOutput;
@@ -90,6 +94,8 @@ public class DebugDataTable extends DbTableAdapter {
 			KEY_VER_RANGE + " REAL NULL, " +
 			KEY_HOR_SD + " REAL NULL, " +
 			KEY_VER_SD + " REAL NULL, " +
+			KEY_EE_ACT + " REAL NULL, " +
+			KEY_MET + " REAL NULL, " +
 			KEY_CLASSIFIER_ALGO_OUTPUT + " TEXT NULL, " +
 			KEY_AGGREGATOR_ALGO_OUTPUT + " TEXT NULL, " + 
 			KEY_FINAL_CLASSIFIER_OUTPUT + " TEXT NULL, " +
@@ -143,6 +149,8 @@ public class DebugDataTable extends DbTableAdapter {
 		insertContentValues.put(KEY_VER_RANGE, this.verRange);
 		insertContentValues.put(KEY_HOR_SD, this.horSd);
 		insertContentValues.put(KEY_VER_SD, this.verSd);
+		insertContentValues.put(KEY_EE_ACT, this.eeAct);
+		insertContentValues.put(KEY_MET, this.met);
 		insertContentValues.put(KEY_CLASSIFIER_ALGO_OUTPUT, this.classifierAlgoOutput);
 		insertContentValues.put(KEY_AGGREGATOR_ALGO_OUTPUT, this.aggregatorAlgoOutput);
 		insertContentValues.put(KEY_FINAL_CLASSIFIER_OUTPUT, this.finalClassifierOutput);
@@ -210,6 +218,8 @@ public class DebugDataTable extends DbTableAdapter {
 		this.verRange = null;
 		this.horSd = null;
 		this.verSd = null;
+		this.eeAct = null;
+		this.met = null;
 		this.classifierAlgoOutput = null;
 		this.aggregatorAlgoOutput = null;
 		this.finalClassifierOutput = null;
@@ -251,6 +261,12 @@ public class DebugDataTable extends DbTableAdapter {
 		this.verRange = verRange;
 		this.horSd = horSd;
 		this.verSd = verSd;
+	}
+	
+	public void setMetStats(float eeAct, float met)
+	{
+		this.eeAct = eeAct;
+		this.met = met;
 	}
 	
 	/**

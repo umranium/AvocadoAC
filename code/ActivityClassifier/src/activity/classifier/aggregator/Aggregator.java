@@ -60,9 +60,13 @@ public class Aggregator {
 	}});
 
 	put("CLASSIFIED", new HashMap<String, Double>() {{
-		put("STATIONARY", 0.33d);
-		put("TRAVELLING", 0.33d);
-		put("WALKING", 0.33d);
+		put("UNCARRIED", 0.14d);
+		put("STATIONARY", 0.14d);
+		put("TRAVELLING", 0.14d);
+		put("WALKING", 0.14d);
+		put("PADDLING", 0.14d);
+		put("ROWING", 0.14d);
+		put("CYCLING", 0.14d);
 	}});
 	
 	}

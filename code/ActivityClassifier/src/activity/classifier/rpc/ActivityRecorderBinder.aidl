@@ -15,7 +15,7 @@ interface ActivityRecorderBinder {
 
     boolean isRunning();
     
-    void submitClassification(long sampleTime, String classification);
+    void submitClassification(long sampleTime, String classification, double eeAct, double met);
 
     List<Classification> getClassifications();
     

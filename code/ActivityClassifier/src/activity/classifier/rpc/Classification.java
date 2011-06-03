@@ -32,6 +32,9 @@ public class Classification implements Parcelable, Comparable<Classification> {
 	private boolean isChecked;
 	private Long myTracksId;
 	private long lastUpdate;
+	private int numberOfBatches;
+	private float totalMet;
+	private float totalEeAct;
 	
 	private String uiStartTime;
 	private String dbStartTime;
@@ -58,6 +61,9 @@ public class Classification implements Parcelable, Comparable<Classification> {
 		this.isChecked = false;
 		this.myTracksId = null;
 		this.lastUpdate = 0;
+		this.numberOfBatches = 1;
+		this.totalMet = 0.0f;
+		this.totalEeAct = 0.0f;
 		
 		computeDurationStr();
 	}
@@ -175,13 +181,56 @@ public class Classification implements Parcelable, Comparable<Classification> {
 		this.lastUpdate = lastUpdate;
 	}
 	
+	
+	/**
+	 * @return the number Of Batches
+	 */
+	public int getNumberOfBatches() {
+		return numberOfBatches;
+	}
+
+	/**
+	 * @param numberOfBatches the number Of Batches to set
+	 */
+	public void setNumberOfBatches(int numberOfBatches) {
+		this.numberOfBatches = numberOfBatches;
+	}
+
+	/**
+	 * @return the total MET
+	 */
+	public float getTotalMet() {
+		return totalMet;
+	}
+
+	/**
+	 * @param totalMet the total MET to set
+	 */
+	public void setTotalMet(float totalMet) {
+		this.totalMet = totalMet;
+	}
+	
+	/**
+	 * @return the total actual energy expenditure (EEact) for the activity
+	 */
+	public float getTotalEeAct() {
+		return totalEeAct;
+	}
+
+	/**
+	 * @param totalEeAct	the total actual energy expenditure (EEact) for the activity
+	 */
+	public void setTotalEeAct(float totalEeAct) {
+		this.totalEeAct = totalEeAct;
+	}
+	
 	/**
 	 * @return the myTracksId
 	 */
 	public Long getMyTracksId() {
 		return myTracksId;
 	}
-
+	
 	/**
 	 * @param myTracksId the myTracksId to set
 	 */
@@ -195,7 +244,10 @@ public class Classification implements Parcelable, Comparable<Classification> {
 			return niceClassification+"";
 		}
 		else{
-			return String.format("%-20s %s for %s", niceClassification, uiStartTime, durationStr);
+			return String.format("%-20s %s for %s", 
+					niceClassification+" ("+(int)Math.round(totalMet/numberOfBatches)+")",
+					uiStartTime,
+					durationStr);
 		}
 	}
 
@@ -251,5 +303,19 @@ public class Classification implements Parcelable, Comparable<Classification> {
 	public int compareTo(Classification another) {
 		return (int)(this.start-another.start);
 	}
-
+	
+	public void assignFrom(Classification another) {
+		this.classification = another.classification;
+		this.start = another.start;
+		this.end = another.end;
+		this.isChecked = another.isChecked;
+		this.myTracksId = another.myTracksId;
+		this.lastUpdate = another.lastUpdate;
+		this.numberOfBatches = another.numberOfBatches;
+		this.totalMet = another.totalMet;
+		this.totalEeAct = another.totalEeAct;
+		
+		computeDurationStr();
+	}
+	
 }

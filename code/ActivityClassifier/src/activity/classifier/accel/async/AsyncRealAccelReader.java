@@ -96,10 +96,11 @@ public class AsyncRealAccelReader implements AsyncAccelReader {
     
     class Values {
     	long timeStamp;
-    	float[] values = new float[3];
+    	float[] values = new float[Constants.ACCEL_DIM];
     }
 
     private Values[] valueBuff;
+    private Values resultantValues = new Values();
     
     private int valuesAssigned;
     private int previousValueIndex = -1;
@@ -185,27 +186,47 @@ public class AsyncRealAccelReader implements AsyncAccelReader {
     	int prevValueIndex = this.previousValueIndex;
     	synchronized (this.valueBuff[previousValueIndex]) {
     		//	get the next one after the previous.. i.e. the current
-        	int currentValueIndex = (prevValueIndex+1) % BUFFER_SIZE;
+        	int currValueIndex = (prevValueIndex+1) % BUFFER_SIZE;
         	
         	//	we sample 1 interval before...
         	long now = System.currentTimeMillis() - Constants.DELAY_BETWEEN_SAMPLES;
         	
-        	int useIndex = currentValueIndex; // default to the latest sample        	
-        	if (Math.abs(now - this.valueBuff[prevValueIndex].timeStamp) < 
-        			Math.abs(now - this.valueBuff[currentValueIndex].timeStamp)) {
-        		//	unless the closer one is actually the one before that
-        		useIndex = prevValueIndex;
-        	}
-        	
-    		double delay = Math.abs(now - this.valueBuff[useIndex].timeStamp);
+    		double delay;
     		
-    		samplingQualitySum += delay;
-    		samplingQualitySumSqr += delay*delay;
-    		samplingQualityCount += 1.0;
+    		int timeFromPrev = (int)(now - this.valueBuff[prevValueIndex].timeStamp);
+    		int timeFromCurr = (int)(now - this.valueBuff[currValueIndex].timeStamp);
     		
-    		//Log.i("ACCEL SAMPLE DELAY", Double.toString(delay));
-    		batch.assignSample(this.valueBuff[useIndex].values);
-		}
+    		//	if they are both of the same sign, that means our
+    		//		now time is after both.. pick the closest
+    		if ((timeFromPrev>0)==(timeFromCurr>0)) {
+            	int useIndex = currValueIndex; // default to the latest sample        	
+            	if (Math.abs(now - this.valueBuff[prevValueIndex].timeStamp) < 
+            			Math.abs(now - this.valueBuff[currValueIndex].timeStamp)) {
+            		//	unless the closer one is actually the one before that
+            		useIndex = prevValueIndex;
+            	}
+            	
+            	delay = Math.abs(now - this.valueBuff[useIndex].timeStamp);
+            	batch.assignSample(this.valueBuff[useIndex].values);
+
+    		} else {	// otherwise our now, is right in between
+        		float prev, curr;
+        		
+        		timeFromCurr = -timeFromCurr;
+        		
+        		resultantValues.timeStamp = now;
+        		for (int i=0; i<Constants.ACCEL_DIM; ++i) {
+        			prev = this.valueBuff[prevValueIndex].values[i]; 
+        			curr = this.valueBuff[currValueIndex].values[i]; 
+        			//	estimate the value at the now time...
+        			resultantValues.values[i] =
+        				(((curr-prev)*timeFromPrev)/(timeFromPrev+timeFromCurr)) + prev;
+        		}
+
+            	delay = Math.abs(now - resultantValues.timeStamp);
+            	batch.assignSample(resultantValues.values);
+    		}
+    	}
     }
 	
     /**

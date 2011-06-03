@@ -270,12 +270,12 @@ public class ActivityListActivity extends Activity {
 								//shift the original index by the number of items inserted
 								Classification dst = adapter.getItem(itemsInserted+index);
 								//	update the one on the list
-								dst.setClassification(cl.getClassification());
-								dst.setEnd(cl.getEnd());
+								dst.assignFrom(cl);
 								++itemsUpdated;
 							} else {
 								//	insert at the top
-								Classification classification = new Classification(cl.getClassification(), cl.getStart(), cl.getEnd());
+								Classification classification = new Classification();
+								classification.assignFrom(cl);
 								classification.withContext(ActivityListActivity.this);
 								adapter.insert(classification, 0);
 								++itemsInserted;

@@ -30,6 +30,7 @@ import activity.classifier.rpc.ActivityRecorderBinder;
 import activity.classifier.service.RecorderService;
 import activity.classifier.utils.CalcStatistics;
 import activity.classifier.utils.Calibrator;
+import activity.classifier.utils.MetUtil;
 import activity.classifier.utils.RotateSamplesToVerticalHorizontal;
 import android.R.string;
 import android.app.Notification;
@@ -99,16 +100,24 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	public static boolean bForceCalibration;
 	private boolean isCalibrated;
 	private Calibrator calibrator;
+	
+	private MetUtil metUtil;
 
 	private volatile boolean shouldExit;
 
-	public ClassifierThread(Context context, ActivityRecorderBinder service,
-			SampleBatchBuffer sampleBatchBuffer) {
+	public ClassifierThread(
+			Context context,
+			ActivityRecorderBinder service,
+			SampleBatchBuffer sampleBatchBuffer,
+			MetUtil metUtil
+			)
+	{
 		super(ClassifierThread.class.getName());
 
 		this.context = context;
 		this.service = service;
 		this.batchBuffer = sampleBatchBuffer;
+		this.metUtil = metUtil; 
 
 		this.model = ModelReader.getModel(context, R.raw.basic_model);
 
@@ -234,6 +243,9 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	 */
 	public void run() {
 		try {
+			double eeAct[] = new double[1];
+			double met[] = new double[1];
+			
 			Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler(context));
 			Log.v(Constants.DEBUG_TAG, "Classification thread started.");
 			this.optionsTable.registerUpdateHandler(this);
@@ -259,17 +271,16 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					{
 						StartCalibration(batch);
 					}
-
 					else
 					{
-						String classification = processData(batch);
+						String classification = processData(batch, eeAct, met);
 
 
 						//	submit the classification (if any)
 						if (classification!=null && classification.length()>0) {
 							Log.v(Constants.DEBUG_TAG, "Classification found: '"+classification+"'");
 							// submit the classification
-							service.submitClassification(sampleTime, classification);
+							service.submitClassification(sampleTime, classification, eeAct[0], met[0]);
 						}
 					}
 
@@ -309,19 +320,20 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			}
 		}
 		if (updatedKeys.contains(OptionsTable.KEY_IS_SERVICE_STARTED)) {
-			}
+		}
 
 	}
 
-	private String processData(SampleBatch batch) throws InterruptedException, RemoteException {
+	private String processData(SampleBatch batch, double retEeAct[], double retMet[]) throws InterruptedException, RemoteException {
 		Log.v(Constants.DEBUG_TAG, "Processing batch.");
+		retEeAct[0] = 0.0;
+		retMet[0] = 0.0;
 
 		long start = System.currentTimeMillis();
-
+		String classification = ActivityNames.UNKNOWN;
 		try {
 			//	get local copies of the data
 			float[][] data = batch.data;
-			String classification = ActivityNames.UNKNOWN;
 
 			int size = batch.getSize();
 			long sampleTime = batch.sampleTime;
@@ -369,11 +381,10 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 							dataMax[Constants.ACCEL_Z_AXIS]-dataMin[Constants.ACCEL_Z_AXIS]
 					);
 				}
-
-				//if(!isCalibrated)
+				
 				calibrator.processData(sampleTime, dataMeans, dataSd, rawSampleStatistics.getSum(), rawSampleStatistics.getSumSqr(), rawSampleStatistics.getCount());
 
-				/*else*/ if (!isCalibrated && calibrator.isCalibrated()) {
+				if (!isCalibrated && calibrator.isCalibrated()) {
 					Log.v(Constants.DEBUG_TAG, "Calibration just finished. Saving values to DB.");
 
 					float[] sd = calibrator.getSd();
@@ -412,6 +423,14 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 								logRotatedValues(dataMeans, data, size);
 								debugDataTable.setClassifierAlgoOutput(classification);
 							}
+							
+							retEeAct[0] = metUtil.computeEEact(size, data, batch.timeStamps);
+							retMet[0] = metUtil.computeMET(retEeAct[0]);
+							Log.d(Constants.DEBUG_TAG, "MET="+retMet[0]+", EEact="+retEeAct[0]);
+							
+							if (Constants.OUTPUT_DEBUG_INFO) {
+								debugDataTable.setMetStats((float)retEeAct[0], (float)retMet[0]);
+							}							
 
 						} else {
 							Log.v(Constants.DEBUG_TAG, "Unable to perform classification, data could not be rotated!");
@@ -426,17 +445,11 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					}
 				}
 			}
-			if (chargingState) {
-				if (classification.contains("TRAVELLING"))
-					classification = ActivityNames.CHARGING_TRAVELLING;
-				else
-					classification = ActivityNames.CHARGING;
-			} else {
-				if (calibrator.isUncarried()) {
-					classification = ActivityNames.UNCARRIED;
-				}
+			
+			if (calibrator.isUncarried()) {
+				classification = ActivityNames.UNCARRIED;
 			}
-
+			
 			if (optionsTable.getUseAggregator()) {
 				aggregator.addClassification(classification);
 				String aggrClassification = aggregator.getClassification();
@@ -455,11 +468,14 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					debugDataTable.setAggregatorAlgoOutput("NOT USING AGGREGATOR");
 				}
 			}
-<<<<<<< HEAD
-
-=======
 			
->>>>>>> 7052b1d39ec7dbb32cb3409c4ed80a2e0a97ca9e
+			if (chargingState) {
+				if (classification.contains("TRAVELLING"))
+					classification = ActivityNames.CHARGING_TRAVELLING;
+				else
+					classification = ActivityNames.CHARGING;
+			}
+
 			if (Constants.OUTPUT_DEBUG_INFO) {
 				debugDataTable.setFinalClassifierOutput(classification);
 			}

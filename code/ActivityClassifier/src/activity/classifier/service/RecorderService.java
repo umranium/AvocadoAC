@@ -30,6 +30,7 @@ import activity.classifier.service.threads.AccountThread;
 import activity.classifier.service.threads.ClassifierThread;
 import activity.classifier.service.threads.UploadActivityHistoryThread;
 import activity.classifier.utils.ActivityWatcher;
+import activity.classifier.utils.MetUtil;
 import activity.classifier.utils.PhoneInfo;
 import android.app.AlarmManager;
 import android.app.Notification;
@@ -109,6 +110,7 @@ public class RecorderService extends Service implements Runnable {
 	private ClassifierThread classifierThread;
 	private AccountThread registerAccountThread;
 	private ActivityWatcher activityWatcher;
+	private MetUtil metUtil;
 
 	private Classification latestClassification;
 
@@ -222,9 +224,9 @@ public class RecorderService extends Service implements Runnable {
 			return mainLooperHandler;
 		}
 
-		public void submitClassification(long sampleTime, String classification) throws RemoteException {
+		public void submitClassification(long sampleTime, String classification, double eeAct, double met) throws RemoteException {
 			Log.i(Constants.DEBUG_TAG, "Recorder Service: Received classification: '" + classification + "'");
-			updateScores(sampleTime, classification);
+			updateScores(sampleTime, classification, eeAct, met);
 		}
 
 		public List<Classification> getClassifications() throws RemoteException {
@@ -319,14 +321,19 @@ public class RecorderService extends Service implements Runnable {
 	};
 
 
-	private void updateScores(long sampleTime, String best) {
+	private void updateScores(long sampleTime, String best, double eeAct, double met) {
 		long start = sampleTime;
 		long end = sampleTime+Constants.DELAY_SAMPLE_BATCH;
 
 
 		if (latestClassification!=null
 				&& best.equals(latestClassification.getClassification())) {
+			
+			latestClassification.setNumberOfBatches(latestClassification.getNumberOfBatches()+1);
+			latestClassification.setTotalEeAct(latestClassification.getTotalEeAct()+(float)eeAct);
+			latestClassification.setTotalMet(latestClassification.getTotalMet()+(float)met);
 			latestClassification.setEnd(end);
+			
 			activityWatcher.processLatest(latestClassification);
 			activitiesTable.update(latestClassification);
 		} else {
@@ -337,6 +344,10 @@ public class RecorderService extends Service implements Runnable {
 				latestClassification.init(best, start, end);
 				latestClassification.withContext(this);
 			}
+			
+			latestClassification.setNumberOfBatches(1);
+			latestClassification.setTotalEeAct((float)eeAct);
+			latestClassification.setTotalMet((float)met);
 
 			activityWatcher.processLatest(latestClassification);
 			activitiesTable.insert(latestClassification);
@@ -462,7 +473,7 @@ public class RecorderService extends Service implements Runnable {
 
 		activityWatcher = new ActivityWatcher(this);
 		activityWatcher.init();
-
+		
 		//		optionQuery.setServiceRunningState(true);
 		applyWakeLock(optionsTable.isWakeLockSet());
 		//		optionQuery.save();
@@ -496,8 +507,10 @@ public class RecorderService extends Service implements Runnable {
 
 		//        SyncAccelReader reader = new SyncAccelReaderFactory().getReader(this);
 		//		sampler = new SyncSampler(reader, analyseRunnable);
-
-		classifierThread = new ClassifierThread(this, binder, batchBuffer);
+		
+		metUtil = new MetUtil(85.0, MetUtil.GENDER_MALE);
+		
+		classifierThread = new ClassifierThread(this, binder, batchBuffer, metUtil);
 		classifierThread.start();
 
 		// if the account wasn't previously sent,

@@ -36,6 +36,9 @@ public class ActivitiesTable extends DbTableAdapter {
 	public static final String KEY_IS_CHECKED		= "isChecked";
 	public static final String KEY_START_STR		= "start_str";
 	public static final String KEY_END_STR 			= "end_str";
+	public static final String KEY_NUM_OF_BATCHES	= "num_of_batches";
+	public static final String KEY_TOTAL_EE_ACT 	= "total_ee_act";
+	public static final String KEY_TOTAL_MET 		= "total_met";
 	public static final String KEY_MYTRACKS_ID 		= "myTracks_id";
 	private static final String KEY_LAST_UPDATED_AT = "lastUpdatedAt";	//	for system use only
 
@@ -47,6 +50,9 @@ public class ActivitiesTable extends DbTableAdapter {
 		KEY_IS_CHECKED + ", " +
 		KEY_START_STR + ", " +
 		KEY_END_STR + ", " +
+		KEY_NUM_OF_BATCHES + ", " + 
+		KEY_TOTAL_EE_ACT + ", " + 
+		KEY_TOTAL_MET + ", " +
 		KEY_MYTRACKS_ID + ", " +
 		KEY_LAST_UPDATED_AT +
 		" FROM " + TABLE_NAME;
@@ -82,6 +88,9 @@ public class ActivitiesTable extends DbTableAdapter {
 			KEY_START_STR+" TEXT NOT NULL, " +
 			KEY_END_STR+" TEXT NOT NULL, " +
 			KEY_IS_CHECKED+" INTEGER NOT NULL, " +
+			KEY_NUM_OF_BATCHES+" INTEGER NOT NULL, " +
+			KEY_TOTAL_EE_ACT+" REAL NOT NULL, " +
+			KEY_TOTAL_MET+" REAL NOT NULL, " +
 			KEY_MYTRACKS_ID + " LONG NULL, " +
 			KEY_LAST_UPDATED_AT+" LONG NOT NULL " +
 			")";
@@ -318,6 +327,9 @@ public class ActivitiesTable extends DbTableAdapter {
 		insertContentValues.put(KEY_START_STR, Constants.DB_DATE_FORMAT.format(insertStartDate));
 		insertContentValues.put(KEY_END_STR, Constants.DB_DATE_FORMAT.format(insertEndDate));
 		insertContentValues.put(KEY_IS_CHECKED, classification.isChecked()?1:0);
+		insertContentValues.put(KEY_NUM_OF_BATCHES, classification.getNumberOfBatches());
+		insertContentValues.put(KEY_TOTAL_EE_ACT, classification.getTotalEeAct());
+		insertContentValues.put(KEY_TOTAL_MET, classification.getTotalMet());
 		insertContentValues.put(KEY_MYTRACKS_ID, classification.getMyTracksId());
 		insertContentValues.put(KEY_LAST_UPDATED_AT, System.currentTimeMillis());
 	}
@@ -340,6 +352,9 @@ public class ActivitiesTable extends DbTableAdapter {
 		updateContentValues.put(KEY_ACTIVITY, classification.getClassification());
 		updateContentValues.put(KEY_END_STR, Constants.DB_DATE_FORMAT.format(insertEndDate));
 		updateContentValues.put(KEY_IS_CHECKED, classification.isChecked());
+		updateContentValues.put(KEY_NUM_OF_BATCHES, classification.getNumberOfBatches());
+		updateContentValues.put(KEY_TOTAL_EE_ACT, classification.getTotalEeAct());
+		updateContentValues.put(KEY_TOTAL_MET, classification.getTotalMet());
 		updateContentValues.put(KEY_MYTRACKS_ID, classification.getMyTracksId());
 		updateContentValues.put(KEY_LAST_UPDATED_AT, System.currentTimeMillis());
 	}
@@ -360,6 +375,9 @@ public class ActivitiesTable extends DbTableAdapter {
 		classification.setClassification(cursor.getString(cursor.getColumnIndex(KEY_ACTIVITY)));
 		classification.setEnd(cursor.getLong(cursor.getColumnIndex(KEY_END_LONG)));
 		classification.setChecked(cursor.getInt(cursor.getColumnIndex(KEY_IS_CHECKED))!=0);
+		classification.setNumberOfBatches(cursor.getInt(cursor.getColumnIndex(KEY_NUM_OF_BATCHES)));
+		classification.setTotalEeAct(cursor.getFloat(cursor.getColumnIndex(KEY_TOTAL_EE_ACT)));
+		classification.setTotalMet(cursor.getFloat(cursor.getColumnIndex(KEY_TOTAL_MET)));
 		classification.setMyTracksId(cursor.getLong(cursor.getColumnIndex(KEY_MYTRACKS_ID)));
 		classification.setLastUpdate(cursor.getLong(cursor.getColumnIndex(KEY_LAST_UPDATED_AT)));
 		classification.withContext(context);
