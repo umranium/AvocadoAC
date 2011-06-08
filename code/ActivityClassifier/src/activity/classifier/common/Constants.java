@@ -265,7 +265,7 @@ public class Constants {
 	 * The duration to monitor waiting for someone to stop for a 
 	 * given duration {@link #DURATION_MIN_KEEP_MYTRACKS}
 	 */
-	public final static long DURATION_MONITOR_MYTRACKS = IS_DEBUGGING?(40*1000L):(3*60*1000L);
+	public final static long DURATION_MONITOR_MYTRACKS = IS_DEBUGGING?(40*1000L):(5*60*1000L);
 	
 	/**
 	 * Minimum duration required for a person to walk, within 
