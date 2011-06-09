@@ -58,7 +58,7 @@ public class SqlLiteAdapter {
 		return instance;
 	}
 	
-	private static final int DATABASE_VERSION = 2;
+	private static final int DATABASE_VERSION = 3;
 	
 	private Context context;
 	private SQLiteOpenHelper helper;

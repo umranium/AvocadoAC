@@ -1,8 +1,10 @@
 package activity.classifier.utils;
 
 import java.util.Arrays;
+import java.util.Set;
 
 import activity.classifier.common.Constants;
+import activity.classifier.db.OptionUpdateHandler;
 import android.util.Log;
 
 /**
@@ -26,13 +28,12 @@ import android.util.Log;
  * @author abd01c
  *
  */
-public class MetUtil {
+public class MetUtil implements OptionUpdateHandler {
 	
 	private static final float AMP_FILTER_LOW = Constants.GRAVITY*0.05f;
-	private static final float AMP_FILTER_HIGH = Constants.GRAVITY*2.5f;
 	
 	//	energy expenditure while resting, per kg mass
-	private static final double RESTING_EE_PER_KG = 0.418;
+	private static final double RESTING_EE_PER_KG_PER_SEC = 0.418;
 	
 	public static final int GENDER_MALE = 1;
 	public static final int GENDER_FEMALE = 2;
@@ -48,29 +49,49 @@ public class MetUtil {
 			0.0, 0.0, Constants.GRAVITY
 		};
 	
+	private double mass;	//	mass in kg
+	private double height;	//	height in cm
+	private double age;		//	age in years
+	private int gender;		// 1 male, 2 female
+	
 	private double param_a;
 	private double param_b;
 	private double param_p1;
 	private double param_p2;
 	
-	private double[] counts = new double[3];
-	
 	private double restingEE;
 	
 	/**
-	 * @param mass
-	 * 	in kilograms
-	 * 
-	 * @param gender
-	 * 	either {@link #GENDER_MALE} or {@link #GENDER_FEMALE}
+	 * @param mass		in kilograms
+	 * @param height	in cm
+	 * @param age		in years
+	 * @param gender	either {@link #GENDER_MALE} or {@link #GENDER_FEMALE}
 	 */
-	public MetUtil(double mass, int gender) {
+	public MetUtil(double mass, double height, double age, int gender) {
+		this.mass = mass;
+		this.height = height;
+		this.age = age;
+		this.gender = gender;
+		
+		computeRestingEE();
+		computeParameters();
+	}
+	
+	private void computeRestingEE() {
+		double weightInLb = mass * 2.20462262;
+		double heightInInches = height * 0.393700787; 
+		if (gender==GENDER_MALE) {
+			restingEE = 4.19 * ((473*weightInLb) + (971*heightInInches) - (513*age) + 4687) / 100000.0;
+		} else {
+			restingEE = 4.19 * ((331*weightInLb) + (352*heightInInches) - (353*age) + 49854) / 100000.0;
+		}
+	}
+	
+	private void computeParameters() {
 		param_p1 = (2.66*mass + 146.72) / 1000.0;
 		param_p2 = (-3.85*mass + 968.28) / 1000.0;
 		param_a = (12.81*mass + 843.22) / 1000.0;
 		param_b = (38.90*mass + 682.44*gender + 693.50) / 1000.0;
-		
-		restingEE = RESTING_EE_PER_KG * mass;
 	}
 	
 	/**
@@ -100,30 +121,44 @@ public class MetUtil {
 	 * <p>
 	 * <code>EEact = EE - EEresting</code>
 	 * </p>
-	 * @param len			number of samples in the signal
-	 * @param rotatedData	samples from the accelerometer, after rotation
-	 * @param timeStamps	the timestamps of the samples
+	 * @param counts		counts per second in all 3 accelerometer axi
 	 * @return				the actual energy expenditure
 	 */
-	public double computeEEact(int len, float[][] rotatedData, long[] timeStamps)
-	{
-		computeCountsPerSecond(len, rotatedData, timeStamps, counts);
-		
-		Log.d(Constants.DEBUG_TAG, "Average Zero-Crossings (per second): "+Arrays.toString(counts));
-		
-		//	the computed counts are per second,
-		//		convert to per minute
-		for (int dim=0; dim<3; ++dim) {
-			counts[dim] *= 60.0;
-		}
+	public double computeEEact(double counts[])
+	{	
+//		//	the computed counts are per second,
+//		//		convert to per minute
+//		for (int dim=0; dim<3; ++dim) {
+//			counts[dim] *= 60.0;
+//		}
 		
 		double horCounts = Math.sqrt(counts[0]*counts[0] + counts[1]*counts[1]);
 		double verCounts = counts[2];
 		
-		return	param_a * Math.pow(horCounts, param_p1) +
-				param_b * Math.pow(verCounts, param_p2);
+		Log.i(Constants.DEBUG_TAG, "horCounts="+horCounts);
+		Log.i(Constants.DEBUG_TAG, "verCounts="+verCounts);
+		
+		Log.i(Constants.DEBUG_TAG, "param_a ="+param_a);
+		Log.i(Constants.DEBUG_TAG, "param_p1="+param_p1);
+		Log.i(Constants.DEBUG_TAG, "param_b ="+param_b);
+		Log.i(Constants.DEBUG_TAG, "param_p2="+param_p2);
+		
+		double eeAct = param_a * Math.pow(horCounts, param_p1) +
+					param_b * Math.pow(verCounts, param_p2); 
+		
+		Log.i(Constants.DEBUG_TAG, "eeAct="+eeAct);
+		
+		Log.i(Constants.DEBUG_TAG, "restingEE="+restingEE);
+		
+		return	eeAct;
 	}
 
+	@Override
+	public void onFieldChange(Set<String> updatedKeys) {
+		computeRestingEE();
+		computeParameters();
+	}
+	
 	/**
 	 * Computes the average number of zero-crossings in the accelerometer
 	 * samples given (after rotation) per second.
@@ -134,13 +169,15 @@ public class MetUtil {
 	 * @param results			an array of three doubles to return the average number of
 	 * 								zero-crossings per second
 	 */
-	private void computeCountsPerSecond(int len, float[][] rotatedData, long[] timeStamps, double[] results) {
+	public void computeCountsPerSecond(int len, float[][] rotatedData, long[] timeStamps, double[] results) {
+		//	the duration of the signal (in seconds)
+		double timePeriod = ((double)(timeStamps[len-1]-timeStamps[0])) / 1000.0;
+		
 		for (int dim=0; dim<3; ++dim) {
 			
 			//	number of zero-crossings found
 			double counts = 0.0;
 			//	the duration of the signal (in seconds)
-			double timePeriod = ((double)(timeStamps[len-1]-timeStamps[0])) / 1000.0; 
 			
 			float value;
 			boolean beenToTheUpperBand = false;
@@ -158,8 +195,8 @@ public class MetUtil {
 				boolean isInTheUpperBand = false;
 				boolean isInTheLowerBand = false;
 				
-				isInTheUpperBand = (value>AMP_FILTER_LOW && value<AMP_FILTER_HIGH);
-				isInTheLowerBand = (-value>AMP_FILTER_LOW && -value<AMP_FILTER_HIGH);
+				isInTheUpperBand = (value>AMP_FILTER_LOW);
+				isInTheLowerBand = (-value>AMP_FILTER_LOW);
 				
 				if (beenToTheUpperBand && isInTheLowerBand) {
 					++counts;
@@ -184,6 +221,8 @@ public class MetUtil {
 			
 			results[dim] = counts / timePeriod;
 		}
+		
+		Log.d(Constants.DEBUG_TAG, "Average Counts (per second): "+Arrays.toString(results));
 	}
-	
+
 }

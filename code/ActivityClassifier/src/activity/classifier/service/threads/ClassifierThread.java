@@ -101,6 +101,9 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	private boolean isCalibrated;
 	private Calibrator calibrator;
 	
+	double counts[] = new double[3];
+	double eeAct[] = new double[1];
+	double met[] = new double[1];
 	private MetUtil metUtil;
 
 	private volatile boolean shouldExit;
@@ -243,9 +246,6 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	 */
 	public void run() {
 		try {
-			double eeAct[] = new double[1];
-			double met[] = new double[1];
-			
 			Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler(context));
 			Log.v(Constants.DEBUG_TAG, "Classification thread started.");
 			this.optionsTable.registerUpdateHandler(this);
@@ -424,12 +424,19 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 								debugDataTable.setClassifierAlgoOutput(classification);
 							}
 							
-							retEeAct[0] = metUtil.computeEEact(size, data, batch.timeStamps);
+							metUtil.computeCountsPerSecond(size, data, batch.timeStamps, counts);
+							retEeAct[0] = metUtil.computeEEact(counts);
 							retMet[0] = metUtil.computeMET(retEeAct[0]);
 							Log.d(Constants.DEBUG_TAG, "MET="+retMet[0]+", EEact="+retEeAct[0]);
 							
 							if (Constants.OUTPUT_DEBUG_INFO) {
-								debugDataTable.setMetStats((float)retEeAct[0], (float)retMet[0]);
+								debugDataTable.setMetStats(
+										(float)counts[0],
+										(float)counts[1],
+										(float)counts[2],
+										(float)retEeAct[0],
+										(float)retMet[0]
+										              );
 							}							
 
 						} else {

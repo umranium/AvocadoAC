@@ -245,7 +245,7 @@ public class Classification implements Parcelable, Comparable<Classification> {
 		}
 		else{
 			return String.format("%-20s %s for %s", 
-					niceClassification+" ("+(int)Math.round(totalMet/numberOfBatches)+")",
+					niceClassification+" ("+String.format("%.1f", totalMet/numberOfBatches)+")",
 					uiStartTime,
 					durationStr);
 		}

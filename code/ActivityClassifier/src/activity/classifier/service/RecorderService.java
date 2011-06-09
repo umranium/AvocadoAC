@@ -508,7 +508,7 @@ public class RecorderService extends Service implements Runnable {
 		//        SyncAccelReader reader = new SyncAccelReaderFactory().getReader(this);
 		//		sampler = new SyncSampler(reader, analyseRunnable);
 		
-		metUtil = new MetUtil(85.0, MetUtil.GENDER_MALE);
+		metUtil = new MetUtil(90.0, 185.0, 26.0, MetUtil.GENDER_MALE);
 		
 		classifierThread = new ClassifierThread(this, binder, batchBuffer, metUtil);
 		classifierThread.start();
