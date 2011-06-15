@@ -45,10 +45,6 @@ public class MetUtil implements OptionUpdateHandler {
 	//		to reduce to 5Hz, we get the mean of every 4 samples.
 	private static final int MEAN_GROUP_SIZE = 4;
 	
-	private static final double[] DC_COMPONENTS = new double[] {
-			0.0, 0.0, Constants.GRAVITY
-		};
-	
 	private double mass;	//	mass in kg
 	private double height;	//	height in cm
 	private double age;		//	age in years
@@ -91,7 +87,7 @@ public class MetUtil implements OptionUpdateHandler {
 		param_p1 = (2.66*mass + 146.72) / 1000.0;
 		param_p2 = (-3.85*mass + 968.28) / 1000.0;
 		param_a = (12.81*mass + 843.22) / 1000.0;
-		param_b = (38.90*mass + 682.44*gender + 693.50) / 1000.0;
+		param_b = (38.90*mass - 682.44*gender + 692.50) / 1000.0;
 	}
 	
 	/**
@@ -112,8 +108,12 @@ public class MetUtil implements OptionUpdateHandler {
 		//	EEact = EE - EEresting
 		double ee = eeAct + restingEE;
 		
+		double met = ee / restingEE;
+		
+		Log.i(Constants.DEBUG_TAG, "MET="+met);
+		
 		//	MET = EE / EEresting
-		return ee / restingEE;
+		return met;
 	}
 	
 	/**
@@ -126,22 +126,16 @@ public class MetUtil implements OptionUpdateHandler {
 	 */
 	public double computeEEact(double counts[])
 	{	
-//		//	the computed counts are per second,
-//		//		convert to per minute
-//		for (int dim=0; dim<3; ++dim) {
-//			counts[dim] *= 60.0;
-//		}
-		
 		double horCounts = Math.sqrt(counts[0]*counts[0] + counts[1]*counts[1]);
 		double verCounts = counts[2];
 		
 		Log.i(Constants.DEBUG_TAG, "horCounts="+horCounts);
 		Log.i(Constants.DEBUG_TAG, "verCounts="+verCounts);
 		
-		Log.i(Constants.DEBUG_TAG, "param_a ="+param_a);
 		Log.i(Constants.DEBUG_TAG, "param_p1="+param_p1);
-		Log.i(Constants.DEBUG_TAG, "param_b ="+param_b);
 		Log.i(Constants.DEBUG_TAG, "param_p2="+param_p2);
+		Log.i(Constants.DEBUG_TAG, "param_a ="+param_a);
+		Log.i(Constants.DEBUG_TAG, "param_b ="+param_b);
 		
 		double eeAct = param_a * Math.pow(horCounts, param_p1) +
 					param_b * Math.pow(verCounts, param_p2); 
@@ -165,11 +159,12 @@ public class MetUtil implements OptionUpdateHandler {
 	 * 
 	 * @param len				the number of accelerometer samples in each dimension
 	 * @param rotatedData		the accelerometer samples (3 dimensions, after rotation)
+	 * @param rotatedDataMeans  the means of the rotated data, in each dimension
 	 * @param timeStamps		timestamps of the accelerometer samples
 	 * @param results			an array of three doubles to return the average number of
 	 * 								zero-crossings per second
 	 */
-	public void computeCountsPerSecond(int len, float[][] rotatedData, long[] timeStamps, double[] results) {
+	public void computeCountsZeroCrossing(int len, float[][] rotatedData, float[] rotatedDataMeans, long[] timeStamps, double[] results) {
 		//	the duration of the signal (in seconds)
 		double timePeriod = ((double)(timeStamps[len-1]-timeStamps[0])) / 1000.0;
 		
@@ -188,7 +183,7 @@ public class MetUtil implements OptionUpdateHandler {
 				//		frequency to the required frequency
 				value = 0.0f;
 				for (int k=0; k<MEAN_GROUP_SIZE; ++k) {
-					value += rotatedData[iSample+k][dim] - DC_COMPONENTS[dim];
+					value += rotatedData[iSample+k][dim] - rotatedDataMeans[dim];
 				}
 				value /= MEAN_GROUP_SIZE;
 				
@@ -222,7 +217,94 @@ public class MetUtil implements OptionUpdateHandler {
 			results[dim] = counts / timePeriod;
 		}
 		
-		Log.d(Constants.DEBUG_TAG, "Average Counts (per second): "+Arrays.toString(results));
+		Log.d(Constants.DEBUG_TAG, "Average Counts: "+Arrays.toString(results));
 	}
 
+	/**
+	 * Computes the average number of counts per min.
+	 * 
+	 * Based on the square-root of the square of the area under the
+	 * acceleration graph.
+	 * 
+	 * Note: 
+	 * 1) you can't get zero counts using this method, because you
+	 * 		 never get the DC component alone from the accelerometer,
+	 * 		there are always fluctuations in the signals. 
+	 * 2) this method is insensitive to high intensity activities (e.g. jogging)
+	 * 
+	 * @param len				the number of accelerometer samples in each dimension
+	 * @param rotatedData		the accelerometer samples (3 dimensions, after rotation)
+	 * @param rotatedDataMeans  the means of the rotated data, in each dimension
+	 * @param timeStamps		timestamps of the accelerometer samples
+	 * @param results			an array of three doubles to return the average number of
+	 * 								zero-crossings per second
+	 */
+	public void computeCountsIntegration(int len, float[][] rotatedData, float[] rotatedDataMeans, long[] timeStamps, double[] results) {
+		//	the duration of the signal (in seconds)
+		double timePeriod = ((double)(timeStamps[len-1]-timeStamps[0])) / 1000.0;
+		double duration, currentMean, area;
+		double prevMean[] = new double[Constants.ACCEL_DIM];
+		
+//		Log.i(Constants.DEBUG_TAG, Arrays.toString(rotatedDataMeans));
+//		for (int i=0; i<len; ++i) {
+//			Log.i(Constants.DEBUG_TAG, Arrays.toString(rotatedData[i]));
+//		}
+		
+		for (int dim=0; dim<Constants.ACCEL_DIM; ++dim) {
+			results[dim] = 0.0;
+			
+			//	compute mean of the first data group
+			prevMean[dim] = 0.0;
+			for (int iSample=0; iSample<MEAN_GROUP_SIZE; ++iSample) {
+				prevMean[dim] += rotatedData[iSample][dim];
+			}			
+			prevMean[dim] /= MEAN_GROUP_SIZE;
+			
+			//	subtract the DC
+			prevMean[dim] -= rotatedDataMeans[dim];
+		}
+		
+		for (int iSample=MEAN_GROUP_SIZE; iSample+MEAN_GROUP_SIZE<len; iSample+=MEAN_GROUP_SIZE) {
+			//	duration between the samples
+			duration = (timeStamps[iSample]-timeStamps[iSample-1]) / 1000.0;
+			
+			for (int dim=0; dim<Constants.ACCEL_DIM; ++dim) {
+				//	compute area covered between the last sample
+				//		and current sample, over the duration
+				
+				//	get the mean of current data group
+				currentMean = 0.0;
+				for (int k=0; k<MEAN_GROUP_SIZE; ++k) {
+					currentMean += rotatedData[iSample+k][dim];
+				}			
+				currentMean /= MEAN_GROUP_SIZE;
+				
+				//	subtract the DC
+				currentMean -= rotatedDataMeans[dim];
+				
+				//	calculate area under current group
+				area = (currentMean + prevMean[dim])/2.0 * duration;
+				
+				//	increase sum by area squared
+				results[dim] += area*area;
+				
+				//	save current mean for next computation
+				prevMean[dim] = currentMean;
+			}
+		}
+		
+		
+		for (int dim=0; dim<Constants.ACCEL_DIM; ++dim) {
+			Log.d(Constants.DEBUG_TAG, "sum(area["+dim+"]^2)="+results[dim]);
+			
+			//	get the square-root of the sum square of the area
+			results[dim] = Math.sqrt(results[dim]);
+			//	get the counts per second
+			results[dim] /= timePeriod;
+			//	convert to per minute
+			results[dim] *= 60.0;
+		}
+		
+		Log.d(Constants.DEBUG_TAG, "Average Counts: "+Arrays.toString(results));
+	}
 }

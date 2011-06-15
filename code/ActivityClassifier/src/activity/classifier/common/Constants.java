@@ -30,7 +30,7 @@ public class Constants {
 	 * being debugged (i.e. plugged into the computer), and normal
 	 * usage.
 	 */
-	public final static boolean IS_DEBUGGING = false; 
+	public final static boolean IS_DEBUGGING = true; 
 	
 	/**
 	 * Should we or should we not output debugging data to the database?
@@ -167,8 +167,8 @@ public class Constants {
 	 *	because of the phone accelerating fast during the sampling period
 	 *	e.g. in a car after a traffic light.
 	 */
-	public static final float MIN_GRAVITY_DEV = 0.5f; // 15% of gravity	
-	public static final float MAX_GRAVITY_DEV = 0.5f; // 100% of gravity	
+	public static final float MIN_GRAVITY_DEV = 0.15f; // 15% of gravity	
+	public static final float MAX_GRAVITY_DEV = 0.15f; // 15% of gravity	
 	
 	/**
 	 * The number of axi on the accelerometer

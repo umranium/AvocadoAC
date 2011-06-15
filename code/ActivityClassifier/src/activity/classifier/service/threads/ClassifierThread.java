@@ -89,6 +89,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	private DebugDataTable debugDataTable;
 
 	private CalcStatistics rawSampleStatistics = new CalcStatistics(Constants.ACCEL_DIM);
+	private CalcStatistics rotatedSampleStatistics = new CalcStatistics(Constants.ACCEL_DIM);	
 
 	private float[][] rotatedMergedSamples = new float[Constants.NUM_OF_SAMPLES_PER_BATCH][2];
 	private CalcStatistics rotatedMergedSampleStatistics = new CalcStatistics(2);	
@@ -415,6 +416,8 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					if (calcGravity>=minGravity && calcGravity<=maxGravity) {
 						// first rotate samples to world-orientation
 						if (rotateSamples.rotateToWorldCoordinates(dataMeans, data)) {
+							rotatedSampleStatistics.assign(data, size);
+							
 							classification = classifier.classifyRotated(data);
 
 							Log.v(Constants.DEBUG_TAG, "Classifier Algorithm Output: "+classification);
@@ -424,7 +427,8 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 								debugDataTable.setClassifierAlgoOutput(classification);
 							}
 							
-							metUtil.computeCountsPerSecond(size, data, batch.timeStamps, counts);
+							//metUtil.computeCountsZeroCrossing(size, data, rotatedSampleStatistics.getMean(), batch.timeStamps, counts);
+							metUtil.computeCountsIntegration(size, data, rotatedSampleStatistics.getMean(), batch.timeStamps, counts);
 							retEeAct[0] = metUtil.computeEEact(counts);
 							retMet[0] = metUtil.computeMET(retEeAct[0]);
 							Log.d(Constants.DEBUG_TAG, "MET="+retMet[0]+", EEact="+retEeAct[0]);
