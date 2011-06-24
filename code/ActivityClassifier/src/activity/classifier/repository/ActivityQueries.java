@@ -134,7 +134,7 @@ public class ActivityQueries extends Queries{
 		ArrayList<String[]> CHARGING = new ArrayList<String[]>();
 		ArrayList<String[]> UNCARRIED = new ArrayList<String[]>();
 		ArrayList<String[]> WALKING = new ArrayList<String[]>();
-		ArrayList<String[]> TRAVELLING = new ArrayList<String[]>();
+		ArrayList<String[]> traveling = new ArrayList<String[]>();
 		ArrayList<String[]> PADDLING = new ArrayList<String[]>();
 		ArrayList<String[]> ACTIVE = new ArrayList<String[]>();
 		ArrayList<String[]> UNKNOWN = new ArrayList<String[]>();
@@ -146,9 +146,11 @@ public class ActivityQueries extends Queries{
 				UNCARRIED.add(items.get(i));
 			}else if(items.get(i)[1].contains("WALKING")){
 				WALKING.add(items.get(i));
-			}else if(items.get(i)[1].contains("TRAVELLING")){
-				TRAVELLING.add(items.get(i));
+			}else if(items.get(i)[1].contains("TRAVELING")){
+				traveling.add(items.get(i));
 			}else if(items.get(i)[1].contains("PADDLING")){
+				PADDLING.add(items.get(i));
+			}else if(items.get(i)[1].contains("RUNNING")){
 				PADDLING.add(items.get(i));
 			}else if(items.get(i)[1].contains("ACTIVE")){
 				ACTIVE.add(items.get(i));
@@ -162,7 +164,7 @@ public class ActivityQueries extends Queries{
 		activityGroup.add(CHARGING);
 		activityGroup.add(UNCARRIED);
 		activityGroup.add(WALKING);
-		activityGroup.add(TRAVELLING);
+		activityGroup.add(traveling);
 		activityGroup.add(PADDLING);
 		activityGroup.add(ACTIVE);
 		activityGroup.add(UNKNOWN);

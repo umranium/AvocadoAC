@@ -106,16 +106,22 @@ public class FeatureExtractor {
 	        fftStats.assign(transpose(freqABSValues),windowSize);
         }
 
-        features[FEATURE_HOR_RANGE] = max[0] - min[0];
-		features[FEATURE_VER_RANGE] = max[1] - min[1];
+//      features[FEATURE_HOR_RANGE] = max[0] - min[0];
+//		features[FEATURE_VER_RANGE] = max[1] - min[1];
+        
+        features[FEATURE_HOR_RANGE] = fftStats.getMax()[0] - fftStats.getMin()[0];
+		features[FEATURE_VER_RANGE] = fftStats.getMax()[1] - fftStats.getMin()[1];
 		features[FEATURE_HOR_MEAN] = mean[0];
 		features[FEATURE_VER_MEAN] = mean[1];
-		features[FEATURE_HOR_SD] = sd[0];
-		features[FEATURE_VER_SD] = sd[1];
+//		features[FEATURE_HOR_SD] = sd[0];
+//		features[FEATURE_VER_SD] = sd[1];
+		
+		features[FEATURE_HOR_SD] = fftStats.getMax()[0] - fftStats.getMean()[0];
+		features[FEATURE_VER_SD] = fftStats.getMax()[1] - fftStats.getMean()[1];
 		
 		if (Constants.USE_FFT) {
-	        features[FEATURE_HOR_MFA] = (fftStats.getMax()[0] - fftStats.getMean()[0]); 
-	        features[FEATURE_VER_MFA] = (fftStats.getMax()[1] - fftStats.getMean()[1]);
+	        features[FEATURE_HOR_MFA] = fftStats.getStandardDeviation()[0]; 
+	        features[FEATURE_VER_MFA] = fftStats.getStandardDeviation()[1];
 		} else {
 			features[FEATURE_HOR_MFA] = 0.0f;
 			features[FEATURE_VER_MFA] = 0.0f;

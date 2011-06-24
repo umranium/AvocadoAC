@@ -20,15 +20,16 @@ public class ActivityNames {
 	public static final String UNKNOWN					= "UNKNOWN";
 	public static final String UNCARRIED				= "CLASSIFIED/UNCARRIED";
 	public static final String CHARGING					= "CLASSIFIED/CHARGING";
-	public static final String CHARGING_TRAVELLING		= "CLASSIFIED/CHARGING/TRAVELLING";
+	public static final String CHARGING_traveling		= "CLASSIFIED/CHARGING/traveling";
 	
 	//	model based activities
 	public static final String STATIONARY				= "CLASSIFIED/STATIONARY";
-	public static final String TRAVELLING				= "CLASSIFIED/TRAVELLING";
+	public static final String TRAVELING				= "CLASSIFIED/traveling";
 	public static final String WALKING					= "CLASSIFIED/WALKING";
 	public static final String PADDLING					= "CLASSIFIED/PADDLING";
 	public static final String ROWING					= "CLASSIFIED/ROWING";
 	public static final String CYCLING					= "CLASSIFIED/CYCLING";
+	public static final String RUNNING					= "CLASSIFIED/RUNNING";
 	
 	/**
 	 * Check if the given activity is a system-based activity,
