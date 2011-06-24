@@ -220,15 +220,23 @@ public class ChartHelper {
 	 * Colors of activities
 	 */
 	public final static int[] COLOR_ACTIVITIES = new int[] {
-		Color.argb(255, 114, 141, 108),
-		Color.argb(255, 255, 97, 78),
+		//Charging Colour
+		Color.argb(255, 153, 153, 153),
+		//Orange
+		Color.argb(255, 255, 97, 0),
+		//Not carried
 		Color.argb(255, 109, 206, 250),
-		Color.argb(255, 109, 206, 250),
+		//Stationary
+		Color.argb(255, 0, 102, 0),
+		//Stationary
+		Color.argb(255, 0, 102, 255),
+		//Walking
 		Color.argb(255, 244, 141, 62),
-		Color.argb(255, 237, 142, 107),
+		//Running
 		Color.argb(255, 181, 40, 65),
+		//Off, light green
 		Color.argb(255, 181, 204, 122),
-		Color.argb(255, 181, 204, 122),
+		Color.argb(255, 181, 204, 0),
 	};
 	
 }

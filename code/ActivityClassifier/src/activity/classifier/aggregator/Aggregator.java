@@ -48,7 +48,7 @@ import android.util.Log;
 public class Aggregator {
 
 	private static final double DELTA = 0.25;
-	private static final double THRESHOLD = 0.5;
+	private static final double THRESHOLD = 0.1;
 
     private static final Map<String, Map<String, Double>> DEFAULT_SCORES = 
     	new HashMap<String, Map<String, Double>>() {
@@ -62,11 +62,12 @@ public class Aggregator {
 	put("CLASSIFIED", new HashMap<String, Double>() {{
 		put("UNCARRIED", 0.14d);
 		put("STATIONARY", 0.14d);
-		put("TRAVELLING", 0.14d);
+		//put("traveling", 0.14d);
 		put("WALKING", 0.14d);
 		put("PADDLING", 0.14d);
-		put("ROWING", 0.14d);
-		put("CYCLING", 0.14d);
+		//put("ROWING", 0.14d);
+		put("CYCLING", 0.1d);
+		put("RUNNING", 0.14d);
 	}});
 	
 	}
@@ -88,7 +89,7 @@ public class Aggregator {
 			put("END", 0.1d);
 			put("WALKING", 0.1d);
 			put("PADDLING", 0.1d);
-			put("TRAVELLING", 0.1d);
+			put("traveling", 0.1d);
 			put("ACTIVE", 0.1d);
 			put("DANCING", 0.1d);
 			put("VEHICLE",0.1d);

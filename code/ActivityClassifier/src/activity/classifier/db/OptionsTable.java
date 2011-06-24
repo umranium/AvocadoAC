@@ -202,7 +202,7 @@ public class OptionsTable extends DbTableAdapter {
 		setServiceStarted(true);
 		setAccountSent(false);
 		setWakeLockSet(false);
-		setUseAggregator(true);
+		setUseAggregator(false);
 		setInvokeMyTracks(Constants.DEF_USE_MYTRACKS);
 		setFullTimeAccel(false);
 		setAccelSensorRate(SensorManager.SENSOR_DELAY_NORMAL);
