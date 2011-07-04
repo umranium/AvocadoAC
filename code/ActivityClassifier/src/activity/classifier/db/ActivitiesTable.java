@@ -125,6 +125,7 @@ public class ActivitiesTable extends DbTableAdapter {
 		if (isDatabaseAvailable()) {
 			synchronized (insertContentValues) {
 				assignValuesToInsertContentValues(classification);
+				Log.i(Constants.DEBUG_TAG, insertContentValues.toString());
 				database.insertOrThrow(TABLE_NAME, null, insertContentValues);
 			}
 		}

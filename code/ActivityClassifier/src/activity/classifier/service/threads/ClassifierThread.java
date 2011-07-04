@@ -5,6 +5,7 @@
 
 package activity.classifier.service.threads;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
@@ -30,8 +31,10 @@ import activity.classifier.rpc.ActivityRecorderBinder;
 import activity.classifier.service.RecorderService;
 import activity.classifier.utils.CalcStatistics;
 import activity.classifier.utils.Calibrator;
+import activity.classifier.utils.LogRedirect;
 import activity.classifier.utils.MetUtil;
 import activity.classifier.utils.RotateSamplesToVerticalHorizontal;
+import activity.classifier.utils.WalkingSpeedUtil;
 import android.R.string;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -106,6 +109,8 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	double eeAct[] = new double[1];
 	double met[] = new double[1];
 	private MetUtil metUtil;
+	
+	private WalkingSpeedUtil walkingSpeedUtil = new WalkingSpeedUtil(Constants.PATH_SD_CARD_APP_LOC, Constants.DB_DATE_FORMAT);
 
 	private volatile boolean shouldExit;
 
@@ -324,7 +329,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 		}
 
 	}
-
+	
 	private String processData(SampleBatch batch, double retEeAct[], double retMet[]) throws InterruptedException, RemoteException {
 		Log.v(Constants.DEBUG_TAG, "Processing batch.");
 		retEeAct[0] = 0.0;
@@ -427,21 +432,33 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 								debugDataTable.setClassifierAlgoOutput(classification);
 							}
 							
-							//metUtil.computeCountsZeroCrossing(size, data, rotatedSampleStatistics.getMean(), batch.timeStamps, counts);
-							metUtil.computeCountsIntegration(size, data, rotatedSampleStatistics.getMean(), batch.timeStamps, counts);
-							retEeAct[0] = metUtil.computeEEact(counts);
-							retMet[0] = metUtil.computeMET(retEeAct[0]);
-							Log.d(Constants.DEBUG_TAG, "MET="+retMet[0]+", EEact="+retEeAct[0]);
+							walkingSpeedUtil.processData(batch.timeStamps, data, rotatedSampleStatistics.getMean(), size);
+							float stepsFound = walkingSpeedUtil.getStepsFound();
+							float walkingHeight = walkingSpeedUtil.getWalkingHeight();
+							float walkingSpeed = walkingSpeedUtil.getWalkingSpeed();
 							
 							if (Constants.OUTPUT_DEBUG_INFO) {
-								debugDataTable.setMetStats(
-										(float)counts[0],
-										(float)counts[1],
-										(float)counts[2],
-										(float)retEeAct[0],
-										(float)retMet[0]
-										              );
-							}							
+								debugDataTable.setWalkingStats(stepsFound, walkingSpeed);
+							}
+							
+							//metUtil.computeCountsZeroCrossing(size, data, rotatedSampleStatistics.getMean(), batch.timeStamps, counts);
+//							metUtil.computeCountsIntegration(size, data, rotatedSampleStatistics.getMean(), batch.timeStamps, counts);
+//							retEeAct[0] = metUtil.computeEEact(counts);
+//							retMet[0] = metUtil.computeMET(retEeAct[0]);
+//							Log.d(Constants.DEBUG_TAG, "MET="+retMet[0]+", EEact="+retEeAct[0]);
+							
+							retEeAct[0] = walkingHeight;
+							retMet[0] = walkingSpeed;
+							
+//							if (Constants.OUTPUT_DEBUG_INFO) {
+//								debugDataTable.setMetStats(
+//										(float)counts[0],
+//										(float)counts[1],
+//										(float)counts[2],
+//										(float)retEeAct[0],
+//										(float)retMet[0]
+//										              );
+//							}
 
 						} else {
 							Log.v(Constants.DEBUG_TAG, "Unable to perform classification, data could not be rotated!");

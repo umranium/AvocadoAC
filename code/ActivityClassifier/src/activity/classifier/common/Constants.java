@@ -23,14 +23,14 @@ public class Constants {
 	 *		pick whether aggregation is used or not.
 	 *	</p> 
 	 */
-	public final static boolean IS_DEV_VERSION = false;
+	public final static boolean IS_DEV_VERSION = true;
 	
 	/**
 	 * Used to differentiate between times when the application is
 	 * being debugged (i.e. plugged into the computer), and normal
 	 * usage.
 	 */
-	public final static boolean IS_DEBUGGING = true; 
+	public final static boolean IS_DEBUGGING = false; 
 	
 	/**
 	 * Should we or should we not output debugging data to the database?
@@ -65,7 +65,7 @@ public class Constants {
 	/**
 	 * The delay between two consecutive samples in a sample batch.
 	 */
-	public static final int DELAY_BETWEEN_SAMPLES = 50; //	50ms
+	public static final int DELAY_BETWEEN_SAMPLES = 25; //	25ms
 	
 	/**
 	 * Duration for the {@link AccountThread} to wait for the user's account
@@ -151,7 +151,7 @@ public class Constants {
 	/**
 	 *	The number of accelerometer (x,y & z) samples in a batch of samples.
 	 */
-	public static final int NUM_OF_SAMPLES_PER_BATCH = 128;
+	public static final int NUM_OF_SAMPLES_PER_BATCH = 256;
 	
 	/**
 	 *	The value of gravity
