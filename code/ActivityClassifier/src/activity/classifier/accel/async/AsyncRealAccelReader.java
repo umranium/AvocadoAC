@@ -133,37 +133,19 @@ public class AsyncRealAccelReader implements AsyncAccelReader {
         accelListenerRegistered = false;
     }
     
-    public void startSampling() {
+    public void startSampling() throws HardwareFaultException {
     	if (!accelListenerRegistered) {
     		Log.i(Constants.DEBUG_TAG, "Turning accelerometer on");
             manager.registerListener(accelListener,
                     manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
                     SensorManager.SENSOR_DELAY_FASTEST);
             accelListenerRegistered = true;
-            valuesAssigned = 0;
             samplingQualitySum = 0.0;
             samplingQualitySumSqr = 0.0;
             samplingQualityCount = 0.0;
+            valuesAssigned = 0;
     	}
-    }
 
-    public void stopSampling() {
-    	if (!optionsTable.getFullTimeAccel()) {
-    		manager.unregisterListener(accelListener);
-    		accelListenerRegistered = false;
-    		Log.i(Constants.DEBUG_TAG, "Turning accelerometer off");
-    		
-    		samplingQualityMean = samplingQualitySum / samplingQualityCount;
-    		samplingQualityStdDev = Math.sqrt(
-    				samplingQualitySumSqr / samplingQualityCount - 
-    				samplingQualityMean * samplingQualityMean
-				);
-    		
-    		Log.d(Constants.DEBUG_TAG, String.format("Sampling Quality: Delay: Mean=%.2f ms, S.D=%.2f ms", samplingQualityMean, samplingQualityStdDev));
-    	}
-    }
-	
-	public void assignSample(SampleBatch batch) throws HardwareFaultException {
     	//	sometimes values are requested before the first
     	//		accelerometer sensor change event has occurred,
     	//		so wait for the sensor to change.
@@ -182,6 +164,25 @@ public class AsyncRealAccelReader implements AsyncAccelReader {
 	    	Log.v(Constants.DEBUG_TAG, "Done, waited for "+((current-startWait)/1000)+"s");
     	}
     	
+    }
+
+    public void stopSampling() {
+    	if (!optionsTable.getFullTimeAccel()) {
+    		manager.unregisterListener(accelListener);
+    		accelListenerRegistered = false;
+    		Log.i(Constants.DEBUG_TAG, "Turning accelerometer off");
+    		
+    		samplingQualityMean = samplingQualitySum / samplingQualityCount;
+    		samplingQualityStdDev = Math.sqrt(
+    				samplingQualitySumSqr / samplingQualityCount - 
+    				samplingQualityMean * samplingQualityMean
+				);
+    		
+    		Log.d(Constants.DEBUG_TAG, String.format("Sampling Quality: Delay: Mean=%.2f ms, S.D=%.2f ms", samplingQualityMean, samplingQualityStdDev));
+    	}
+    }
+	
+	public void assignSample(SampleBatch batch) {
     	//	lock the previous sample, hence locking the current one too
     	int prevValueIndex = this.previousValueIndex;
     	synchronized (this.valueBuff[prevValueIndex]) {

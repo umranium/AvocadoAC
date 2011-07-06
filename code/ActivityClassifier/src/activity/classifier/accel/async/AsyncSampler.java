@@ -114,12 +114,21 @@ public class AsyncSampler implements Sampler {
     	this.currentBatch.reset();
     	this.currentBatch.sampleTime = System.currentTimeMillis();
     	
-        reader.startSampling();
-        this.sampling = true;
+        try {
+			reader.startSampling();
+	        this.sampling = true;
+	        Log.i(Constants.DEBUG_TAG, "Starting Timer");
+	        timer.scheduleAtFixedRate(this.timerTask, Constants.DELAY_BETWEEN_SAMPLES, Constants.DELAY_BETWEEN_SAMPLES);
+	        Log.i(Constants.DEBUG_TAG, "Started Sampling.");
+        } catch (HardwareFaultException e) {
+			Log.e(Constants.DEBUG_TAG, "Hardware Fault While Starting Sampling", e);
+			try {
+				service.handleHardwareFaultException("Faulty Accelerometer", e.getMessage());
+			} catch (RemoteException e1) {
+				e1.printStackTrace();
+			}
+		}
         
-        Log.i(Constants.DEBUG_TAG, "Starting Timer");
-        timer.scheduleAtFixedRate(this.timerTask, Constants.DELAY_BETWEEN_SAMPLES, Constants.DELAY_BETWEEN_SAMPLES);
-        Log.i(Constants.DEBUG_TAG, "Started Sampling.");
     }
 
     public SampleBatch getSampleBatch() {

@@ -50,8 +50,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 	private static final int DIALOG_YES_NO_MESSAGE_FOR_CALIBRATION_START = 2;
 
 
-	ActivityRecorderBinder service = null;
-	CheckBox checkBox;
+	private ActivityRecorderBinder service = null;
 
 	private int isWakeLockSet;
 	private boolean wakelock;
@@ -64,6 +63,8 @@ public class MainSettingsActivity extends PreferenceActivity {
 	private CheckBoxPreference fulltimeAccelPref;
 	private PreferenceScreen selectAccountPref;
 	private CheckBoxPreference fftOnPref; 
+	private PreferenceScreen forceCalibPref;
+	
 
 	private Handler mainLooperHandler;
 
@@ -127,6 +128,18 @@ public class MainSettingsActivity extends PreferenceActivity {
 					});
 				}
 			}
+			
+			if (Constants.IS_DEV_VERSION &&
+					updatedKeys.contains(OptionsTable.KEY_USE_AGGREGATOR)) {
+				mainLooperHandler.post(new Runnable() {
+					@Override
+					public void run() {
+						aggregatePref.setChecked(optionsTable.getUseAggregator());
+					}
+				});
+				
+			}
+			
 		}
 	};
 
@@ -175,9 +188,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 	 */
 	protected void onResume() {
 		super.onResume();
-		if (Constants.IS_DEV_VERSION) {
-			aggregatePref.setChecked(optionsTable.getUseAggregator());
-		}
 		optionsTable.registerUpdateHandler(optionUpdateHandler);
 	}
 
@@ -231,15 +241,15 @@ public class MainSettingsActivity extends PreferenceActivity {
 			throw new IllegalStateException("Binding to service failed " + intent);
 		}
 	}
-	static public PreferenceScreen forceCalibPref;
+	
 	private PreferenceScreen createPreferenceHierarchy(){
 
 		PreferenceScreen root = getPreferenceManager().createPreferenceScreen(this);
 
 		// Inline preferences 
-		PreferenceCategory inlinePrefCat = new PreferenceCategory(this);
-		inlinePrefCat.setTitle("Screen Wake Lock Settings ");
-		root.addPreference(inlinePrefCat);
+		PreferenceCategory lockPrefCat = new PreferenceCategory(this);
+		lockPrefCat.setTitle("Accelerometer Lock Settings ");
+		root.addPreference(lockPrefCat);
 
 		// Toggle preference
 		final CheckBoxPreference screenPref = new CheckBoxPreference(this);
@@ -281,28 +291,27 @@ public class MainSettingsActivity extends PreferenceActivity {
 			}
 
 		});
-		inlinePrefCat.addPreference(screenPref);
+		
+		fulltimeAccelPref = new CheckBoxPreference(this);
+		fulltimeAccelPref.setKey("fulltime_accel_preference");
+		fulltimeAccelPref.setTitle("Keep Accelerometer On");
+		fulltimeAccelPref.setSummary("Keep accelerometer on all the time\n(requires service restart)");
+		fulltimeAccelPref.setOnPreferenceChangeListener(new CheckBoxPreference.OnPreferenceChangeListener(){
 
-		final CheckBoxPreference invokeMyTracksPref = new CheckBoxPreference(this);
-		invokeMyTracksPref.setKey("invoke_mytracks_pref");
-		invokeMyTracksPref.setTitle("Invoke Google MyTracks Recording");
-		invokeMyTracksPref.setSummary("Automatically invoke Google MyTracks to record while walking");
-		invokeMyTracksPref.setOnPreferenceChangeListener(new CheckBoxPreference.OnPreferenceChangeListener(){
 			public boolean onPreferenceChange(Preference arg0, Object arg1) {
-				boolean newValue = (Boolean) arg1;
-				optionsTable.setInvokeMyTracks(newValue);
+				boolean checked = (Boolean) arg1; 
+				optionsTable.setFullTimeAccel(checked);
 				optionsTable.save();
-				invokeMyTracksPref.setChecked(optionsTable.getInvokeMyTracks());
+				fulltimeAccelPref.setChecked(checked);
 				return false;
 			}
-		});
-		invokeMyTracksPref.setChecked(optionsTable.getInvokeMyTracks());
-		if (!MyTracksIntergration.isMyTracksInstalled(this)) {
-			invokeMyTracksPref.setEnabled(false);
-			invokeMyTracksPref.setSummary(invokeMyTracksPref.getSummary()+"\nGoogle MyTracks is not installed yet.");
-		}
-		inlinePrefCat.addPreference(invokeMyTracksPref);
 
+		});
+		fulltimeAccelPref.setChecked(optionsTable.getFullTimeAccel());
+
+		
+		lockPrefCat.addPreference(screenPref);
+		lockPrefCat.addPreference(fulltimeAccelPref);
 
 		// Dialog based preferences
 		PreferenceCategory calibrationSettingsCat = new PreferenceCategory(this);
@@ -465,26 +474,28 @@ public class MainSettingsActivity extends PreferenceActivity {
 			});
 			aggregatePref.setChecked(optionsTable.getUseAggregator());
 
-			fulltimeAccelPref = new CheckBoxPreference(this);
-			fulltimeAccelPref.setKey("fulltime_accel_preference");
-			fulltimeAccelPref.setTitle("Keep Accelerometer On");
-			fulltimeAccelPref.setSummary("Keep accelerometer on all the time\n(requires service restart)");
-			fulltimeAccelPref.setOnPreferenceChangeListener(new CheckBoxPreference.OnPreferenceChangeListener(){
-
+			final CheckBoxPreference invokeMyTracksPref = new CheckBoxPreference(this);
+			invokeMyTracksPref.setKey("invoke_mytracks_pref");
+			invokeMyTracksPref.setTitle("Invoke Google MyTracks Recording");
+			invokeMyTracksPref.setSummary("Automatically invoke Google MyTracks to record while walking");
+			invokeMyTracksPref.setOnPreferenceChangeListener(new CheckBoxPreference.OnPreferenceChangeListener(){
 				public boolean onPreferenceChange(Preference arg0, Object arg1) {
-					boolean checked = (Boolean) arg1; 
-					optionsTable.setFullTimeAccel(checked);
+					boolean newValue = (Boolean) arg1;
+					optionsTable.setInvokeMyTracks(newValue);
 					optionsTable.save();
-					fulltimeAccelPref.setChecked(checked);
+					invokeMyTracksPref.setChecked(optionsTable.getInvokeMyTracks());
 					return false;
 				}
-
 			});
-			fulltimeAccelPref.setChecked(optionsTable.getFullTimeAccel());
-
+			invokeMyTracksPref.setChecked(optionsTable.getInvokeMyTracks());
+			if (!MyTracksIntergration.isMyTracksInstalled(this)) {
+				invokeMyTracksPref.setEnabled(false);
+				invokeMyTracksPref.setSummary(invokeMyTracksPref.getSummary()+"\nGoogle MyTracks is not installed yet.");
+			}
+			
 			root.addPreference(developerPrefCat);
 			developerPrefCat.addPreference(aggregatePref);
-			developerPrefCat.addPreference(fulltimeAccelPref);
+			developerPrefCat.addPreference(invokeMyTracksPref);
 		}
 
 		return root;

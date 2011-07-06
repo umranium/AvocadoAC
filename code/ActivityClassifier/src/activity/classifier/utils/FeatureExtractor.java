@@ -19,7 +19,7 @@ import android.util.Log;
  */
 public class FeatureExtractor {
 
-    public static final int NUM_FEATURES = 8;
+    public static final int NUM_FEATURES = 6;
     
     public static final String FEATURE_NAMES[] = new String[] {
         "HOR RANGE",
@@ -28,8 +28,6 @@ public class FeatureExtractor {
         "VER MEAN",
         "HOR STD DEV",
         "VER STD DEV",
-        "HOR MAX FAMP",//Maximum frequency amplitude value for horizontal axis
-        "VER MAX FAMP" //Maximum frequency amplitude value for vertical axis
     };
 
     public static final int FEATURE_HOR_RANGE   = 0;
@@ -38,8 +36,6 @@ public class FeatureExtractor {
     public static final int FEATURE_VER_MEAN   	= 3;
     public static final int FEATURE_HOR_SD   	= 4;
     public static final int FEATURE_VER_SD   	= 5;
-    public static final int FEATURE_HOR_MFA   	= 6;//Maximum frequency amplitude value for horizontal axis
-    public static final int FEATURE_VER_MFA   	= 7;//Maximum frequency amplitude value for vertical axis
 
     private int windowSize;
     private RotateSamplesToVerticalHorizontal rotate;
@@ -47,10 +43,6 @@ public class FeatureExtractor {
     private float[][] twoDimSamples;
     private CalcStatistics sampleStats;
     private float[] features;
-    
-    private float[][] freqABSValues;
-    private CalcStatistics fftStats;
-    private FFTLib fftObj;
     
 
     public FeatureExtractor(int windowSize) {
@@ -61,12 +53,7 @@ public class FeatureExtractor {
         this.twoDimSamples = new float[windowSize][2];
         this.sampleStats = new CalcStatistics(2);
         this.features = new float[NUM_FEATURES];
-
-        // FFT calculations:
-        this.freqABSValues = new float[2][windowSize];
-        this.fftStats = new CalcStatistics(2);
-        this.fftObj = new FFTLib(windowSize);
-
+        
     }
 
     synchronized
@@ -95,38 +82,13 @@ public class FeatureExtractor {
         float[] max = sampleStats.getMax();
         float[] mean = sampleStats.getMean();
         float[] sd = sampleStats.getStandardDeviation();
-        
-        if (Constants.USE_FFT) {
-	        //FFT calculations
-            float[][] sampleTrasposed = transpose(twoDimSamples);
-	        float[] imagenary = new float[windowSize];
-	        freqABSValues[0] = fftObj.fft(sampleTrasposed[0],imagenary);
-	        imagenary = new float[windowSize];
-	        freqABSValues[1] = fftObj.fft(sampleTrasposed[1],imagenary);
-	        fftStats.assign(transpose(freqABSValues),windowSize);
-        }
-
-//      features[FEATURE_HOR_RANGE] = max[0] - min[0];
-//		features[FEATURE_VER_RANGE] = max[1] - min[1];
-        
-        features[FEATURE_HOR_RANGE] = fftStats.getMax()[0] - fftStats.getMin()[0];
-		features[FEATURE_VER_RANGE] = fftStats.getMax()[1] - fftStats.getMin()[1];
-		features[FEATURE_HOR_MEAN] = mean[0];
-		features[FEATURE_VER_MEAN] = mean[1];
-//		features[FEATURE_HOR_SD] = sd[0];
-//		features[FEATURE_VER_SD] = sd[1];
-		
-		features[FEATURE_HOR_SD] = fftStats.getMax()[0] - fftStats.getMean()[0];
-		features[FEATURE_VER_SD] = fftStats.getMax()[1] - fftStats.getMean()[1];
-		
-		if (Constants.USE_FFT) {
-	        features[FEATURE_HOR_MFA] = fftStats.getStandardDeviation()[0]; 
-	        features[FEATURE_VER_MFA] = fftStats.getStandardDeviation()[1];
-		} else {
-			features[FEATURE_HOR_MFA] = 0.0f;
-			features[FEATURE_VER_MFA] = 0.0f;
-		}
-
+       
+        features[FEATURE_HOR_RANGE] = max[0] - min[0];
+        features[FEATURE_VER_RANGE] = max[0] - min[0];
+        features[FEATURE_HOR_MEAN] = mean[0];
+        features[FEATURE_VER_MEAN] = mean[0];
+        features[FEATURE_HOR_SD] = sd[0];
+        features[FEATURE_VER_SD] = sd[0];
         
         return features;
     }

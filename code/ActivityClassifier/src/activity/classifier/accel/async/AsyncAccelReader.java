@@ -43,7 +43,7 @@ import activity.classifier.exception.HardwareFaultException;
  */
 public interface AsyncAccelReader {
 
-    void startSampling();
+    void startSampling()  throws HardwareFaultException;
 
     void stopSampling();
 

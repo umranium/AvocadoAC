@@ -178,7 +178,6 @@ public class ActivityChartActivity extends Activity {
 		 * 
 		 * @throws ParseException
 		 */
-		@SuppressWarnings("unchecked")
 		private void updateUI() throws ParseException {
 			
 			//	please note:

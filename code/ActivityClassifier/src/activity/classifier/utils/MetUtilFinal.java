@@ -28,7 +28,7 @@ import android.util.Log;
  * @author abd01c
  *
  */
-public class MetUtil implements OptionUpdateHandler {
+public class MetUtilFinal implements OptionUpdateHandler {
 	
 	private static final float AMP_FILTER_LOW = Constants.GRAVITY*0.05f;
 	
@@ -63,7 +63,7 @@ public class MetUtil implements OptionUpdateHandler {
 	 * @param age		in years
 	 * @param gender	either {@link #GENDER_MALE} or {@link #GENDER_FEMALE}
 	 */
-	public MetUtil(double mass, double height, double age, int gender) {
+	public MetUtilFinal(double mass, double height, double age, int gender) {
 		this.mass = mass;
 		this.height = height;
 		this.age = age;

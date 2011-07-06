@@ -16,16 +16,13 @@ public class WalkingSpeedUtil {
 	private static final String DEBUG  = "WalkingSpeed";
 	
 	private static final int DATA_V_DIM = 2;
-	private static final float MIN_UPPER_BAND = 1.1f;  // m/s^2
+	private static final float MIN_UPPER_BAND = 1.1f;	// m/s^2
+	private static final float MIN_PEAK_HEIGHT = Constants.GRAVITY*0.25f;	// m/s^2
 	private static final int BUFFER_LEN = Constants.NUM_OF_SAMPLES_PER_BATCH;
 	
 	//	minimum and maximum, step frequencies for walking
 	private static final float MAX_WALKING_STEP_FREQUENCY = 2.5f;	// Hz
 	private static final float MIN_WALKING_STEP_FREQUENCY = 1.4f;	// Hz
-	
-	private static final int MAX_NUMBER_OF_WALKING_STEPS = (int)((MAX_WALKING_STEP_FREQUENCY*Constants.DELAY_BETWEEN_SAMPLES*Constants.NUM_OF_SAMPLES_PER_BATCH)/1000.0f);
-	private static final int MIN_NUMBER_OF_WALKING_STEPS = (int)((MIN_WALKING_STEP_FREQUENCY*Constants.DELAY_BETWEEN_SAMPLES*Constants.NUM_OF_SAMPLES_PER_BATCH)/1000.0f);
-	private static final int REQ_NUMBER_OF_WALKING_STEPS = MIN_NUMBER_OF_WALKING_STEPS/2;
 	
 	//	minimum and maximum, time between peaks
 	private static final long MIN_WALKING_DURATION_BTWN_PEAKS = (long)(1000.0f / MAX_WALKING_STEP_FREQUENCY);	// milli-seconds
@@ -50,12 +47,12 @@ public class WalkingSpeedUtil {
 	private int stepsFound;
 	private float walkingHeight;
 	private float walkingSpeed;
+	private int maxContigiousSteps;
 	
 	private class Sample {
 		int index;	//	index in the samples array
 		long timeStamp;	//	absolute time sample was taken
 		int zeroCrossings;
-		float time;
 		float accel;
 		float vel;
 		float dist;
@@ -95,6 +92,10 @@ public class WalkingSpeedUtil {
 	public int getStepsFound() {
 		return stepsFound;
 	}
+
+	public int getMaxContigiousSteps() {
+		return maxContigiousSteps;
+	}
 	
 	public float getWalkingHeight() {
 		return walkingHeight;
@@ -128,6 +129,7 @@ public class WalkingSpeedUtil {
 		this.stepsFound = 0;
 		this.walkingHeight = 0;
 		this.walkingSpeed = 0;
+		this.maxContigiousSteps = 0;
 		
 		log("Processing Walking");
 		
@@ -157,81 +159,114 @@ public class WalkingSpeedUtil {
 		
 		if (peaksFound>1) {
 			
+			int contigiousSteps = 0;
+			boolean lastWasAStep = false;
+			
 			for (int i=0; i<peaksFound; ++i) {
+				boolean thisIsAStep = false;
+				
 				Sample peak = filteredPeaksBuffer[i];
 				log("Peak["+i+"]: "+peak);
 				
-				//	find next peak
-				Sample nextPeak = null;
-				for (int j=1; j<peaksFound; ++j) {
-					if (filteredPeaksBuffer[j-1].index==peak.index) {
-						nextPeak = filteredPeaksBuffer[j];
-						break;
-					}
-				}
-				
-				log("\tNext Peak "+nextPeak);
-				
-				if (nextPeak!=null) {
-					long stepDuration = nextPeak.timeStamp-peak.timeStamp;
-					if (stepDuration<MIN_WALKING_DURATION_BTWN_PEAKS ||
-							stepDuration>MAX_WALKING_DURATION_BTWN_PEAKS) {
-						nextPeak = null;
-						log("\t\tStep-duration ("+stepDuration+"ms) not within required limits ["+MIN_WALKING_DURATION_BTWN_PEAKS+"ms.."+MAX_WALKING_DURATION_BTWN_PEAKS+"ms]!");
-					}
-				}
-				
-				if (nextPeak!=null) {
-					int zeroCrossings = nextPeak.zeroCrossings - peak.zeroCrossings;
-					log("\t\tzero-corsisngs="+zeroCrossings);
-					if (zeroCrossings<MIN_WALKING_ZERO_CROSSINGS || zeroCrossings>MAX_WALKING_ZERO_CROSSINGS) {
-						log("\t\tZero crossings ("+zeroCrossings+") out of required range ["+MIN_WALKING_ZERO_CROSSINGS+".."+MAX_WALKING_ZERO_CROSSINGS+"]");
-						nextPeak = null;
-					}
-				}
-				
-				//	check from 2 samples before first peak
-				if (peak.index>2) {
-					peak = samples[peak.index-2];
-				}
-				if (nextPeak!=null && nextPeak.index<count-2) {
-					nextPeak = samples[nextPeak.index+2];
-				}
-
-				if (nextPeak!=null) {
-					if (hasOkTiming(peak.index, nextPeak.index)) {
-						log("\tIntegrating from "+peak+".."+nextPeak);
-
-						integrateAccel(peak.index, nextPeak.index);
-
-	//					log("\t\tVelocities:");
-	//					for (int k=peak.index; k<=nextPeak.index; ++k) {
-	//						log("\t\t\t"+samples[k]+" "+samples[k].accel+" >> "+samples[k].vel);
-	//					}
-
-						integrateVel(peak.index, nextPeak.index);
-
-	//					log("\t\tDistances:");
-	//					for (int k=peak.index; k<=nextPeak.index; ++k) {
-	//						log("\t\t\t"+samples[k]+" "+samples[k].vel+" >> "+samples[k].dist);
-	//					}
-
-						float h = computeWalkingHeight(peak.index, nextPeak.index);
-
-						log("\tFound Height="+h);
-
-						if (!Float.isNaN(h)) {
-							++this.stepsFound;
-							this.walkingHeight += h;
-//							//	find highest walking height
-//							if (h>this.walkingHeight) {
-//								this.walkingHeight = h;
-//							}
+				if (peak.accel<MIN_PEAK_HEIGHT) {
+					log("\t\tPeak is smaller than expected minimum size ("+peak.accel+"<"+MIN_PEAK_HEIGHT+")");
+				} else {
+					//	find next peak
+					Sample nextPeak = null;
+					for (int j=1; j<peaksFound; ++j) {
+						if (filteredPeaksBuffer[j-1].index==peak.index) {
+							nextPeak = filteredPeaksBuffer[j];
+							break;
 						}
-					} else {
-						log("\t\tRange from "+peak+".."+nextPeak+" has timing problems");
+					}
+
+					log("\tNext Peak "+nextPeak);
+
+					if (nextPeak!=null) {
+						long stepDuration = nextPeak.timeStamp-peak.timeStamp;
+						if (stepDuration<MIN_WALKING_DURATION_BTWN_PEAKS ||
+								stepDuration>MAX_WALKING_DURATION_BTWN_PEAKS) {
+							nextPeak = null;
+							log("\t\tStep-duration ("+stepDuration+"ms) not within required limits ["+MIN_WALKING_DURATION_BTWN_PEAKS+"ms.."+MAX_WALKING_DURATION_BTWN_PEAKS+"ms]!");
+						}
+					}
+
+					if (nextPeak!=null) {
+						int zeroCrossings = nextPeak.zeroCrossings - peak.zeroCrossings;
+						log("\t\tzero-corsisngs="+zeroCrossings);
+						if (zeroCrossings<MIN_WALKING_ZERO_CROSSINGS || zeroCrossings>MAX_WALKING_ZERO_CROSSINGS) {
+							log("\t\tZero crossings ("+zeroCrossings+") out of required range ["+MIN_WALKING_ZERO_CROSSINGS+".."+MAX_WALKING_ZERO_CROSSINGS+"]");
+							nextPeak = null;
+						}
+					}
+
+					if (nextPeak!=null && nextPeak.accel<MIN_PEAK_HEIGHT) {
+						log("\t\tNext peak is smaller than expected minimum size ("+nextPeak.accel+"<"+MIN_PEAK_HEIGHT+")");
+						nextPeak = null;
+					}
+
+					//	check from 2 samples before first peak
+					if (peak.index>2) {
+						peak = samples[peak.index-2];
+					}
+					if (nextPeak!=null && nextPeak.index<count-2) {
+						nextPeak = samples[nextPeak.index+2];
+					}
+
+					if (nextPeak!=null) {
+						if (hasOkTiming(peak.index, nextPeak.index)) {
+							log("\tIntegrating from "+peak+".."+nextPeak);
+
+							integrateAccel(peak.index, nextPeak.index);
+
+		//					log("\t\tVelocities:");
+		//					for (int k=peak.index; k<=nextPeak.index; ++k) {
+		//						log("\t\t\t"+samples[k]+" "+samples[k].accel+" >> "+samples[k].vel);
+		//					}
+
+							integrateVel(peak.index, nextPeak.index);
+
+		//					log("\t\tDistances:");
+		//					for (int k=peak.index; k<=nextPeak.index; ++k) {
+		//						log("\t\t\t"+samples[k]+" "+samples[k].vel+" >> "+samples[k].dist);
+		//					}
+
+							float h = computeWalkingHeight(peak.index, nextPeak.index);
+
+							log("\tFound Height="+h);
+
+							if (!Float.isNaN(h)) {
+								thisIsAStep = true;
+								++this.stepsFound;
+								this.walkingHeight += h;
+	//							//	find highest walking height
+	//							if (h>this.walkingHeight) {
+	//								this.walkingHeight = h;
+	//							}
+							}
+						} else {
+							log("\t\tRange from "+peak+".."+nextPeak+" has timing problems");
+						}
 					}
 				}
+				
+				if (thisIsAStep) {
+					if (lastWasAStep) {
+						if (contigiousSteps==0)
+							contigiousSteps = 1;
+						
+						++contigiousSteps;
+						
+						if (contigiousSteps>maxContigiousSteps) {
+							maxContigiousSteps = contigiousSteps;
+						}
+					}
+				} else {
+					contigiousSteps = 0;
+				}
+				
+				lastWasAStep = thisIsAStep;
+				
 			}
 			
 			if (stepsFound>1) {

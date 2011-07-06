@@ -30,7 +30,8 @@ import activity.classifier.service.threads.AccountThread;
 import activity.classifier.service.threads.ClassifierThread;
 import activity.classifier.service.threads.UploadActivityHistoryThread;
 import activity.classifier.utils.ActivityWatcher;
-import activity.classifier.utils.MetUtil;
+import activity.classifier.utils.MetUtilFinal;
+import activity.classifier.utils.MetUtilOrig;
 import activity.classifier.utils.PhoneInfo;
 import android.app.AlarmManager;
 import android.app.Notification;
@@ -110,7 +111,7 @@ public class RecorderService extends Service implements Runnable {
 	private ClassifierThread classifierThread;
 	private AccountThread registerAccountThread;
 	private ActivityWatcher activityWatcher;
-	private MetUtil metUtil;
+	private MetUtilOrig metUtil;
 
 	private Classification latestClassification;
 
@@ -508,7 +509,7 @@ public class RecorderService extends Service implements Runnable {
 		//        SyncAccelReader reader = new SyncAccelReaderFactory().getReader(this);
 		//		sampler = new SyncSampler(reader, analyseRunnable);
 		
-		metUtil = new MetUtil(90.0, 185.0, 26.0, MetUtil.GENDER_MALE);
+		metUtil = new MetUtilOrig(90.0, 185.0, 26.0, MetUtilFinal.GENDER_MALE);
 		
 		classifierThread = new ClassifierThread(this, binder, batchBuffer, metUtil);
 		classifierThread.start();

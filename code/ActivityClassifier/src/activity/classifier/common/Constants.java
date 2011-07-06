@@ -30,17 +30,12 @@ public class Constants {
 	 * being debugged (i.e. plugged into the computer), and normal
 	 * usage.
 	 */
-	public final static boolean IS_DEBUGGING = true; 
+	public final static boolean IS_DEBUGGING = false; 
 	
 	/**
 	 * Should we or should we not output debugging data to the database?
 	 */
 	public static final boolean OUTPUT_DEBUG_INFO = true;
-	
-	/**
-	 * Whether to use FFT or not
-	 */
-	public static final boolean USE_FFT = true;
 	
 	/**
 	 * Default value for Full Time accelerometer option
@@ -65,7 +60,12 @@ public class Constants {
 	/**
 	 * The delay between two consecutive samples in a sample batch.
 	 */
-	public static final int DELAY_BETWEEN_SAMPLES = 25; //	25ms
+	public static final int DELAY_BETWEEN_SAMPLES = 50; //	50ms
+	
+	/**
+	 *	The number of accelerometer (x,y & z) samples in a batch of samples.
+	 */
+	public static final int NUM_OF_SAMPLES_PER_BATCH = 128;
 	
 	/**
 	 * Duration for the {@link AccountThread} to wait for the user's account
@@ -149,11 +149,6 @@ public class Constants {
 	public static final String UPLOAD_ACCOUNT_TYPE = "com.google";
 	
 	/**
-	 *	The number of accelerometer (x,y & z) samples in a batch of samples.
-	 */
-	public static final int NUM_OF_SAMPLES_PER_BATCH = 256;
-	
-	/**
 	 *	The value of gravity
 	 */
 	public static final float GRAVITY = 9.81f;
@@ -193,9 +188,7 @@ public class Constants {
 	/**
 	 * The duration the phone is required to be stationary before doing calibration
 	 */
-	//	TODO: CHANGE THIS BEFORE COMMIT
-	public final static long DURATION_OF_CALIBRATION = 60*1000; // 60 seconds
-//	public final static long DURATION_OF_CALIBRATION = 10*60*1000; // 60 seconds
+	public final static long DURATION_OF_CALIBRATION = IS_DEBUGGING?(60*1000):10*60*1000;
 
 	/**
 	 * The deviation in the means & sd of the accelerometer axis
