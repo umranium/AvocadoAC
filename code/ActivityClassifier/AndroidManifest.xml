@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest package="activity.classifier" android:versionCode="1"
+	android:versionName="1" xmlns:android="http://schemas.android.com/apk/res/android">
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
+	<uses-permission android:name="android.permission.READ_LOGS"></uses-permission>
+	<uses-permission android:name="com.google.android.apps.mytracks.WRITE_TRACK_DATA"></uses-permission>
+	<uses-permission android:name="com.google.android.apps.mytracks.READ_TRACK_DATA"></uses-permission>
+	<application android:debuggable="true" android:icon="@drawable/icon" android:label="Avocado AC" android:allowClearUserData="true">
+		<activity android:screenOrientation="portrait" android:label="Avocado AC"
+			android:name=".activity.MainTabActivity">
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+		</activity>
+		<receiver android:permission="android.permission.RECEIVE_BOOT_COMPLETED"
+			android:name=".BootReceiver">
+
+			<intent-filter>
+				<action android:name="android.intent.action.BOOT_COMPLETED" />
+
+			</intent-filter>
+		</receiver>
+		<service android:label="Sensor Recorder Service" android:name=".service.RecorderService" />
+
+		<activity android:name=".activity.ActivityListActivity"></activity>
+		<activity android:name=".activity.ActivityChartActivity"></activity>
+		<activity android:name=".activity.ActivityMapActivity"></activity>
+		<activity android:name=".activity.MainSettingsActivity"></activity>
+
+		<activity android:name=".activity.Sensors" android:theme="@android:style/Theme.Dialog"></activity>
+	</application>
+
+
+	<uses-permission android:name="android.permission.WRITE_SETTINGS" />
+	<uses-permission android:name="android.permission.READ_PHONE_STATE" />
+	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.WAKE_LOCK" />
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+	<uses-permission android:name="android.permission.GET_ACCOUNTS"></uses-permission>
+	<uses-permission android:name="android.permission.USE_CREDENTIALS"></uses-permission>
+	<uses-permission android:name="android.permission.VIBRATE"></uses-permission>
+
+	<uses-sdk android:minSdkVersion="7" android:targetSdkVersion="8" />
+	<supports-screens android:anyDensity="true" />
+
+</manifest>

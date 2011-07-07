@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+<LinearLayout 
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:padding="5px">
+    <TextView
+        android:id="@+id/recordingheader"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/recordingheader"
+        android:textSize="10sp"
+        android:textStyle="bold"/>
+        <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Sensors Info" />
+ <!--  
+    <RadioGroup
+        android:id="@+id/sensor_group"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+>
+        <RadioButton
+            android:id="@+id/sensor_accel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+
+            android:text="Accelerometer" />
+       
+        <RadioButton
+            android:id="@+id/sensor_mag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+
+            android:text="Magnetic" />
+        <RadioButton
+            android:id="@+id/sensor_orient"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+
+            android:text="Orientation" />
+       
+    </RadioGroup>
+    -->
+    <TextView
+        android:id="@+id/recordingcount"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="1"
+        android:layout_gravity="fill"
+        android:gravity="center"
+        android:text="@string/recordinginitial"
+        android:textSize="30sp"
+        android:textStyle="bold"/>
+    <TextView
+        android:id="@+id/recordingblurb"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/recordingwait"/>
+        <Button
+        android:id="@+id/stop"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/stop"/>
+	<TextView
+        android:id="@+id/status"
+
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:textSize="10sp"
+        android:text="... data will go here ..." 
+        
+        android:layout_gravity="left" android:gravity="left"/>
+    <TextView
+        android:id="@+id/status_1"
+
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:textSize="10sp"
+        android:text="... chaned data will go here ..." 
+        android:layout_gravity="left" android:gravity="left"/>
+    
+</LinearLayout>
+</ScrollView>
