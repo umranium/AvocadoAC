@@ -104,6 +104,12 @@ public class AsyncSampler implements Sampler {
     }
 
     public void start(SampleBatch currentBatch) {
+//    	try {
+//			service.showServiceToast("Starting Sampling.");
+//		} catch (RemoteException e) {
+//			e.printStackTrace();
+//		}
+    	
     	this.currentBatch = currentBatch;
     	this.currentBatch.reset();
     	this.currentBatch.sampleTime = System.currentTimeMillis();
@@ -122,6 +128,12 @@ public class AsyncSampler implements Sampler {
     
 
     public void stop() {
+//    	try {
+//			service.showServiceToast("Stopping Sampling.");
+//		} catch (RemoteException e) {
+//			e.printStackTrace();
+//		}
+		
     	reader.stopSampling();
         this.sampling = false;
         

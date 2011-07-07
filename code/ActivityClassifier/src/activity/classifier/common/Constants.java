@@ -65,7 +65,7 @@ public class Constants {
 	/**
 	 * The delay between two consecutive samples in a sample batch.
 	 */
-	public static final int DELAY_BETWEEN_SAMPLES = 50; //	50ms
+	public static final int DELAY_BETWEEN_SAMPLES = 25; //	25ms
 	
 	/**
 	 * Duration for the {@link AccountThread} to wait for the user's account
@@ -151,7 +151,7 @@ public class Constants {
 	/**
 	 *	The number of accelerometer (x,y & z) samples in a batch of samples.
 	 */
-	public static final int NUM_OF_SAMPLES_PER_BATCH = 128;
+	public static final int NUM_OF_SAMPLES_PER_BATCH = 256;
 	
 	/**
 	 *	The value of gravity
@@ -167,8 +167,8 @@ public class Constants {
 	 *	because of the phone accelerating fast during the sampling period
 	 *	e.g. in a car after a traffic light.
 	 */
-	public static final float MIN_GRAVITY_DEV = 0.5f; // 15% of gravity	
-	public static final float MAX_GRAVITY_DEV = 0.5f; // 100% of gravity	
+	public static final float MIN_GRAVITY_DEV = 0.15f; // 15% of gravity	
+	public static final float MAX_GRAVITY_DEV = 0.15f; // 15% of gravity	
 	
 	/**
 	 * The number of axi on the accelerometer

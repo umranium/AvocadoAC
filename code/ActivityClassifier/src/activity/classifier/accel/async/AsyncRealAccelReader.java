@@ -184,7 +184,7 @@ public class AsyncRealAccelReader implements AsyncAccelReader {
     	
     	//	lock the previous sample, hence locking the current one too
     	int prevValueIndex = this.previousValueIndex;
-    	synchronized (this.valueBuff[previousValueIndex]) {
+    	synchronized (this.valueBuff[prevValueIndex]) {
     		//	get the next one after the previous.. i.e. the current
         	int currValueIndex = (prevValueIndex+1) % BUFFER_SIZE;
         	

@@ -32,6 +32,8 @@ public class DebugDataTable extends DbTableAdapter {
 	public static final String KEY_VER_RANGE = "range_ver";
 	public static final String KEY_HOR_SD = "sd_hor";
 	public static final String KEY_VER_SD = "sd_ver";
+	public static final String KEY_STEP_COUNT = "step_count";
+	public static final String KEY_WALKING_SPEED = "walking_speed";
 	public static final String KEY_COUNTS_X = "counts_x";
 	public static final String KEY_COUNTS_Y = "counts_y";
 	public static final String KEY_COUNTS_Z = "counts_z";
@@ -63,6 +65,8 @@ public class DebugDataTable extends DbTableAdapter {
 	private Float verRange;
 	private Float horSd;
 	private Float verSd;
+	private Float stepCount;
+	private Float walkingSpeed;
 	private Float countsX;
 	private Float countsY;
 	private Float countsZ;
@@ -100,6 +104,8 @@ public class DebugDataTable extends DbTableAdapter {
 			KEY_VER_RANGE + " REAL NULL, " +
 			KEY_HOR_SD + " REAL NULL, " +
 			KEY_VER_SD + " REAL NULL, " +
+			KEY_STEP_COUNT + " REAL NULL, " +
+			KEY_WALKING_SPEED + " REAL NULL, " +
 			KEY_COUNTS_X + " REAL NULL, " + 
 			KEY_COUNTS_Y + " REAL NULL, " + 
 			KEY_COUNTS_Z + " REAL NULL, " + 
@@ -158,6 +164,8 @@ public class DebugDataTable extends DbTableAdapter {
 		insertContentValues.put(KEY_VER_RANGE, this.verRange);
 		insertContentValues.put(KEY_HOR_SD, this.horSd);
 		insertContentValues.put(KEY_VER_SD, this.verSd);
+		insertContentValues.put(KEY_STEP_COUNT, this.stepCount);
+		insertContentValues.put(KEY_WALKING_SPEED, this.walkingSpeed);
 		insertContentValues.put(KEY_COUNTS_X, this.countsX);
 		insertContentValues.put(KEY_COUNTS_Y, this.countsY);
 		insertContentValues.put(KEY_COUNTS_Z, this.countsZ);
@@ -230,6 +238,8 @@ public class DebugDataTable extends DbTableAdapter {
 		this.verRange = null;
 		this.horSd = null;
 		this.verSd = null;
+		this.stepCount = null;
+		this.walkingSpeed = null;
 		this.countsX = null;
 		this.countsY = null;
 		this.countsZ = null;
@@ -277,7 +287,19 @@ public class DebugDataTable extends DbTableAdapter {
 		this.horSd = horSd;
 		this.verSd = verSd;
 	}
+
+	/**
+	 * Sets details of MET computation
+	 */
+	public void setWalkingStats(float stepCount, float walkingSpeed)
+	{
+		this.stepCount = stepCount;
+		this.walkingSpeed = walkingSpeed;
+	}
 	
+	/**
+	 * Sets details of MET computation
+	 */
 	public void setMetStats(float countsX, float countsY, float countsZ, float eeAct, float met)
 	{
 		this.countsX = countsX;
