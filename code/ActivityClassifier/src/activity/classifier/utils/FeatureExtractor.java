@@ -19,13 +19,12 @@ import android.util.Log;
  */
 public class FeatureExtractor {
 
-    public static final int NUM_FEATURES = 6;
+    public static final int NUM_FEATURES = 5;
     
     public static final String FEATURE_NAMES[] = new String[] {
         "HOR RANGE",
         "VER RANGE",
         "HOR MEAN",
-        "VER MEAN",
         "HOR STD DEV",
         "VER STD DEV",
     };
@@ -33,9 +32,8 @@ public class FeatureExtractor {
     public static final int FEATURE_HOR_RANGE   = 0;
     public static final int FEATURE_VER_RANGE   = 1;
     public static final int FEATURE_HOR_MEAN   	= 2;
-    public static final int FEATURE_VER_MEAN   	= 3;
-    public static final int FEATURE_HOR_SD   	= 4;
-    public static final int FEATURE_VER_SD   	= 5;
+    public static final int FEATURE_HOR_SD   	= 3;
+    public static final int FEATURE_VER_SD   	= 4;
 
     private int windowSize;
     private RotateSamplesToVerticalHorizontal rotate;
@@ -60,7 +58,7 @@ public class FeatureExtractor {
     public float[] extractRotated(float[][] input, int windowStart)
     {
         if (windowStart+windowSize>input.length) {
-        	Log.w(Constants.DEBUG_TAG, "attempting to extract features past " +
+			System.out.println("attempting to extract features past " +
                     "the end of samples (windowStart="+windowStart+", size="+samples.length+")");
             return null;
         }
@@ -84,11 +82,10 @@ public class FeatureExtractor {
         float[] sd = sampleStats.getStandardDeviation();
        
         features[FEATURE_HOR_RANGE] = max[0] - min[0];
-        features[FEATURE_VER_RANGE] = max[0] - min[0];
+        features[FEATURE_VER_RANGE] = max[1] - min[1];
         features[FEATURE_HOR_MEAN] = mean[0];
-        features[FEATURE_VER_MEAN] = mean[0];
         features[FEATURE_HOR_SD] = sd[0];
-        features[FEATURE_VER_SD] = sd[0];
+        features[FEATURE_VER_SD] = sd[1];
         
         return features;
     }
