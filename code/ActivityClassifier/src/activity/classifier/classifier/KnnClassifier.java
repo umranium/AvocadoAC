@@ -49,7 +49,7 @@ import android.util.Log;
  */
 public class KnnClassifier implements Classifier {
 	
-	private static final int K_VALUE = 4;
+	private static final int K_VALUE = 1;
 	
 	private final static Set<Integer> tempIgnoreFeatures = new HashSet<Integer>(FeatureExtractor.NUM_FEATURES) {
 		{

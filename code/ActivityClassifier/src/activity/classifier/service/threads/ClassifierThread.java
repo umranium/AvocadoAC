@@ -472,6 +472,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 							}
 						}
 					} else {
+						Log.v(Constants.DEBUG_TAG, "Unable to perform classification, Gravity "+calcGravity+" not within limits: ["+minGravity+","+maxGravity+"]!");
 						if (Constants.OUTPUT_DEBUG_INFO) {
 							debugDataTable.setClassifierAlgoOutput("ERROR: Gravity "+calcGravity+" not within limits: ["+minGravity+","+maxGravity+"]");
 						}
@@ -513,6 +514,8 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				debugDataTable.setFinalClassifierOutput(classification);
 			}
 			Log.v(Constants.DEBUG_TAG, "Final Classifier Output: "+classification);
+			
+			//service.showServiceToast(classification);
 
 			return classification;
 		} finally {
