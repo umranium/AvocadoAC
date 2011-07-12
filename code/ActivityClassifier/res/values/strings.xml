@@ -43,7 +43,8 @@ if you want to use the service properly.
     
 
 <string name="activity_classified_stationary">Stationary</string>
-<string name="activity_classified_uncarried_traveling">Not carried (Traveling)</string>
-<string name="activity_classified_charging_traveling">Charging (Traveling)</string>
+<string name="activity_classified_uncarried_travelling">Not carried (Travelling)</string>
+<string name="activity_classified_charging_travelling">Charging (Travelling)</string>
 <string name="activity_end">End of Previous Classifications</string>
+<string name="activity_classified_rowing">Rowing</string>
 </resources>

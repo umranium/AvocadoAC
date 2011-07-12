@@ -428,16 +428,21 @@ public class ActivityChartActivity extends Activity {
 				canvas.drawText(ChartHelper.FOOTER_NAMES[i], i*width/3+((width/3)-sizeOfFooters[i])/2, height-(((height/6)-17)/2), paint);
 			}
 			
-			String[] tempActivityNames = new String[activityIndexes.keySet().toArray().length];
-			for(int i=0;i<activityIndexes.keySet().toArray().length;i++){
-				tempActivityNames[i] = ""+activityIndexes.keySet().toArray()[i];
-			}
+			String[] tempActivityNames = activityIndexes.keySet().toArray(new String[activityIndexes.size()]);
+			
 			String[] activityNames = new String[tempActivityNames.length];
 			float[][] sizeOfActivityNames = new float[chartData.numOfDurations][chartData.numOfActivities];
 			
+			int[] activityColors = new int[tempActivityNames.length];
 			
 			for(int i=0;i<tempActivityNames.length;i++){
 				activityNames[i] = activityNiceNames.get(tempActivityNames[i]);
+				
+				Integer color = ChartHelper.COLOR_ACTIVITIES.get(tempActivityNames[i]);
+				if (color!=null)
+					activityColors[i] = color;
+				else
+					activityColors[i] = Color.BLACK;
 			}
 
 			
@@ -447,7 +452,7 @@ public class ActivityChartActivity extends Activity {
 				float percentageStack = 0;
 				for(int j=0;j<chartData.numOfActivities;j++){
 					paint.setStyle(Paint.Style.FILL);
-					paint.setColor(ChartHelper.COLOR_ACTIVITIES[j]);
+					paint.setColor(activityColors[j]);
 					canvas.drawRect((new RectF(i*width/3,percentageStack,(i+1)*width/3,(percentageStack+(chartData.percentageMatrix[i][j]*(height-height/6)/100)))),paint);
 					
 					paint.setColor(ChartHelper.COLOR_LINE);

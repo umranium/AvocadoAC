@@ -504,8 +504,8 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			}
 			
 			if (chargingState) {
-				if (classification.contains("traveling"))
-					classification = ActivityNames.CHARGING_traveling;
+				if (classification.contains("TRAVEL"))
+					classification = ActivityNames.CHARGING_TRAVELLING;
 				else
 					classification = ActivityNames.CHARGING;
 			}

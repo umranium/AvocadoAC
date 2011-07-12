@@ -219,24 +219,41 @@ public class ChartHelper {
 	/**
 	 * Colors of activities
 	 */
-	public final static int[] COLOR_ACTIVITIES = new int[] {
-		//Charging Colour
-		Color.argb(255, 153, 153, 153),
-		//Orange
-		Color.argb(255, 255, 97, 0),
-		//Not carried
-		Color.argb(255, 109, 206, 250),
-		//Stationary
-		Color.argb(255, 0, 102, 0),
-		//Stationary
-		Color.argb(255, 0, 102, 255),
-		//Walking
-		Color.argb(255, 244, 141, 62),
-		//Running
-		Color.argb(255, 181, 40, 65),
-		//Off, light green
-		Color.argb(255, 181, 204, 122),
-		Color.argb(255, 181, 204, 0),
+	@SuppressWarnings("serial")
+	public final static Map<String,Integer> COLOR_ACTIVITIES = new TreeMap<String,Integer>(new StringComparator(true)) {
+		{
+			this.put(ActivityNames.OFF,					Color.argb(255, 128, 128, 128));
+			this.put(ActivityNames.END,					Color.argb(255, 255, 255, 255));
+			this.put(ActivityNames.UNKNOWN,				Color.argb(255, 255, 255, 255));
+			this.put(ActivityNames.UNCARRIED,			Color.argb(255, 109, 206, 250));
+			this.put(ActivityNames.CHARGING,			Color.argb(255, 122, 181, 204));
+			this.put(ActivityNames.CHARGING_TRAVELLING, Color.argb(255, 153, 102, 255));
+			this.put(ActivityNames.STATIONARY,			Color.argb(255,   1, 190, 171));
+			this.put(ActivityNames.TRAVELING,			Color.argb(255,   0, 102, 255));
+			this.put(ActivityNames.WALKING,				Color.argb(255,   0, 191,  48));
+			this.put(ActivityNames.PADDLING,			Color.argb(255, 181,  48,   0));
+			this.put(ActivityNames.ROWING,				Color.argb(255, 181,  48,   0));
+			this.put(ActivityNames.CYCLING,				Color.argb(255, 191, 134,   0));
+			this.put(ActivityNames.RUNNING,				Color.argb(255, 187, 191,   0));
+			
+//		//Charging Colour
+//		Color.argb(255, 153, 153, 153),
+//		//Orange
+//		Color.argb(255, 255, 97, 0),
+//		//Not carried
+//		Color.argb(255, 109, 206, 250),
+//		//Stationary
+//		Color.argb(255, 0, 102, 0),
+//		//Stationary
+//		Color.argb(255, 0, 102, 255),
+//		//Walking
+//		Color.argb(255, 244, 141, 62),
+//		//Running
+//		Color.argb(255, 181, 40, 65),
+//		//Off, light green
+//		Color.argb(255, 181, 204, 122),
+//		Color.argb(255, 181, 204, 0),
+		}
 	};
 	
 }

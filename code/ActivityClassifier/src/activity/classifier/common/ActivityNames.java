@@ -1,5 +1,7 @@
 package activity.classifier.common;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -20,7 +22,7 @@ public class ActivityNames {
 	public static final String UNKNOWN					= "UNKNOWN";
 	public static final String UNCARRIED				= "CLASSIFIED/UNCARRIED";
 	public static final String CHARGING					= "CLASSIFIED/CHARGING";
-	public static final String CHARGING_traveling		= "CLASSIFIED/CHARGING/traveling";
+	public static final String CHARGING_TRAVELLING		= "CLASSIFIED/CHARGING/TRAVELLING";
 	
 	//	model based activities
 	public static final String STATIONARY				= "CLASSIFIED/STATIONARY";
@@ -43,20 +45,46 @@ public class ActivityNames {
 		
 		Map<Float[],Object[]> model = ModelReader.getModel(context, R.raw.basic_model);
 		
-		Set<String> allActivities = new TreeSet<String>(new StringComparator(false));
+		Set<String> declaredActivities = new TreeSet<String>(new StringComparator(false));
+		
+		try {
+			Field[] fields = ActivityNames.class.getFields();
+			for (Field f:fields) {
+				//	find all public static final String declared fields 
+				if (f.getType().equals(String.class) &&
+					(f.getModifiers() & (Modifier.STATIC | Modifier.FINAL | Modifier.PUBLIC)) != 0) {
+					String value = (String)f.get(null);
+					declaredActivities.add(value);
+				}
+			}
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		Set<String> modelActivities = new TreeSet<String>(new StringComparator(false));
 		
         for (Map.Entry<Float[], Object[]> entry : model.entrySet()) {
         	String activity = (String)entry.getValue()[0];
-        	allActivities.add(activity);
+        	modelActivities.add(activity);
         }
         
-        allActivities.add(OFF);
-        allActivities.add(END);
-        allActivities.add(UNKNOWN);
-        allActivities.add(UNCARRIED);
-        allActivities.add(CHARGING);
+        for (String activity:modelActivities) {
+        	if (!declaredActivities.contains(activity)) {
+        		throw new RuntimeException("Undeclared activity found in the model:'"+activity+"'");
+        	}
+        }
         
-        return allActivities;
+        declaredActivities.add(OFF);
+        declaredActivities.add(END);
+        declaredActivities.add(UNKNOWN);
+        declaredActivities.add(UNCARRIED);
+        declaredActivities.add(CHARGING);
+        
+        return declaredActivities;
 	}
 
 }
