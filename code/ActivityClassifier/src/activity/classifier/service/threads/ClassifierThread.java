@@ -34,6 +34,7 @@ import activity.classifier.utils.Calibrator;
 import activity.classifier.utils.LogRedirect;
 import activity.classifier.utils.MetUtilFinal;
 import activity.classifier.utils.MetUtilOrig;
+import activity.classifier.utils.RawDump;
 import activity.classifier.utils.RotateSamplesToVerticalHorizontal;
 import activity.classifier.utils.WalkingSpeedUtil;
 import android.R.string;
@@ -85,6 +86,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	private Context context;
 	private ActivityRecorderBinder service;
 	private SampleBatchBuffer batchBuffer;
+	private RawDump rawDump;
 
 	private Map<Float[],Object[]> model; 
 
@@ -119,7 +121,8 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			Context context,
 			ActivityRecorderBinder service,
 			SampleBatchBuffer sampleBatchBuffer,
-			MetUtilOrig metUtil
+			MetUtilOrig metUtil,
+			RawDump rawDump
 			)
 	{
 		super(ClassifierThread.class.getName());
@@ -127,7 +130,8 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 		this.context = context;
 		this.service = service;
 		this.batchBuffer = sampleBatchBuffer;
-		this.metUtil = metUtil; 
+		this.metUtil = metUtil;
+		this.rawDump = rawDump;
 
 		this.model = ModelReader.getModel(context, R.raw.basic_model);
 
@@ -348,8 +352,10 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			boolean chargingState = !Constants.IS_DEBUGGING && batch.isCharging();
 
 			if (Constants.OUTPUT_DEBUG_INFO) {
+				rawDump.dumpRawData(batch);
 				debugDataTable.reset(sampleTime);
 			}
+			
 			{
 				//	take out accelerometer axis offsets
 				if (calibrator.isCalibrated()) {

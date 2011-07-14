@@ -33,6 +33,7 @@ import activity.classifier.utils.ActivityWatcher;
 import activity.classifier.utils.MetUtilFinal;
 import activity.classifier.utils.MetUtilOrig;
 import activity.classifier.utils.PhoneInfo;
+import activity.classifier.utils.RawDump;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -112,6 +113,7 @@ public class RecorderService extends Service implements Runnable {
 	private AccountThread registerAccountThread;
 	private ActivityWatcher activityWatcher;
 	private MetUtilOrig metUtil;
+	private RawDump rawDump;
 
 	private Classification latestClassification;
 
@@ -469,6 +471,7 @@ public class RecorderService extends Service implements Runnable {
 
 		phoneInfo = new PhoneInfo(this);
 		batchBuffer = new SampleBatchBuffer();
+		rawDump = new RawDump();
 
 		latestClassification = null;
 
@@ -511,7 +514,7 @@ public class RecorderService extends Service implements Runnable {
 		
 		metUtil = new MetUtilOrig(90.0, 185.0, 26.0, MetUtilFinal.GENDER_MALE);
 		
-		classifierThread = new ClassifierThread(this, binder, batchBuffer, metUtil);
+		classifierThread = new ClassifierThread(this, binder, batchBuffer, metUtil, rawDump);
 		classifierThread.start();
 
 		// if the account wasn't previously sent,
