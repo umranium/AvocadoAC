@@ -103,7 +103,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 					});
 				}
 			}
-			if (updatedKeys.contains(OptionsTable.KEY_IS_SERVICE_STARTED)) {
+			if (updatedKeys.contains(OptionsTable.KEY_IS_SERVICE_USER_STARTED)) {
 				if (forceCalibPref!=null) {
 					mainLooperHandler.post(new Runnable() {
 						@Override
@@ -112,13 +112,13 @@ public class MainSettingsActivity extends PreferenceActivity {
 							// This is to re initiate the manual calibration process.
 							ClassifierThread.bForceCalibration = false;
 
-							if(!optionsTable.isServiceStarted())
+							if(!optionsTable.isServiceUserStarted())
 							{
 								forceCalibPref.setTitle("First, start the service.");
 								forceCalibPref.setEnabled(false);
 								forceCalibPref.setSelectable(false);
 							}
-							else if (optionsTable.isServiceStarted())
+							else if (optionsTable.isServiceUserStarted())
 							{
 								forceCalibPref.setEnabled(true);
 								forceCalibPref.setTitle("Start Calibration now");
@@ -335,8 +335,8 @@ public class MainSettingsActivity extends PreferenceActivity {
 		forceCalibPref = getPreferenceManager().createPreferenceScreen(this);
 		forceCalibPref.setKey("screen_preference");
 
-		//TODO: Check whether the service is running.
-		if(!optionsTable.isServiceStarted())
+		//TODO: Change to service.isRunning()
+		if(!optionsTable.isServiceUserStarted())
 		{
 			forceCalibPref.setTitle("First, start the service.");
 			forceCalibPref.setEnabled(false);
@@ -349,7 +349,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 			forceCalibPref.setTitle("Calibration in progress ...");
 			forceCalibPref.setEnabled(false);
 			forceCalibPref.setSelectable(false);
-
 		}
 
 		forceCalibPref.setSummary("Tab to initiate calibration task now.");

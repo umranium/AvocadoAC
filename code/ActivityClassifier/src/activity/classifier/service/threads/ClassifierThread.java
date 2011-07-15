@@ -260,7 +260,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler(context));
 			Log.v(Constants.DEBUG_TAG, "Classification thread started.");
 			this.optionsTable.registerUpdateHandler(this);
-			while (optionsTable.isServiceStarted() && !this.shouldExit) {
+			while (service.isRunning() && !this.shouldExit) {
 				try {
 					// in case of too sampling too fast, or too slow CPU, or the
 					// classification taking too long
@@ -307,6 +307,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				}
 			}
 			Log.d(Constants.DEBUG_TAG, "Classifier thread exitting");
+		} catch (RemoteException e) {
 		} finally {
 			this.optionsTable.unregisterUpdateHandler(this);
 			Log.d(Constants.DEBUG_TAG, "Classification thread exiting.");
@@ -330,7 +331,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				);
 			}
 		}
-		if (updatedKeys.contains(OptionsTable.KEY_IS_SERVICE_STARTED)) {
+		if (updatedKeys.contains(OptionsTable.KEY_IS_SERVICE_USER_STARTED)) {
 		}
 
 	}

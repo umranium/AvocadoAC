@@ -40,7 +40,7 @@ public class OptionsTable extends DbTableAdapter {
 	 * Column names in startinfo Table
 	 */
 	public static final String KEY_ID = "id";
-	public static final String KEY_IS_SERVICE_STARTED = "isServiceStarted";
+	public static final String KEY_IS_SERVICE_USER_STARTED = "isServiceStarted";
 	public static final String KEY_IS_CALIBRATED = "isCalibrated";
 	public static final String KEY_VALUE_OF_GRAVITY = "valueOfGravity";
 	public static final String KEY_SD_X = "sdX";
@@ -96,7 +96,7 @@ public class OptionsTable extends DbTableAdapter {
 	
 	private static final String SELECT_SQL =
 		"SELECT " +
-		KEY_IS_SERVICE_STARTED + ", " +
+		KEY_IS_SERVICE_USER_STARTED + ", " +
 		KEY_IS_CALIBRATED + ", " +
 		KEY_VALUE_OF_GRAVITY + ", " +
 		KEY_SD_X + ", " +
@@ -131,7 +131,7 @@ public class OptionsTable extends DbTableAdapter {
 	private ContentValues contentValues;
 	
 	//	various system states
-	private boolean isServiceStarted;
+	private boolean isServiceUserStarted;
 	private boolean isAccountSent;
 	private boolean isWakeLockSet;
 	private boolean useAggregator;
@@ -169,7 +169,7 @@ public class OptionsTable extends DbTableAdapter {
 		String sql = 
 			"CREATE TABLE "+TABLE_NAME+" (" +
 			KEY_ID+" INTEGER PRIMARY KEY, " +
-			KEY_IS_SERVICE_STARTED+" INTEGER NOT NULL, " +
+			KEY_IS_SERVICE_USER_STARTED+" INTEGER NOT NULL, " +
 			KEY_IS_CALIBRATED+" INTEGER NOT NULL, " +
 			KEY_VALUE_OF_GRAVITY+" REAL NOT NULL, " +
 			KEY_SD_X+" REAL NOT NULL, " +
@@ -199,7 +199,7 @@ public class OptionsTable extends DbTableAdapter {
 		database.execSQL(sql);
 		
 		//	insert default values
-		setServiceStarted(true);
+		setServiceUserStarted(true);
 		setAccountSent(false);
 		setWakeLockSet(false);
 		setUseAggregator(false);
@@ -287,7 +287,7 @@ public class OptionsTable extends DbTableAdapter {
 			float scale[] = new float[Constants.ACCEL_DIM];
 			
 			if (cursor.moveToNext()) {
-				setServiceStarted(cursor.getInt(cursor.getColumnIndex(KEY_IS_SERVICE_STARTED))!=0);
+				setServiceUserStarted(cursor.getInt(cursor.getColumnIndex(KEY_IS_SERVICE_USER_STARTED))!=0);
 				setCalibrated(cursor.getInt(cursor.getColumnIndex(KEY_IS_CALIBRATED))!=0);
 				setValueOfGravity(cursor.getFloat(cursor.getColumnIndex(KEY_VALUE_OF_GRAVITY)));
 				setCount(cursor.getInt(cursor.getColumnIndex(KEY_COUNT)));
@@ -357,10 +357,10 @@ public class OptionsTable extends DbTableAdapter {
 	}
 
 	/**
-	 * @return the isServiceStarted
+	 * @return the isServiceUserStarted
 	 */
-	public boolean isServiceStarted() {
-		return isServiceStarted;
+	public boolean isServiceUserStarted() {
+		return isServiceUserStarted;
 	}
 
 	/**
@@ -380,13 +380,13 @@ public class OptionsTable extends DbTableAdapter {
 	 *	and only when the user explicitly turns the service
 	 *	off (i.e. using the menu item is clicked.)
 	 * 
-	 * @param isServiceStarted
+	 * @param isServiceUserStarted
 	 * whether the service has been started or not
 	 */
-	public void setServiceStarted(boolean isServiceStarted) {
-		this.isServiceStarted = isServiceStarted;
-		this.contentValues.put(KEY_IS_SERVICE_STARTED, isServiceStarted?1:0);
-		this.updatedKeys.add(KEY_IS_SERVICE_STARTED);
+	public void setServiceUserStarted(boolean isServiceUserStarted) {
+		this.isServiceUserStarted = isServiceUserStarted;
+		this.contentValues.put(KEY_IS_SERVICE_USER_STARTED, isServiceUserStarted?1:0);
+		this.updatedKeys.add(KEY_IS_SERVICE_USER_STARTED);
 	}
 
 	/**

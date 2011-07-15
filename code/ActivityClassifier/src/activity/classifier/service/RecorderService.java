@@ -534,7 +534,7 @@ public class RecorderService extends Service implements Runnable {
 
 		//	if the service started successfully, then start set the system to show
 		//		that the service started
-		optionsTable.setServiceStarted(true);
+		optionsTable.setServiceUserStarted(true);
 		optionsTable.save();
 
 		//	put on-going notification to show that service is running in the background
@@ -634,7 +634,7 @@ public class RecorderService extends Service implements Runnable {
 		//	turn off the service
 		this.stopSelf();
 		stopService();
-		optionsTable.setServiceStarted(false);
+		optionsTable.setServiceUserStarted(false);
 		optionsTable.save();
 		
 		//	set an alarm to turn it on after a short while

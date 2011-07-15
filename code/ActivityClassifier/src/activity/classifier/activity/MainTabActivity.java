@@ -66,8 +66,8 @@ public class MainTabActivity extends TabActivity {
 			Log.v(Constants.DEBUG_TAG, "MainTabActivity: Connected to service");
 			
 			try {
-				Log.v(Constants.DEBUG_TAG, "Was the service started? "+optionsTable.isServiceStarted()+", Is Running? "+service.isRunning());
-				if (optionsTable.isServiceStarted() && !service.isRunning()) {
+				Log.v(Constants.DEBUG_TAG, "Was the service previously started by the user? "+optionsTable.isServiceUserStarted()+", Is Running? "+service.isRunning());
+				if (optionsTable.isServiceUserStarted() && !service.isRunning()) {
 					MainTabActivity.this.startService();
 				}
 			} catch (RemoteException e) {
@@ -208,8 +208,7 @@ public class MainTabActivity extends TabActivity {
 			FlurryAgent.onEvent("recording_start");
 			startServiceRunnable.startService();
 			
-			//Amir: Was missing!
-			optionsTable.setServiceStarted(true);
+			optionsTable.setServiceUserStarted(true);
 			optionsTable.save();
 
 			
@@ -224,7 +223,7 @@ public class MainTabActivity extends TabActivity {
 			Log.v(Constants.DEBUG_TAG, "User stopping RecorderService");
 			if (service.isRunning()) {
 				
-				optionsTable.setServiceStarted(false);
+				optionsTable.setServiceUserStarted(false);
 				optionsTable.save();
 				
 				EnableDeletion = true;

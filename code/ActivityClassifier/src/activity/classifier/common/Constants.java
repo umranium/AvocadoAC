@@ -291,7 +291,7 @@ public class Constants {
 	 * Amount of time between the service being stopped
 	 * and turning it on again, after a hardware fault occurs.
 	 */
-	public static final long DURATION_SLEEP_AFTER_FAULT = 10*60*1000L;
+	public static final long DURATION_SLEEP_AFTER_FAULT = IS_DEBUGGING?(30*1000L):(10*60*1000L);
 	
 	
 }

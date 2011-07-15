@@ -37,7 +37,7 @@ public class BootReceiver extends BroadcastReceiver{
 			SqlLiteAdapter sqlLiteAdapter = SqlLiteAdapter.getInstance(context);
 			OptionsTable optionsTable = sqlLiteAdapter.getOptionsTable();
 			
-			if (optionsTable.isServiceStarted()) {
+			if (optionsTable.isServiceUserStarted()) {
 				Intent i = new Intent(context, RecorderService.class);   
 				i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 				context.startService(i); 
