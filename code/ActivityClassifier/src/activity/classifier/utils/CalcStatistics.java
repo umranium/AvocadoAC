@@ -67,6 +67,11 @@ public class CalcStatistics {
 	 */
 	private float sd[];
 	
+	/**
+	 * The variance of the array data.
+	 */
+	private float var[];
+	
 	public CalcStatistics(int dimensions) {
 		this.dimensions = dimensions;
 
@@ -76,6 +81,7 @@ public class CalcStatistics {
 		this.min = new float[dimensions];
 		this.mean = new float[dimensions];
 		this.sd = new float[dimensions];
+		this.var = new float[dimensions];
 	}
 	
 	/**
@@ -99,6 +105,8 @@ public class CalcStatistics {
             this.min[i] = Float.POSITIVE_INFINITY;
             this.max[i] = Float.NEGATIVE_INFINITY;
             this.mean[i] = 0.0f;
+            this.sd[i] = 0.0f;
+            this.var[i] = 0.0f;
         }
 		
 		
@@ -119,9 +127,8 @@ public class CalcStatistics {
 		
 		for (int j = 0; j < dimensions; j++) {
 			mean[j] = sum[j] / (samples);
-			sd[j] = (float) Math.sqrt(
-					sumSqr[j] / count - mean[j] * mean[j]
-				);
+			var[j] = sumSqr[j] / count - mean[j] * mean[j];
+			sd[j] = (float) Math.sqrt(var[j]);
 		}
 	}
 
@@ -174,13 +181,22 @@ public class CalcStatistics {
 	
 	/**
 	 * 
+	 * @return variance of all the items that have been entered. Value
+	 *         will be Double.NaN if count == 0.
+	 */
+	public float[] getVariance() {
+		return var;
+	}
+	
+	/**
+	 * 
 	 * @return standard deviation of all the items that have been entered. Value
 	 *         will be Double.NaN if count == 0.
 	 */
 	public float[] getStandardDeviation() {
 		return sd;
 	}
-
+	
 	/**
 	 * 
 	 * @return the smallest item that has been entered. Value will be - infinity
