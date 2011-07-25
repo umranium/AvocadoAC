@@ -149,7 +149,7 @@ public class RotateSamplesToVerticalHorizontal {
         	outVec[i] -= dt*normalizedGravity[i];
 
         // now normalize the vector being returned
-        CalcStatistics.normalize(3, outVec);
+        CalcStatistics.normalize(Constants.ACCEL_DIM, outVec);
 	}
 	
 	/**

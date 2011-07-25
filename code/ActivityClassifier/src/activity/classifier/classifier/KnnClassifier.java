@@ -49,21 +49,9 @@ import android.util.Log;
  */
 public class KnnClassifier implements Classifier {
 	
-	private static final int K_VALUE = 1;
+    private Set<Map.Entry<Float[], Object[]>> model;
 	
-	private final static Set<Integer> tempIgnoreFeatures = new HashSet<Integer>(FeatureExtractor.NUM_FEATURES) {
-		{
-//			this.add(FeatureExtractor.FEATURE_VER_MEAN);
-//			this.add(FeatureExtractor.FEATURE_VER_RANGE);
-		}
-	};
-
-    private final Set<Map.Entry<Float[], Object[]>> model;
-    
-    /**
-     * {@link FeatureExtractor} instance to extract features from samples.
-     */
-    private FeatureExtractor featureExtractor;
+	private int kValue;
     
     //	the distances of each of the samples found in the model to the newly sampled data
     private ClassificationDist[] distances;
@@ -76,71 +64,67 @@ public class KnnClassifier implements Classifier {
      * Set the clustered data set for classification.
      * @param model clustered data set
      */
-    public KnnClassifier(final Set<Entry<Float[], Object[]>> model) {
+    public KnnClassifier(int kValue) {
+		this.kValue = kValue;
+    }
+
+	public void setModel(final Set<Entry<Float[], Object[]>> model) {
+		//	statistics about each feature selected
+		Map<String,CalcStatistics> activityFeatureStatistics;
+
+		activityFeatureStatistics = new TreeMap<String,CalcStatistics>(new StringComparator(false));
+		
+		int numOfFeatures = Integer.MAX_VALUE;
+		
+		for (Entry<Float[],Object[]> entry:model) {
+			if (entry.getKey().length<numOfFeatures) {
+				numOfFeatures = entry.getKey().length;
+			}
+		}
+		
+		if (numOfFeatures==0 || numOfFeatures==Integer.MAX_VALUE)
+			throw new RuntimeException("Unable to determine number of features, either no features, or no data");
+
+		for (Entry<Float[], Object[]> sample:model) {
+			String activity = (String)sample.getValue()[0];
+			if (!activityFeatureStatistics.containsKey(activity)) {
+				activityFeatureStatistics.put(activity, new CalcStatistics(numOfFeatures));
+			}
+		}
+
+		for (String activity:activityFeatureStatistics.keySet()) {
+			CalcStatistics features = activityFeatureStatistics.get(activity);
+
+			ArrayList<float[]> featureData = new ArrayList<float[]>(model.size());
+			for (Entry<Float[], Object[]> sample:model) {
+				String activityName = (String)sample.getValue()[0];
+				if (activity.equalsIgnoreCase(activityName)) {
+					Float[] origSampleData = sample.getKey();
+					float[] sampleData = new float[origSampleData.length];
+					for (int i=0; i<origSampleData.length; ++i)
+						sampleData[i] = origSampleData[i];
+					featureData.add(sampleData);
+				}
+			}
+
+			features.assign(featureData.toArray(new float[featureData.size()][]), featureData.size());
+		}
+
         this.model = model;
-        this.featureExtractor = new FeatureExtractor(Constants.NUM_OF_SAMPLES_PER_BATCH);
         
         this.distances = new ClassificationDist[model.size()];
         for (int i=0; i<model.size(); ++i)
         	this.distances[i] = new ClassificationDist();
-        
-        {
-            //	statistics about each feature selected
-            Map<String,CalcStatistics> activityFeatureStatistics;
-            
-        	activityFeatureStatistics = new TreeMap<String,CalcStatistics>(new StringComparator(false));
-        	
-        	for (Entry<Float[], Object[]> sample:model) {
-        		String activity = (String)sample.getValue()[0];
-        		if (!activityFeatureStatistics.containsKey(activity)) {
-        			activityFeatureStatistics.put(activity, new CalcStatistics(FeatureExtractor.NUM_FEATURES));
-        		}
-        	}
-        	
-        	Log.v(Constants.DEBUG_TAG, "Feature Statistics:");
-        	
-        	for (String activity:activityFeatureStatistics.keySet()) {
-        		CalcStatistics features = activityFeatureStatistics.get(activity);
-        		
-            	ArrayList<float[]> featureData = new ArrayList<float[]>(model.size());
-            	for (Entry<Float[], Object[]> sample:model) {
-            		String activityName = (String)sample.getValue()[0];
-            		if (activity.equalsIgnoreCase(activityName)) {
-                		Float[] origSampleData = sample.getKey();
-                		float[] sampleData = new float[origSampleData.length];
-                		for (int i=0; i<origSampleData.length; ++i)
-                			sampleData[i] = origSampleData[i];
-                		featureData.add(sampleData);
-            		}
-            	}
-            	
-            	features.assign(featureData.toArray(new float[featureData.size()][]), featureData.size());
-            	
-            	Log.v(Constants.DEBUG_TAG, "\tActivity: '"+activity+"'");
-            	
-            	for (int i=0; i<FeatureExtractor.NUM_FEATURES; ++i) {
-            		Log.v(Constants.DEBUG_TAG,
-            				String.format("\t\t%10s: count=%3d min=%3.4f max=%3.4f range=%3.4f mean=%3.4f sd=%3.4f ", 
-            						FeatureExtractor.FEATURE_NAMES[i],
-            						features.getCount(),
-            						features.getMin()[i],
-            						features.getMax()[i],
-            						features.getMax()[i]-features.getMin()[i],
-            						features.getMean()[i],
-            						features.getStandardDeviation()[i]
-            						));
-            	}
-        	}
-        }
-    }
+	}
+	
+	
 
     /* (non-Javadoc)
 	 * @see activity.classifier.classifier.Classifier#classifyRotated(float[][])
 	 */
-    @Override
 	synchronized
-    public String classifyRotated(final float[][] data) {
-    	return internClassify(featureExtractor.extractRotated(data, 0));
+    public String classify(final float[] extractedData) {
+    	return internClassify(extractedData);
     }
     
     private String internClassify(float[] features) {
@@ -164,11 +148,10 @@ public class KnnClassifier implements Classifier {
 	        	
 	            float distance = 0;
 	
-	            for (int f = 0; f < features.length; f++)
-		            if (!tempIgnoreFeatures.contains(f)) {
-		            	temp = features[f] - activityFeatures[f];
-		                distance += temp*temp;
-		            }
+	            for (int f = 0; f < features.length; f++) {
+					temp = features[f] - activityFeatures[f];
+					distance += temp*temp;
+				}
 	            
 	            distances[i].classification = activity;
 	            distances[i].distance = distance;
@@ -181,23 +164,10 @@ public class KnnClassifier implements Classifier {
         Arrays.sort(distances, distanceComparator);
         activityCounts.clear();
 
-        Log.v(Constants.DEBUG_TAG, "KNN Comparator:");
-        Log.v(Constants.DEBUG_TAG, "\t"+Arrays.toString(features));
-        for (int i=0; i<10; ++i) {
-        	Log.v(Constants.DEBUG_TAG, 
-        			String.format("\t%2d) %3.5f %15s[%3d] %s",
-        					i+1,
-        					distances[i].distance, 
-        					distances[i].classification,
-        					(Integer)distances[i].entry.getValue()[1],
-        					Arrays.toString(distances[i].entry.getKey())
-        					));
-        }
-        
-        String bestActivity = ActivityNames.UNKNOWN;
+        String bestActivity = "UNKNOWN";
         int bestCount = 0;
         
-        for (int l = model.size(), i=0; i<K_VALUE && i<l; ++i) {
+        for (int l = model.size(), i=0; i<kValue && i<l; ++i) {
         	Integer count = activityCounts.get(distances[i].classification);
         	if (count==null)
         		count = 0;

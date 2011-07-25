@@ -14,17 +14,12 @@ import android.util.Log;
  * most likely in a car. If it is less than gravity then device was rotated
  * during sampling.
  * 
- *	<p>
- *	Changes made by Umran: <br>
- *	Class can now work on any given vector size.
- *	And to be re-usable with another set of samples. Call {@link #assign(float[][], int)} to initiate another set of samples.
- *
- * <p>
- * 
- * 
  * @author Ken Taylor
  */
 public class CalcStatistics {
+	
+	//	the lowest required accuracy, lower than which, is regarded as zero
+	private final float EPSILON = 2.0e-4f;
 	
 	/**
 	 * Number of dimensions we're computing
@@ -63,14 +58,24 @@ public class CalcStatistics {
 	private float mean[];
 	
 	/**
-	 * The sd of the array data.
+	 * The population-based sd of the array data.
 	 */
-	private float sd[];
+	private float sd_p[];
 	
 	/**
-	 * The variance of the array data.
+	 * The population-based variance of the array data.
 	 */
-	private float var[];
+	private float var_p[];
+	
+	/**
+	 * The sample-based sd of the array data.
+	 */
+	private float sd_s[];
+	
+	/**
+	 * The sample-based variance of the array data.
+	 */
+	private float var_s[];
 	
 	public CalcStatistics(int dimensions) {
 		this.dimensions = dimensions;
@@ -80,8 +85,10 @@ public class CalcStatistics {
 		this.max = new float[dimensions];
 		this.min = new float[dimensions];
 		this.mean = new float[dimensions];
-		this.sd = new float[dimensions];
-		this.var = new float[dimensions];
+		this.sd_p = new float[dimensions];
+		this.var_p = new float[dimensions];
+		this.sd_s = new float[dimensions];
+		this.var_s = new float[dimensions];
 	}
 	
 	/**
@@ -105,8 +112,10 @@ public class CalcStatistics {
             this.min[i] = Float.POSITIVE_INFINITY;
             this.max[i] = Float.NEGATIVE_INFINITY;
             this.mean[i] = 0.0f;
-            this.sd[i] = 0.0f;
-            this.var[i] = 0.0f;
+            this.sd_p[i] = 0.0f;
+            this.var_p[i] = 0.0f;
+            this.sd_s[i] = 0.0f;
+            this.var_s[i] = 0.0f;
         }
 		
 		
@@ -125,10 +134,47 @@ public class CalcStatistics {
 			}
 		}
 		
+		float sumSqrOverSamples, sumSqrOverSamplesLessOne, meanSqr;
+			
 		for (int j = 0; j < dimensions; j++) {
 			mean[j] = sum[j] / (samples);
-			var[j] = sumSqr[j] / count - mean[j] * mean[j];
-			sd[j] = (float) Math.sqrt(var[j]);
+			
+			sumSqrOverSamples = sumSqr[j] / samples;
+			sumSqrOverSamplesLessOne = sumSqr[j] / (samples-1);
+			meanSqr = mean[j] * mean[j];
+			
+			var_p[j] = sumSqrOverSamples - meanSqr;
+
+			if (var_p[j]>-EPSILON && var_p[j]<EPSILON) {
+				var_p[j] = 0.0f;
+			}
+			
+			if (var_p[j]<0.0f) {
+				for (int s = 0; s < samples; ++s) {
+					System.out.println(arrayIn[s][j]);
+				}
+				throw new RuntimeException("Population Variance ("+var_p[j]+") found to be < 0.0");
+			}
+			if (Float.isNaN(var_p[j])) {
+				throw new RuntimeException("Population Variance found to be NaN");
+			}
+			
+			sd_p[j] = (float) Math.sqrt(var_s[j]);
+			
+			var_s[j] = sumSqrOverSamplesLessOne - samples * meanSqr / (samples-1);
+			
+			if (var_s[j]>-EPSILON && var_s[j]<EPSILON) {
+				var_s[j] = 0.0f;
+			}
+			
+			if (var_s[j]<0.0f) {
+				throw new RuntimeException("Sample Variance ("+var_s[j]+") found to be < 0.0");
+			}
+			if (Float.isNaN(var_s[j])) {
+				throw new RuntimeException("Sample Variance found to be NaN");
+			}
+			
+			sd_s[j] = (float) Math.sqrt(var_s[j]);
 		}
 	}
 
@@ -171,8 +217,6 @@ public class CalcStatistics {
 	public float getVerticalAccel() {
 		float verticalAccel = 0;
 		for (int j = 0; j < dimensions; j++) {
-			Log.i("sd", "count" + count + " sum_sqr " + sumSqr[j] + " mean "
-					+ mean[j] + " ");
 			verticalAccel += mean[j] * mean[j];
 		}
 		verticalAccel = (float) Math.sqrt(verticalAccel);
@@ -181,20 +225,42 @@ public class CalcStatistics {
 	
 	/**
 	 * 
-	 * @return variance of all the items that have been entered. Value
-	 *         will be Double.NaN if count == 0.
+	 * @return population-based variance of all the items that have been entered.
+	 *			(i.e. assumes the data given is the whole population)
+	 *			Value will be Double.NaN if count == 0.
 	 */
-	public float[] getVariance() {
-		return var;
+	public float[] getPopVariance() {
+		return var_p;
 	}
 	
 	/**
 	 * 
-	 * @return standard deviation of all the items that have been entered. Value
-	 *         will be Double.NaN if count == 0.
+	 * @return population-based standard deviation of all the items that have been entered.
+	 *			(i.e. assumes the data given is the whole population)
+	 *			Value will be Double.NaN if count == 0.
 	 */
-	public float[] getStandardDeviation() {
-		return sd;
+	public float[] getPopStandardDeviation() {
+		return sd_p;
+	}
+	
+	/**
+	 * 
+	 * @return sample-based variance of all the items that have been entered.
+	 *			(i.e. assumes the data given is a subset of the population)
+	 *			Value will be Double.NaN if count == 0.
+	 */
+	public float[] getSampleVariance() {
+		return var_s;
+	}
+	
+	/**
+	 * 
+	 * @return sample-based standard deviation of all the items that have been entered.
+	 *			(i.e. assumes the data given is a subset of the population)
+	 *			Value will be Double.NaN if count == 0.
+	 */
+	public float[] getSampleStandardDeviation() {
+		return sd_s;
 	}
 	
 	/**

@@ -18,6 +18,7 @@ import activity.classifier.activity.MainTabActivity;
 import activity.classifier.aggregator.Aggregator;
 import activity.classifier.classifier.Classifier;
 import activity.classifier.classifier.KnnClassifier;
+import activity.classifier.classifier.NaiveBayesClassifier;
 import activity.classifier.common.ActivityNames;
 import activity.classifier.common.Constants;
 import activity.classifier.common.ExceptionHandler;
@@ -31,6 +32,7 @@ import activity.classifier.rpc.ActivityRecorderBinder;
 import activity.classifier.service.RecorderService;
 import activity.classifier.utils.CalcStatistics;
 import activity.classifier.utils.Calibrator;
+import activity.classifier.utils.FeatureExtractor;
 import activity.classifier.utils.LogRedirect;
 import activity.classifier.utils.MetUtilFinal;
 import activity.classifier.utils.MetUtilOrig;
@@ -101,6 +103,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	private CalcStatistics rotatedMergedSampleStatistics = new CalcStatistics(2);	
 
 	private RotateSamplesToVerticalHorizontal rotateSamples = new RotateSamplesToVerticalHorizontal();
+	private FeatureExtractor featureExtractor = new FeatureExtractor(Constants.NUM_OF_SAMPLES_PER_BATCH);
 	private Classifier classifier;
 	private Aggregator aggregator;
 
@@ -133,13 +136,15 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 		this.metUtil = metUtil;
 		this.rawDump = rawDump;
 
-		this.model = ModelReader.getModel(context, R.raw.basic_model);
+		this.model = ModelReader.getModel(context, R.raw.new_basic_model);
 
 		this.sqlLiteAdapter = SqlLiteAdapter.getInstance(context);
 		this.optionsTable = sqlLiteAdapter.getOptionsTable();
 		this.debugDataTable = sqlLiteAdapter.getDebugDataTable();
 
-		this.classifier = new KnnClassifier(this.model.entrySet());
+		this.classifier = new NaiveBayesClassifier();
+		this.classifier.setModel(this.model.entrySet());
+		
 		this.aggregator = new Aggregator(null);
 
 		this.isCalibrated = this.optionsTable.isCalibrated();
@@ -185,7 +190,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			rawSampleStatistics.assign(data, size);
 			calibrator.MainForceCalibrationProcess(sampleTime, 
 					rawSampleStatistics.getMean(), 
-					rawSampleStatistics.getStandardDeviation(), 
+					rawSampleStatistics.getSampleStandardDeviation(), 
 					rawSampleStatistics.getSum(), 
 					rawSampleStatistics.getSumSqr(), 
 					rawSampleStatistics.getCount());
@@ -380,7 +385,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				float[] dataMin = rawSampleStatistics.getMin();
 				float[] dataMax = rawSampleStatistics.getMax();
 				float[] dataMeans = rawSampleStatistics.getMean();
-				float[] dataSd = rawSampleStatistics.getStandardDeviation();
+				float[] dataSd = rawSampleStatistics.getSampleStandardDeviation();
 
 				if (Constants.OUTPUT_DEBUG_INFO) {
 					debugDataTable.setUnrotatedStats(
@@ -431,7 +436,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 						if (rotateSamples.rotateToWorldCoordinates(dataMeans, data)) {
 							rotatedSampleStatistics.assign(data, size);
 							
-							classification = classifier.classifyRotated(data);
+							classification = classifier.classify(featureExtractor.extractRotated(data));
 
 							Log.v(Constants.DEBUG_TAG, "Classifier Algorithm Output: "+classification);
 
@@ -548,7 +553,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 		float[] rotatedMin = rotatedMergedSampleStatistics.getMin();
 		float[] rotatedMax = rotatedMergedSampleStatistics.getMax();
 		float[] rotatedMeans = rotatedMergedSampleStatistics.getMean();
-		float[] rotatedSd = rotatedMergedSampleStatistics.getStandardDeviation();
+		float[] rotatedSd = rotatedMergedSampleStatistics.getSampleStandardDeviation();
 
 		debugDataTable.setRotatedStats(
 				rotatedMeans[0],
