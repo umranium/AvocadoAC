@@ -26,8 +26,8 @@ public class RawDump {
 	public RawDump() {
 		this.dumpFolder = new File(PATH_DUMP_FOLDER);
 		
-		if (!this.dumpFolder.exists() && !this.dumpFolder.mkdirs())
-			throw new RuntimeException("Unable to create folder:"+PATH_DUMP_FOLDER);
+		if (!this.dumpFolder.exists())
+			this.dumpFolder.mkdirs();
 		
 		//	fetch all required files in the folder
 		File[] files = this.dumpFolder.listFiles(new FilenameFilter() {
@@ -85,6 +85,9 @@ public class RawDump {
 	{
 		try {
 			Log.i(Constants.DEBUG_TAG, "Dumping raw-data to file");
+			
+			if (!dumpFolder.exists())
+				throw new RuntimeException("Unable to create folder:"+PATH_DUMP_FOLDER);
 			
 			File newF = new File(dumpFolder, timeToFName(batch.sampleTime));
 			if (!newF.exists()) {

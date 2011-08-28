@@ -27,6 +27,7 @@ import java.util.TimerTask;
 
 import activity.classifier.accel.SampleBatch;
 import activity.classifier.accel.Sampler;
+import activity.classifier.accel.SamplerCallback;
 import activity.classifier.common.Constants;
 import activity.classifier.exception.HardwareFaultException;
 import activity.classifier.rpc.ActivityRecorderBinder;
@@ -53,15 +54,16 @@ import android.util.Log;
 public class AsyncSampler implements Sampler {
 	
 	private final ActivityRecorderBinder service;
-	private final Handler handler;
     private final AsyncAccelReader reader;
-    private final Runnable finishedRunnable;
+    private final SamplerCallback callback;
     
     private SampleBatch currentBatch;
     private boolean sampling;
     
     private Timer timer;
     private SamplerTimerTask timerTask;
+    
+    private int startSamplingHardwareErrorCount = 0; 
     
     private class SamplerTimerTask extends TimerTask
     {
@@ -72,13 +74,15 @@ public class AsyncSampler implements Sampler {
 		    	try {
 					reader.assignSample(currentBatch);
 			    	if (!currentBatch.nextSample()) {
-			            stop();
-			            if (finishedRunnable != null)
-			            	finishedRunnable.run();
+			            if (callback != null)
+			            	callback.samplerFinished(currentBatch);
+			    		finalizeSampling();
 			    	}
 				} catch (HardwareFaultException e) {
 					Log.e(Constants.DEBUG_TAG, "Hardware Fault While Sampling", e);
-					stop();
+		            if (callback != null)
+		            	callback.samplerError(currentBatch, e);
+					finalizeSampling();
 					try {
 						service.handleHardwareFaultException("Faulty Accelerometer", e.getMessage());
 					} catch (RemoteException e1) {
@@ -92,66 +96,65 @@ public class AsyncSampler implements Sampler {
     
     public AsyncSampler(
     		final ActivityRecorderBinder service, 
-    		final Handler handler,
     		final AsyncAccelReader reader,
-            final Runnable finishedRunnable) {
+            final SamplerCallback callback) {
     	this.service = service;
-        this.handler = handler;
         this.reader = reader;
-        this.finishedRunnable = finishedRunnable;
+        this.callback = callback;
         this.timer = new Timer("Async Sampler Timer");
         this.timerTask = new SamplerTimerTask();
     }
 
     public void start(SampleBatch currentBatch) {
-//    	try {
-//			service.showServiceToast("Starting Sampling.");
-//		} catch (RemoteException e) {
-//			e.printStackTrace();
-//		}
-    	
     	this.currentBatch = currentBatch;
     	this.currentBatch.reset();
     	this.currentBatch.sampleTime = System.currentTimeMillis();
     	
         try {
 			reader.startSampling();
-	        this.sampling = true;
-	        Log.i(Constants.DEBUG_TAG, "Starting Timer");
-	        timer.scheduleAtFixedRate(this.timerTask, Constants.DELAY_BETWEEN_SAMPLES, Constants.DELAY_BETWEEN_SAMPLES);
-	        Log.i(Constants.DEBUG_TAG, "Started Sampling.");
+	        startSamplingHardwareErrorCount = 0;
         } catch (HardwareFaultException e) {
-			Log.e(Constants.DEBUG_TAG, "Hardware Fault While Starting Sampling", e);
-			try {
-				service.handleHardwareFaultException("Faulty Accelerometer", e.getMessage());
-			} catch (RemoteException e1) {
-				e1.printStackTrace();
+        	++startSamplingHardwareErrorCount;
+			Log.e(Constants.DEBUG_TAG, "Hardware Fault While Starting Sampling ("+startSamplingHardwareErrorCount+")", e);
+			
+            if (callback != null)
+            	callback.samplerError(currentBatch, e);
+			
+			if (startSamplingHardwareErrorCount>=3) {
+				try {
+					service.handleHardwareFaultException("Faulty Accelerometer", e.getMessage());
+				} catch (RemoteException e1) {
+					e1.printStackTrace();
+				}
 			}
+			
+			return;
 		}
         
-    }
-
-    public SampleBatch getSampleBatch() {
-    	return currentBatch;
+        this.sampling = true;
+        Log.i(Constants.DEBUG_TAG, "Starting Timer");
+        timer.scheduleAtFixedRate(this.timerTask, Constants.DELAY_BETWEEN_SAMPLES, Constants.DELAY_BETWEEN_SAMPLES);
+        Log.i(Constants.DEBUG_TAG, "Started Sampling.");
     }
     
-
-    public void stop() {
-//    	try {
-//			service.showServiceToast("Stopping Sampling.");
-//		} catch (RemoteException e) {
-//			e.printStackTrace();
-//		}
-		
-    	reader.stopSampling();
+    private void finalizeSampling() {
         this.sampling = false;
+    	reader.stopSampling();
         
         Log.i(Constants.DEBUG_TAG, "Cancelling Timer");
     	timerTask.cancel();		//	cancel timer task
     	timer.purge();			//	purge timer task
     							//	replace timer task to make sure previous one is gc
         this.timerTask = new SamplerTimerTask();
-        Log.i(Constants.DEBUG_TAG, "Finished Sampling.");
+    }
+
+    public void stop() {
+    	if (this.isSampling()) {
+	        if (callback != null)
+	        	callback.samplerStopped(currentBatch);
+	    	finalizeSampling();
+    	}
+        Log.i(Constants.DEBUG_TAG, "Sampling Stopped.");
     }
 
 	public boolean isSampling() {

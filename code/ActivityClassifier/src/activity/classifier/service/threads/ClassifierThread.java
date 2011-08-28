@@ -145,7 +145,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 		this.classifier = new NaiveBayesClassifier();
 		this.classifier.setModel(this.model.entrySet());
 		
-		this.aggregator = new Aggregator(null);
+		this.aggregator = new Aggregator();
 
 		this.isCalibrated = this.optionsTable.isCalibrated();
 		this.calibrator = new Calibrator(
@@ -358,7 +358,9 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			boolean chargingState = !Constants.IS_DEBUGGING && batch.isCharging();
 
 			if (Constants.OUTPUT_DEBUG_INFO) {
-				rawDump.dumpRawData(batch);
+				if (Constants.OUTPUT_RAW_DATA) {
+					rawDump.dumpRawData(batch);
+				}
 				debugDataTable.reset(sampleTime);
 			}
 			

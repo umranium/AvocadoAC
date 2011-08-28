@@ -126,11 +126,8 @@ public class Aggregator {
 	private Map<String, Map<String, Double>> scores;
 	private boolean firstActivity = true; 
 	
-    public Aggregator(Map<String, Map<String, Double>> scores) {
-    	if (scores==null)
-    		this.scores = DEFAULT_SCORES;
-    	else
-    		this.scores = scores;
+    public Aggregator() {
+		this.scores = DEFAULT_SCORES;
     }
 	
 	public void addClassification(final String classification) {

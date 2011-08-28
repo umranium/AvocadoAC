@@ -22,14 +22,7 @@ public interface Sampler {
 	 * 
 	 */
     public void start(SampleBatch currentBatch);
-
-    /**
-     * 
-     * @return
-     * 	The batch currently being sampled. (Maybe incomplete).
-     */
-    public SampleBatch getSampleBatch();
-
+    
     /**
      * Forces the sampler to stop sampling.
      */

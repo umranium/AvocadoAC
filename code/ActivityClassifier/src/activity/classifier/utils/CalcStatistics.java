@@ -19,7 +19,7 @@ import android.util.Log;
 public class CalcStatistics {
 	
 	//	the lowest required accuracy, lower than which, is regarded as zero
-	private final float EPSILON = 2.0e-4f;
+	private final float EPSILON = 5.0e-4f;
 	
 	/**
 	 * Number of dimensions we're computing
@@ -150,10 +150,7 @@ public class CalcStatistics {
 			}
 			
 			if (var_p[j]<0.0f) {
-				for (int s = 0; s < samples; ++s) {
-					System.out.println(arrayIn[s][j]);
-				}
-				throw new RuntimeException("Population Variance ("+var_p[j]+") found to be < 0.0");
+				throw new RuntimeException("Population Variance ("+var_p[j]+") found to be < 0.0; Sum(x^2)="+sumSqr[j]+", mean^2="+meanSqr);
 			}
 			if (Float.isNaN(var_p[j])) {
 				throw new RuntimeException("Population Variance found to be NaN");
@@ -168,7 +165,7 @@ public class CalcStatistics {
 			}
 			
 			if (var_s[j]<0.0f) {
-				throw new RuntimeException("Sample Variance ("+var_s[j]+") found to be < 0.0");
+				throw new RuntimeException("Sample Variance ("+var_s[j]+") found to be < 0.0; Sum(x^2)="+sumSqr[j]+", mean^2="+meanSqr);
 			}
 			if (Float.isNaN(var_s[j])) {
 				throw new RuntimeException("Sample Variance found to be NaN");

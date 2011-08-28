@@ -22,31 +22,234 @@
 
 package activity.classifier.accel.async;
 
+import java.util.Set;
+
 import activity.classifier.accel.SampleBatch;
-import activity.classifier.accel.sync.SyncAccelReader;
+import activity.classifier.common.Constants;
+import activity.classifier.db.OptionUpdateHandler;
+import activity.classifier.db.OptionsTable;
+import activity.classifier.db.SqlLiteAdapter;
 import activity.classifier.exception.HardwareFaultException;
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.util.Log;
 
 /**
- * Interface implemented by classes which can sample accelerometer data.
- * 
- * Edit by Umran:
- * An asynchronous accelerometer reader is capable of running at a different
- * frequency from the system's sampling frequency. The sampler obtains the
- * latest available data by calling assign sample. This could be a problem
- * since the reader might be obtaining more samples than required (over sampling)
- * or obtaining less samples hence providing out-dated values to the sampler
- * (under sampling). In addition, more resources are used in order to maintain
- * states of both the sampler and the reader. But the {@link SyncAccelReader} is
- * currently not functioning as hoped.
- * 
+ * An accelerometer reader which reads real data from the device's
+ * accelerometer.
+ *
  * @author chris
  */
-public interface AsyncAccelReader {
+public class AsyncAccelReader {
+	
+	private static final int BUFFER_SIZE = 10;
 
-    void startSampling()  throws HardwareFaultException;
+    private final SensorEventListener accelListener = new SensorEventListener() {
+    	
+    	float diffFromLast;
 
-    void stopSampling();
+        /** {@inheritDoc} */
+//        @Override
+        public void onSensorChanged(final SensorEvent event) {
+        	int nextValues = (currentValueIndex + 1) % BUFFER_SIZE;
+        	synchronized (valueBuff[nextValues]) {
+        		valueBuff[nextValues].timeStamp = System.currentTimeMillis(); 
+            	valueBuff[nextValues].values[Constants.ACCEL_X_AXIS] = event.values[SensorManager.DATA_X]; 
+            	valueBuff[nextValues].values[Constants.ACCEL_Y_AXIS] = event.values[SensorManager.DATA_Y]; 
+            	valueBuff[nextValues].values[Constants.ACCEL_Z_AXIS] = event.values[SensorManager.DATA_Z];
+            	
+            	/*
+            	 * Some phone's accelerometers aren't that good, sometimes,
+            	 * all of a sudden the accelerometer would return zeros in one
+            	 * or more accelerometer axis for a one or more samples.
+            	 * To detect and remove these anomalies (at the cost of
+            	 * sample timing), we check that the value is not zero,
+            	 * or if it is, then there were values close to zero before.
+            	 */
+            	for (int i=0; i<Constants.ACCEL_DIM; ++i) {
+	            	if (valueBuff[nextValues].values[i]==0.0f) {
+	            		diffFromLast = valueBuff[nextValues].values[i] - valueBuff[currentValueIndex].values[i];
+	            		if (diffFromLast<0.0f)
+	            			diffFromLast = -diffFromLast;
+	            		if (diffFromLast>0.1f) {
+	            			return;
+	            		}
+	            	}
+            	}
 
-    void assignSample(SampleBatch batch) throws HardwareFaultException;
+            	previousValueIndex = currentValueIndex;
+            	currentValueIndex = nextValues;
+            	++valuesAssigned;
+        	}
+        }
+
+        /** {@inheritDoc} */
+//        @Override
+        public void onAccuracyChanged(final Sensor sensor, final int accuracy) {
+            // Don't really care
+        }
+
+    };
+    
+    class Values {
+    	long timeStamp;
+    	float[] values = new float[Constants.ACCEL_DIM];
+    }
+
+    private Values[] valueBuff;
+    private Values resultantValues = new Values();
+    
+    private int valuesAssigned;
+    private int previousValueIndex = -1;
+    private int currentValueIndex = 0;
+    private SensorManager manager;
+    
+    private SqlLiteAdapter sqlLiteAdapter;
+    private OptionsTable optionsTable;
+    
+    private boolean accelListenerRegistered;
+    
+    //	used to compute sampling quality
+    private double samplingQualitySum;
+    private double samplingQualitySumSqr;
+    private double samplingQualityCount;
+    
+    private double samplingQualityMean;
+    private double samplingQualityStdDev;
+
+    public AsyncAccelReader(final Context context) {
+        manager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        
+        sqlLiteAdapter = SqlLiteAdapter.getInstance(context);
+        optionsTable = sqlLiteAdapter.getOptionsTable();
+        
+        this.valueBuff = new Values[BUFFER_SIZE];
+        for (int i=0; i<BUFFER_SIZE; ++i)
+        	this.valueBuff[i] = new Values();
+        
+        accelListenerRegistered = false;
+    }
+    
+    public void startSampling() throws HardwareFaultException {
+    	if (!accelListenerRegistered) {
+    		Log.i(Constants.DEBUG_TAG, "Turning accelerometer on");
+            manager.registerListener(accelListener,
+                    manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                    SensorManager.SENSOR_DELAY_FASTEST);
+            accelListenerRegistered = true;
+            samplingQualitySum = 0.0;
+            samplingQualitySumSqr = 0.0;
+            samplingQualityCount = 0.0;
+            valuesAssigned = 0;
+    	}
+
+    	//	sometimes values are requested before the first
+    	//		accelerometer sensor change event has occurred,
+    	//		so wait for the sensor to change.
+    	if (valuesAssigned<2)
+    	{
+    		Log.v(Constants.DEBUG_TAG, "No values assigned yet from accelerometer, going to wait for values.");
+    		long startWait = System.currentTimeMillis();
+    		long current = startWait;
+	    	while (valuesAssigned<2)
+	    	{
+	    		Thread.yield();
+	    		current = System.currentTimeMillis();
+	    		if (current-startWait>Constants.DELAY_SAMPLE_BATCH)
+	    		{
+	    			throw new HardwareFaultException("Unable to start accelerometer.");
+	    		}
+	    	}
+//	    	Log.v(Constants.DEBUG_TAG, "Done, waited for "+((current-startWait)/1000)+"s");
+    	}
+    	
+    }
+
+    public void stopSampling() {
+    	if (!optionsTable.getFullTimeAccel()) {
+    		manager.unregisterListener(accelListener);
+    		accelListenerRegistered = false;
+    		Log.i(Constants.DEBUG_TAG, "Turning accelerometer off");
+    		
+    		samplingQualityMean = samplingQualitySum / samplingQualityCount;
+    		samplingQualityStdDev = Math.sqrt(
+    				samplingQualitySumSqr / samplingQualityCount - 
+    				samplingQualityMean * samplingQualityMean
+				);
+    		
+    		Log.d(Constants.DEBUG_TAG, String.format("Sampling Quality: Delay: Mean=%.2f ms, S.D=%.2f ms", samplingQualityMean, samplingQualityStdDev));
+    	}
+    }
+	
+	public void assignSample(SampleBatch batch) throws HardwareFaultException 
+	{
+    	//	lock the previous sample, hence locking the current one too
+    	int prevValueIndex = this.previousValueIndex;
+    	synchronized (this.valueBuff[prevValueIndex]) {
+    		//	get the next one after the previous.. i.e. the current
+        	int currValueIndex = (prevValueIndex+1) % BUFFER_SIZE;
+        	
+        	//	we sample 1 interval before...
+        	long now = System.currentTimeMillis() - Constants.DELAY_BETWEEN_SAMPLES;
+        	
+    		double delay;
+    		
+    		int timeFromPrev = (int)(now - this.valueBuff[prevValueIndex].timeStamp);
+    		int timeFromCurr = (int)(now - this.valueBuff[currValueIndex].timeStamp);
+    		
+    		//	if they are both of the same sign, that means our
+    		//		now time is after both.. pick the closest
+    		if ((timeFromPrev>0)==(timeFromCurr>0)) {
+            	int useIndex = currValueIndex; // default to the latest sample        	
+            	if (Math.abs(now - this.valueBuff[prevValueIndex].timeStamp) < 
+            			Math.abs(now - this.valueBuff[currValueIndex].timeStamp)) {
+            		//	unless the closer one is actually the one before that
+            		useIndex = prevValueIndex;
+            	}
+            	
+            	delay = Math.abs(now - this.valueBuff[useIndex].timeStamp);
+            	batch.assignSample(this.valueBuff[useIndex].values);
+
+    		} else {	// otherwise our now, is right in between
+        		float prev, curr;
+        		
+        		timeFromCurr = -timeFromCurr;
+        		
+        		resultantValues.timeStamp = now;
+        		for (int i=0; i<Constants.ACCEL_DIM; ++i) {
+        			prev = this.valueBuff[prevValueIndex].values[i]; 
+        			curr = this.valueBuff[currValueIndex].values[i]; 
+        			//	estimate the value at the now time...
+        			resultantValues.values[i] =
+        				(((curr-prev)*timeFromPrev)/(timeFromPrev+timeFromCurr)) + prev;
+        		}
+
+            	delay = Math.abs(now - resultantValues.timeStamp);
+            	batch.assignSample(resultantValues.values);
+    		}
+    	}
+    }
+	
+    /**
+	 * @return the mean delay between the arrival of a sample, and the time it is 
+	 */
+	public double getSamplingQualityMean() {
+		return samplingQualityMean;
+	}
+
+	/**
+	 * @return the samplingQualityStdDev
+	 */
+	public double getSamplingQualityStdDev() {
+		return samplingQualityStdDev;
+	}
+
+	@Override
+    protected void finalize() throws Throwable {
+    }
+
 
 }

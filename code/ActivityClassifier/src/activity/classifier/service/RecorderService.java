@@ -13,9 +13,10 @@ import activity.classifier.R;
 import activity.classifier.accel.SampleBatch;
 import activity.classifier.accel.SampleBatchBuffer;
 import activity.classifier.accel.Sampler;
+import activity.classifier.accel.SamplerCallback;
 import activity.classifier.activity.MainTabActivity;
 import activity.classifier.accel.async.AsyncAccelReader;
-import activity.classifier.accel.async.AsyncAccelReaderFactory;
+import activity.classifier.accel.async.AsyncAccelReader;
 import activity.classifier.accel.async.AsyncSampler;
 import activity.classifier.common.ActivityNames;
 import activity.classifier.common.Constants;
@@ -147,10 +148,8 @@ public class RecorderService extends Service implements Runnable {
 			int status = arg1.getIntExtra("plugged", -1);
 			if (status != 0) {
 				charging = true;
-				Log.i(Constants.DEBUG_TAG, "charging");
 			} else {
 				charging = false;
-				Log.i(Constants.DEBUG_TAG, "not charging");
 			}
 		}
 	};
@@ -300,25 +299,40 @@ public class RecorderService extends Service implements Runnable {
 	};
 
 	//	called by the sampler when sampling a batch of samples is done.
-	private final Runnable analyseRunnable = new Runnable() {
+	private final SamplerCallback samplerCallback = new SamplerCallback() {
 
-		public void run() {
-			//			Log.v(Constants.DEBUG_TAG, "Sampling done. Sending batch for analysis.");
-
-			//	get the sample batch from the sampler
-			SampleBatch sample = sampler.getSampleBatch();
-
-			if(sample != null)
+		@Override
+		public void samplerFinished(SampleBatch batch) {
+			if(batch!=null)
 				//	set any required properties
-				sample.setCharging(charging);
+				batch.setCharging(charging);
 
 			//	put it back into the buffer as a filled batch
 			try {
-				batchBuffer.returnFilledInstance(sample);
+				batchBuffer.returnFilledInstance(batch);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+		}
 
+		@Override
+		public void samplerStopped(SampleBatch batch) {
+			//	put it back into the buffer as a filled batch
+			try {
+				batchBuffer.returnEmptyInstance(batch);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+
+		@Override
+		public void samplerError(SampleBatch batch, Exception e) {
+			//	put it back into the buffer as a filled batch
+			try {
+				batchBuffer.returnEmptyInstance(batch);
+			} catch (InterruptedException ex) {
+				ex.printStackTrace();
+			}
 		}
 
 	};
@@ -506,8 +520,8 @@ public class RecorderService extends Service implements Runnable {
 			}
 		}
 
-		AsyncAccelReader reader = new AsyncAccelReaderFactory().getReader(this);
-		sampler = new AsyncSampler(binder, handler, reader, analyseRunnable);
+		AsyncAccelReader reader = new AsyncAccelReader(this);
+		sampler = new AsyncSampler(binder, reader, samplerCallback);
 
 		//        SyncAccelReader reader = new SyncAccelReaderFactory().getReader(this);
 		//		sampler = new SyncSampler(reader, analyseRunnable);
@@ -628,7 +642,7 @@ public class RecorderService extends Service implements Runnable {
 				System.currentTimeMillis());
 		notification.defaults = Notification.DEFAULT_ALL;
 		notification.flags = Notification.FLAG_ONLY_ALERT_ONCE;
-		notification.setLatestEventInfo(context, title, msg, pendingNotIntent);
+		notification.setLatestEventInfo(context, title, msg+ " Please restart service, after restarting phone.", pendingNotIntent);
 		nm.notify(Constants.NOTIFICATION_ID_HARDWARE_FAULT, notification);
 		
 		//	turn off the service
@@ -637,12 +651,12 @@ public class RecorderService extends Service implements Runnable {
 		optionsTable.setServiceUserStarted(false);
 		optionsTable.save();
 		
-		//	set an alarm to turn it on after a short while
-		Intent alarmIntent = new Intent(this, RecorderService.class);
-		PendingIntent pendingAlarmIntent = PendingIntent.getService(this, 0, alarmIntent, 0);
-		am.set(	AlarmManager.RTC,
-				System.currentTimeMillis()+Constants.DURATION_SLEEP_AFTER_FAULT,
-				pendingAlarmIntent	);
+//		//	set an alarm to turn it on after a short while
+//		Intent alarmIntent = new Intent(this, RecorderService.class);
+//		PendingIntent pendingAlarmIntent = PendingIntent.getService(this, 0, alarmIntent, 0);
+//		am.set(	AlarmManager.RTC,
+//				System.currentTimeMillis()+Constants.DURATION_SLEEP_AFTER_FAULT,
+//				pendingAlarmIntent	);
 	}
 
 }

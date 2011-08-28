@@ -33,9 +33,15 @@ public class Constants {
 	public final static boolean IS_DEBUGGING = false; 
 	
 	/**
-	 * Should we or should we not output debugging data to the database?
+	 * Should we or should we output debugging data?
 	 */
 	public static final boolean OUTPUT_DEBUG_INFO = true;
+	
+	/**
+	 * While outputting debugging data,
+	 * should we or should we output raw data to files in the SD card?
+	 */
+	public static final boolean OUTPUT_RAW_DATA = false;
 	
 	/**
 	 * Default value for Full Time accelerometer option
@@ -162,7 +168,7 @@ public class Constants {
 	 *	because of the phone accelerating fast during the sampling period
 	 *	e.g. in a car after a traffic light.
 	 */
-	public static final float MIN_GRAVITY_DEV = 0.15f; // 15% of gravity	
+	public static final float MIN_GRAVITY_DEV = 0.50f; // 50% of gravity	
 	public static final float MAX_GRAVITY_DEV = 0.15f; // 15% of gravity	
 	
 	/**
