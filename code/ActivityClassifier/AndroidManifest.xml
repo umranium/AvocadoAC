@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<manifest package="activity.classifier" android:versionCode="1"
+<manifest package="au.urremote.classifier" android:versionCode="1"
 	android:versionName="1" xmlns:android="http://schemas.android.com/apk/res/android">
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
 	<uses-permission android:name="android.permission.READ_LOGS"></uses-permission>
@@ -14,21 +14,21 @@
 			</intent-filter>
 		</activity>
 		<receiver android:permission="android.permission.RECEIVE_BOOT_COMPLETED"
-			android:name=".BootReceiver">
+			android:name="au.urremote.classifier.BootReceiver">
 
 			<intent-filter>
 				<action android:name="android.intent.action.BOOT_COMPLETED" />
 
 			</intent-filter>
 		</receiver>
-		<service android:label="Sensor Recorder Service" android:name=".service.RecorderService" />
+		<service android:label="Avocado AC Service" android:name=".service.RecorderService" />
 
 		<activity android:name=".activity.ActivityListActivity"></activity>
 		<activity android:name=".activity.ActivityChartActivity"></activity>
 		<activity android:name=".activity.ActivityMapActivity"></activity>
 		<activity android:name=".activity.MainSettingsActivity"></activity>
 
-		<activity android:name=".activity.Sensors" android:theme="@android:style/Theme.Dialog"></activity>
+		<activity android:name="au.urremote.classifier.activity.Sensors" android:theme="@android:style/Theme.Dialog"></activity>
 	</application>
 
 
