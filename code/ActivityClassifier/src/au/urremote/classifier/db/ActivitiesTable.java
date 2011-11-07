@@ -3,6 +3,7 @@
  */
 package au.urremote.classifier.db;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
+import au.urremote.classifier.common.ActivityNames;
 import au.urremote.classifier.common.Constants;
 import au.urremote.classifier.rpc.Classification;
 
@@ -109,8 +111,65 @@ public class ActivitiesTable extends DbTableAdapter {
 	protected boolean init(SQLiteDatabase database) {
 		super.init(database);
 		
+//		long now = System.currentTimeMillis();
+//		long minute = 60L*1000L;
+//		
+//		long restingDur = 10*minute + (long)getRandVal(-2*minute,+2*minute);
+//		long walkingDur = 5*minute + (long)getRandVal(-2*minute,+2*minute);
+//		long runningDur = 45*minute + (long)getRandVal(-5*minute,+5*minute);
+//		long officeDur = 120*minute + (long)getRandVal(-5*minute,+5*minute);
+//		long cyclingDur = 30*minute + (long)getRandVal(-5*minute,+5*minute);
+//		long getReadyDur = 30*minute + (long)getRandVal(-5*minute,+5*minute);
+//		long chargingDur = 8*60*minute + (long)getRandVal(-10*minute,+10*minute);
+//		long eveningDur = 2*60*minute + (long)getRandVal(-10*minute,+10*minute);
+////		long beforeDur = 10*60*minute + (long)getRandVal(-10*minute,+10*minute);
+//		
+//		long restingStart = now-restingDur;
+//		long walkingStart = restingStart-walkingDur;
+//		long runningStart = walkingStart-runningDur;
+//		long officeStart = runningStart-officeDur;
+//		long cyclingStart = officeStart-cyclingDur;
+//		long getReadyStart = cyclingStart-getReadyDur;
+//		long chargingStart = getReadyStart-chargingDur;
+//		long eveningStart = chargingStart-eveningDur;
+////		long beforeStart = eveningStart-beforeDur;
+//		
+//		List<Classification> classifications = new ArrayList<Classification>();
+//		classifications.add(new Classification(ActivityNames.STATIONARY, restingStart, now));
+//		classifications.get(classifications.size()-1).setTotalMet(1.0f + (float)getRandVal(-0.5, 0.5));
+//		
+//		classifications.add(new Classification(ActivityNames.WALKING, walkingStart, restingStart));
+//		classifications.get(classifications.size()-1).setTotalMet(3.5f + (float)getRandVal(-1.0, 1.0));
+//		
+//		classifications.add(new Classification(ActivityNames.RUNNING, runningStart, walkingStart));
+//		classifications.get(classifications.size()-1).setTotalMet(7.0f + (float)getRandVal(-1.0, 1.0));
+//		
+//		classifications.add(new Classification(ActivityNames.STATIONARY, officeStart, runningStart));
+//		classifications.get(classifications.size()-1).setTotalMet(1.0f);
+//		
+//		classifications.add(new Classification(ActivityNames.CYCLING, cyclingStart, officeStart));
+//		classifications.get(classifications.size()-1).setTotalMet(5.5f + (float)getRandVal(-1.0, 1.0));
+//		
+//		classifications.add(new Classification(ActivityNames.WALKING, getReadyStart, cyclingStart));
+//		classifications.get(classifications.size()-1).setTotalMet(2.3f + (float)getRandVal(-0.5, 0.5));
+//		
+//		classifications.add(new Classification(ActivityNames.CHARGING, chargingStart, getReadyStart));
+//		classifications.get(classifications.size()-1).setTotalMet(1.0f);
+//		
+//		classifications.add(new Classification(ActivityNames.STATIONARY, eveningStart, getReadyStart));
+//		classifications.get(classifications.size()-1).setTotalMet(1.0f);
+//		
+//		for (int l=classifications.size(), i=l-1; i>=0; --i) {
+//			insert(classifications.get(i));
+//		}
+		
 		return true;
 	}
+	
+//	private double getRandVal(double min, double max)
+//	{
+//		return Math.random()*(max-min) - (max+min)/2.0; 
+//	}
 
 	@Override
 	protected void done() {
