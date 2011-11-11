@@ -135,7 +135,6 @@ public class ChartHelper {
 		}
 		activitiesTable.loadAllBetween(periodStart, periodEnd, classification,
 				new ActivitiesTable.ClassificationDataCallback() {
-					@Override
 					public void onRetrieve(Classification classification) {
 						if (!activityIndexes.containsKey(classification.getClassification())) {
 							Log.e(Constants.DEBUG_TAG, "ERROR: UNKNOWN ACTIVITY '"+classification.getClassification()+"' FOUND");

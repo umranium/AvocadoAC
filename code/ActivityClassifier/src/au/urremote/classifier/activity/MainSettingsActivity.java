@@ -71,12 +71,10 @@ public class MainSettingsActivity extends PreferenceActivity {
 	private AccountChooser accountChooser;
 
 	private OptionUpdateHandler optionUpdateHandler = new OptionUpdateHandler() {
-		@Override
 		public void onFieldChange(Set<String> updatedKeys) {
 			if (updatedKeys.contains(OptionsTable.KEY_IS_CALIBRATED)) {
 				if (calibrationSummary!=null) {
 					mainLooperHandler.post(new Runnable() {
-						@Override
 						public void run() {
 							String summary = getScreenSummary();
 							calibrationSummary.setSummary(summary);
@@ -93,7 +91,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 			if (updatedKeys.contains(OptionsTable.KEY_UPLOAD_ACCOUNT)) {
 				if (calibrationSummary!=null) {
 					mainLooperHandler.post(new Runnable() {
-						@Override
 						public void run() {
 
 							String summary = optionsTable.getUploadAccount();
@@ -106,7 +103,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 			if (updatedKeys.contains(OptionsTable.KEY_IS_SERVICE_USER_STARTED)) {
 				if (forceCalibPref!=null) {
 					mainLooperHandler.post(new Runnable() {
-						@Override
 						public void run() {
 							//In case of any changes to the service the force calibration should become false
 							// This is to re initiate the manual calibration process.
@@ -132,7 +128,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 			if (Constants.IS_DEV_VERSION &&
 					updatedKeys.contains(OptionsTable.KEY_USE_AGGREGATOR)) {
 				mainLooperHandler.post(new Runnable() {
-					@Override
 					public void run() {
 						aggregatePref.setChecked(optionsTable.getUseAggregator());
 					}

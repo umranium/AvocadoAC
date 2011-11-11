@@ -320,7 +320,6 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 
 	}
 
-	@Override
 	public void onFieldChange(Set<String> updatedKeys) {
 		if (updatedKeys.contains(OptionsTable.KEY_IS_CALIBRATED)) {
 			if (!this.optionsTable.isCalibrated()) {

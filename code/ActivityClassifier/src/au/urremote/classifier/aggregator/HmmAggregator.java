@@ -11,7 +11,6 @@ public class HmmAggregator implements IAggregator {
 	float[][] transitionProbNumerator;
 	float[][] transitionProbDenomenator;
 
-	@Override
 	public void init(Context context) {
 		Set<String> activities = ActivityNames.getAllActivities(context);
 		
@@ -20,14 +19,12 @@ public class HmmAggregator implements IAggregator {
 		transitionProbDenomenator = new float[numberOfActivities][numberOfActivities];
 	}
 
-	@Override
 	public void update(Map<String, Float> activityValues) {
 		
 		
 		
 	}
 
-	@Override
 	public String getActivity() {
 		return null;
 	}

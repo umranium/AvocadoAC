@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -256,7 +257,6 @@ public class RecorderService extends Service implements Runnable {
 			});
 		}
 		
-		@Override
 		public void handleHardwareFaultException(String title, String msg)
 				throws RemoteException {
 			RecorderService.this.handleHardwareFaultException(title, msg);
@@ -300,7 +300,6 @@ public class RecorderService extends Service implements Runnable {
 	//	called by the sampler when sampling a batch of samples is done.
 	private final SamplerCallback samplerCallback = new SamplerCallback() {
 
-		@Override
 		public void samplerFinished(SampleBatch batch) {
 			if(batch!=null)
 				//	set any required properties
@@ -314,7 +313,6 @@ public class RecorderService extends Service implements Runnable {
 			}
 		}
 
-		@Override
 		public void samplerStopped(SampleBatch batch) {
 			//	put it back into the buffer as a filled batch
 			try {
@@ -324,7 +322,6 @@ public class RecorderService extends Service implements Runnable {
 			}
 		}
 
-		@Override
 		public void samplerError(SampleBatch batch, Exception e) {
 			//	put it back into the buffer as a filled batch
 			try {
@@ -485,10 +482,23 @@ public class RecorderService extends Service implements Runnable {
 		phoneInfo = new PhoneInfo(this);
 		batchBuffer = new SampleBatchBuffer();
 		
-		if (Constants.OUTPUT_DEBUG_INFO && Constants.OUTPUT_RAW_DATA)
-			rawDump = new RawDump();
-		else
+		if (shouldBeRunningRawDump()) {
+			IntentFilter mountedFilter = new IntentFilter(Intent.ACTION_MEDIA_MOUNTED); 
+			mountedFilter.addDataScheme("file"); 
+			registerReceiver(this.sdCardMountedReceiver, new IntentFilter(mountedFilter));
+			IntentFilter unmountedFilter = new IntentFilter(Intent.ACTION_MEDIA_EJECT); 
+			unmountedFilter.addDataScheme("file"); 
+			registerReceiver(this.sdCardMountedReceiver, new IntentFilter(unmountedFilter));
+			
+			if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
+				rawDump = new RawDump();
+			else {
+				rawDump = null;
+			}
+		}
+		else {
 			rawDump = null;
+		}
 
 		latestClassification = null;
 
@@ -661,5 +671,24 @@ public class RecorderService extends Service implements Runnable {
 //				System.currentTimeMillis()+Constants.DURATION_SLEEP_AFTER_FAULT,
 //				pendingAlarmIntent	);
 	}
+	
+	private boolean shouldBeRunningRawDump() {
+		return (Constants.OUTPUT_DEBUG_INFO && Constants.OUTPUT_RAW_DATA);
+	}
+	
+	private BroadcastReceiver sdCardMountedReceiver = new BroadcastReceiver() {
+		@Override
+		synchronized
+		public void onReceive(Context arg0, Intent intent) {
+			if (shouldBeRunningRawDump()) {
+				if (rawDump==null && Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+					rawDump = new RawDump();
+				}
+				if (rawDump!=null && !Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+					rawDump = null;
+				}
+			}
+		}
+	};
 
 }

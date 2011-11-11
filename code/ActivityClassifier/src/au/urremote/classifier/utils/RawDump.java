@@ -39,7 +39,6 @@ public class RawDump {
 		
 		//	fetch all required files in the folder
 		File[] files = this.dumpFolder.listFiles(new FilenameFilter() {
-			@Override
 			public boolean accept(File dir, String filename) {
 				return filename.matches("\\d\\d\\d\\d_\\d\\d_\\d\\d_\\d\\d_\\d\\d_\\d\\d\\.txt");
 			}
@@ -186,7 +185,6 @@ public class RawDump {
 	
 	private static Comparator<String> comparebyDate = new Comparator<String>() {
 		
-		@Override
 		public int compare(String object1, String object2) {
 			return compareFnames(object1, object2);
 		}

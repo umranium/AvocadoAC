@@ -69,7 +69,6 @@ public class WalkingSpeedUtil {
 	}
 	
 	private Comparator<SampleRef> peakAccelDecrComparator = new Comparator<SampleRef>() {
-		@Override
 		public int compare(SampleRef object1, SampleRef object2) {
 			return -Double.compare(object1.sample.accel, object2.sample.accel);
 		}

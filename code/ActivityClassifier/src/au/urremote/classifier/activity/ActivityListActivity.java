@@ -262,7 +262,6 @@ public class ActivityListActivity extends Activity {
 					lastDbUpdateTime,
 					reusableClassification,
 					new ActivitiesTable.ClassificationDataCallback() {
-						@Override
 						public void onRetrieve(Classification cl) {
 							//	check if item is on the list (updated) or is new (inserted)
 							if (currentlyDisplayedItems.containsKey(cl.getStart())) {

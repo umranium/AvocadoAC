@@ -122,10 +122,16 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
     private void writeToFile(String stacktrace, String filename) {
         try {
         	File outputFile = new File(Constants.PATH_SD_CARD_APP_LOC + File.separator + filename);
+        	
+        	if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+        		Log.e(Constants.DEBUG_TAG, "Unable to write stacktrace to file. External media not mounted!");
+        		return;
+        	}
+        	
         	Log.v(Constants.DEBUG_TAG, "Output Trace File:"+outputFile);
         	if (!outputFile.getParentFile().exists()) {
         		if (!outputFile.getParentFile().mkdirs()) {
-                    Log.e("Avocado AC Error", 
+                    Log.e(Constants.DEBUG_TAG, 
                     		"Unable to create log file directory:\n"+
                     		outputFile.getParentFile()+
                     		"\nCaused when writing stack to file:\n"+
@@ -134,7 +140,7 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
         	}
         	if (!outputFile.exists()) {
         		if (!outputFile.createNewFile()) {
-                    Log.e("Avocado AC Error", 
+                    Log.e(Constants.DEBUG_TAG, 
                     		"Unable to create log file:\n"+
                     		outputFile.getParentFile()+
                     		"\nCaused when writing stack to file:\n"+

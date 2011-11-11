@@ -98,7 +98,6 @@ public class AccountChooser {
 		}
 		builder.setSingleChoiceItems(choices, selectedAccountIndex,
 				new DialogInterface.OnClickListener() {
-					@Override
 					public void onClick(DialogInterface dialog, int which) {
 						selectedAccountIndex = which;
 					}

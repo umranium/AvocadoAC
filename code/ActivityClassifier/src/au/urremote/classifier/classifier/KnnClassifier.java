@@ -199,7 +199,6 @@ public class KnnClassifier implements Classifier {
     
     private static class ClassificationDistComparator implements Comparator<ClassificationDist> {
 
-		@Override
 		public int compare(ClassificationDist arg0, ClassificationDist arg1) {
 			return Double.compare(arg0.distance, arg1.distance);
 		}

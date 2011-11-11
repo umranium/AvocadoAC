@@ -69,7 +69,6 @@ public class DbAdapter {
 				currDate.getTime(),
 				reusableClassification,
 				new ActivitiesTable.ClassificationDataCallback() {
-					@Override
 					public void onRetrieve(Classification classification) {
 						String[] tempPara = {
 								Long.toString(classification.getStart()),

@@ -299,7 +299,6 @@ public class Classification implements Parcelable, Comparable<Classification> {
 
 	};
 
-	@Override
 	public int compareTo(Classification another) {
 		return (int)(this.start-another.start);
 	}

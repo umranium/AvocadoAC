@@ -171,7 +171,6 @@ public class UploadActivityHistoryThread extends Thread {
 			boolean first = true;
 			boolean bufferFull = false;
 			
-			@Override
 			public void onRetrieve(Classification cl) {
 				//	if previously the buffer was full, don't do any more processing...
 				if (bufferFull)
