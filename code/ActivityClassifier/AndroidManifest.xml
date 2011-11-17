@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="au.urremote.classifier"
+    package="com.urremote.classifier"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -10,13 +10,20 @@
         android:icon="@drawable/icon"
         android:label="@string/app_name" android:debuggable="true" android:allowClearUserData="true">
         
-		<receiver android:permission="android.permission.RECEIVE_BOOT_COMPLETED" android:name=".BootReceiver">
-
+		<receiver
+		    android:permission="android.permission.RECEIVE_BOOT_COMPLETED"
+		    android:name="BootReceiver"
+		    >
 			<intent-filter>
 				<action android:name="android.intent.action.BOOT_COMPLETED" />
-
 			</intent-filter>
-		</receiver><service android:label="Avocado AC Service" android:name=".service.RecorderService" /><activity android:screenOrientation="portrait" android:label="Avocado AC"
+		</receiver>
+		
+		<service android:label="Avocado AC" android:name=".service.RecorderService" />
+		
+		<activity
+		    android:screenOrientation="portrait"
+		    android:label="Avocado AC"
 			android:name=".activity.MainTabActivity">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
@@ -28,9 +35,8 @@
 
 		<activity android:name=".activity.ActivityListActivity"></activity>
 		<activity android:name=".activity.ActivityChartActivity"></activity>
-		<activity android:name=".activity.MainSettingsActivity"></activity>
-
 		<activity android:name=".activity.Sensors" android:theme="@android:style/Theme.Dialog"></activity>
+		<activity android:name=".activity.MainSettingsActivity"></activity>
 		
     </application>
 
