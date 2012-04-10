@@ -19,12 +19,12 @@ if you want to use the service properly.
 
     <string name="activity_unknown">Unknown</string>
     <string name="activity_classified_charging">Charging</string>
-     <string name="activity_classified_end">END</string>
+        <string name="activity_classified_end">END</string>
     <string name="activity_classified_uncarried">Not carried</string>
     <string name="activity_classified_walking">Walking</string>
     <string name="activity_classified_paddling">Paddling</string>
     <string name="activity_classified_running">Running</string>
-    <string name="activity_classified_traveling">Traveling</string>
+    <string name="activity_classified_travelling">Travelling</string>
     <string name="activity_classified_cycling">Cycling</string>
     <string name="activity_classified_active">Active</string>
     <string name="activity_off">OFF</string>
@@ -37,9 +37,9 @@ if you want to use the service properly.
 	 <string name="activity_classified_idle">Idle</string> 
 	 <string name="activity_classified_idle_standing">Standing still</string> 
 	 <string name="activity_classified_idle_sitting">Sitting down</string> 
-	 <string name="activity_classified_vehicle">Traveling</string> 
-	 <string name="activity_classified_vehicle_bus">Traveling by bus</string> 
-	 <string name="activity_classified_vehicle_car">Traveling by car</string> 
+	 <string name="activity_classified_vehicle">Travelling</string> 
+	 <string name="activity_classified_vehicle_bus">Travelling by bus</string> 
+	 <string name="activity_classified_vehicle_car">Travelling by car</string> 
     
 
 <string name="activity_classified_stationary">Stationary</string>
@@ -47,4 +47,31 @@ if you want to use the service properly.
 <string name="activity_classified_charging_travelling">Charging (Travelling)</string>
 <string name="activity_end">End of Previous Classifications</string>
 <string name="activity_classified_rowing">Rowing</string>
+
+    
+  <string name="generic_ok"
+    translation_description="The text on a button to say ok.">
+    OK
+  </string>
+  <string name="generic_cancel"
+    translation_description="The text on a button to say cancel.">
+    Cancel
+  </string>
+  <string name="send_google_choose_account_title"
+    translation_description="When sending to Google, the dialog title to choose a Google account.
+
+      Screenshot: send_google_choose_account.png">
+    Choose account
+  </string>
+  <string name="send_google_no_account_message"
+    translation_description="When sending to Google, the dialog message when no Google account is
+      found.">
+    No account found to upload tracks to.
+  </string>
+  <string name="send_google_no_account_title"
+    translation_description="When sending to Google, the dialog title when no Google account is
+      found.">
+    No account found
+  </string>
+      
 </resources>

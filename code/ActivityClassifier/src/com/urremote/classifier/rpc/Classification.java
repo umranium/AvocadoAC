@@ -30,7 +30,8 @@ public class Classification implements Parcelable, Comparable<Classification> {
 	private String classification;
 	private long start;
 	private long end;
-	private boolean isChecked;
+	private String startStr;
+	private String endStr;
 	private Long myTracksId;
 	private long lastUpdate;
 	private int numberOfBatches;
@@ -53,13 +54,35 @@ public class Classification implements Parcelable, Comparable<Classification> {
 		init(classification, start, end);
 	}
 	
+	public Classification(Classification other) {
+		assignFrom(other);
+	}
+	
+	public void assignFrom(Classification other) {
+		this.classification = other.classification;
+		this.start = other.start;
+		this.end = other.end;
+		this.startStr = other.startStr;
+		this.endStr = other.endStr;
+		this.myTracksId = other.myTracksId;
+		this.lastUpdate = other.lastUpdate;
+		this.numberOfBatches = other.numberOfBatches;
+		this.totalMet = other.totalMet;
+		this.totalEeAct = other.totalEeAct;
+		this.uiStartTime = other.uiStartTime;
+		this.dbStartTime = other.dbStartTime;
+		this.uiEndTime = other.uiEndTime;
+		this.dbEndTime = other.dbEndTime;
+		this.durationStr = other.durationStr;
+		this.niceClassification = other.niceClassification;
+	}
+	
 	public void init(String classification, long start, long end) {
 		this.classification = classification;
 		if (this.classification==null)
 			throw new RuntimeException("Invalid classification with classification name as NULL");
 		this.start = start;
 		this.end = end;
-		this.isChecked = false;
 		this.myTracksId = null;
 		this.lastUpdate = 0;
 		this.numberOfBatches = 1;
@@ -155,20 +178,6 @@ public class Classification implements Parcelable, Comparable<Classification> {
 	}
 	
 	/**
-	 * @return the isChecked
-	 */
-	public boolean isChecked() {
-		return isChecked;
-	}
-
-	/**
-	 * @param isChecked the isChecked to set
-	 */
-	public void setChecked(boolean isChecked) {
-		this.isChecked = isChecked;
-	}
-	
-	/**
 	 * @return the lastUpdate
 	 */
 	public long getLastUpdate() {
@@ -214,16 +223,16 @@ public class Classification implements Parcelable, Comparable<Classification> {
 	/**
 	 * @return the total actual energy expenditure (EEact) for the activity
 	 */
-	public float getTotalEeAct() {
-		return totalEeAct;
-	}
+//	public float getTotalEeAct() {
+//		return totalEeAct;
+//	}
 
 	/**
 	 * @param totalEeAct	the total actual energy expenditure (EEact) for the activity
 	 */
-	public void setTotalEeAct(float totalEeAct) {
-		this.totalEeAct = totalEeAct;
-	}
+//	public void setTotalEeAct(float totalEeAct) {
+//		this.totalEeAct = totalEeAct;
+//	}
 	
 	/**
 	 * @return the myTracksId
@@ -274,7 +283,7 @@ public class Classification implements Parcelable, Comparable<Classification> {
 					classification.replace("/", "_").toLowerCase()
 					);
 	
-		//Log.v(Constants.DEBUG_TAG, "Classification derived name: '"+name+"' from: '"+classification+"'");
+		//Log.v(Constants.TAG, "Classification derived name: '"+name+"' from: '"+classification+"'");
 
 		int id = context.getResources().getIdentifier(
 				name, "string", Constants.DEFAULT_PACKAGE);
@@ -302,20 +311,6 @@ public class Classification implements Parcelable, Comparable<Classification> {
 
 	public int compareTo(Classification another) {
 		return (int)(this.start-another.start);
-	}
-	
-	public void assignFrom(Classification another) {
-		this.classification = another.classification;
-		this.start = another.start;
-		this.end = another.end;
-		this.isChecked = another.isChecked;
-		this.myTracksId = another.myTracksId;
-		this.lastUpdate = another.lastUpdate;
-		this.numberOfBatches = another.numberOfBatches;
-		this.totalMet = another.totalMet;
-		this.totalEeAct = another.totalEeAct;
-		
-		computeDurationStr();
 	}
 	
 }

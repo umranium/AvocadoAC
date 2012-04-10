@@ -76,37 +76,6 @@ public class ActivityQueries extends Queries{
 		dbAdapter = super.dbAdapter;
 	}
 	
-	public synchronized ArrayList<String[]> getTodayItemsFromActivityTable(){
-
-		ArrayList<String[]> items = new ArrayList<String[]>();
-		Date date = new Date();
-		int day = date.getDate();
-		int month = date.getMonth()+1;
-		
-		Calendar calendarToday = Calendar.getInstance();
-		calendarToday.add(Calendar.DAY_OF_MONTH, -1);
-		Date todayTime = calendarToday.getTime();
-		
-		Calendar calendarFourHour = Calendar.getInstance();
-		calendarFourHour.add(Calendar.HOUR, -4);
-		Date fourHourTime = calendarFourHour.getTime();
-		
-		Calendar calendarHour = Calendar.getInstance();
-		calendarHour.add(Calendar.HOUR, -1);
-		Date hourTime = calendarHour.getTime();
-
-		setOneDayBefore(todayTime);
-		setFourHourBefore(fourHourTime);
-		setHourBefore(hourTime);
-
-
-		items = dbAdapter.fetchTodayItemsFromActivityTable(todayTime,date);
-		ArrayList<ArrayList<String[]>> activityGroup = new ArrayList<ArrayList<String[]>>();
-		activityGroup=getActivityGroup(items);
-
-		return items;
-	}
-	
 	private Date todayTime;
 	private Date fourHourTime;
 	private Date hourTime;

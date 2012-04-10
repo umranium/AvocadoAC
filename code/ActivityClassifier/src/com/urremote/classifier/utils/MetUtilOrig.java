@@ -141,20 +141,20 @@ public class MetUtilOrig implements OptionUpdateHandler {
 				* counts[1]);
 		double verCounts = counts[2];
 
-		Log.i(Constants.DEBUG_TAG, "horCounts=" + horCounts);
-		Log.i(Constants.DEBUG_TAG, "verCounts=" + verCounts);
+		Log.i(Constants.TAG, "horCounts=" + horCounts);
+		Log.i(Constants.TAG, "verCounts=" + verCounts);
 
-		Log.i(Constants.DEBUG_TAG, "param_a =" + param_a);
-		Log.i(Constants.DEBUG_TAG, "param_p1=" + param_p1);
-		Log.i(Constants.DEBUG_TAG, "param_b =" + param_b);
-		Log.i(Constants.DEBUG_TAG, "param_p2=" + param_p2);
+		Log.i(Constants.TAG, "param_a =" + param_a);
+		Log.i(Constants.TAG, "param_p1=" + param_p1);
+		Log.i(Constants.TAG, "param_b =" + param_b);
+		Log.i(Constants.TAG, "param_p2=" + param_p2);
 
 		double eeAct = param_a * Math.pow(horCounts, param_p1) + param_b
 				* Math.pow(verCounts, param_p2);
 
-		Log.i(Constants.DEBUG_TAG, "eeAct=" + eeAct);
+		Log.i(Constants.TAG, "eeAct=" + eeAct);
 
-		Log.i(Constants.DEBUG_TAG, "restingEE=" + restingEE);
+		Log.i(Constants.TAG, "restingEE=" + restingEE);
 
 		return eeAct;
 	}
@@ -229,7 +229,7 @@ public class MetUtilOrig implements OptionUpdateHandler {
 			results[dim] = counts / timePeriod;
 		}
 
-		Log.d(Constants.DEBUG_TAG,
+		Log.d(Constants.TAG,
 				"Average Counts (per second): " + Arrays.toString(results));
 	}
 

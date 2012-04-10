@@ -16,6 +16,7 @@ import com.urremote.classifier.accel.SamplerCallback;
 import com.urremote.classifier.accel.async.AsyncAccelReader;
 import com.urremote.classifier.accel.async.AsyncSampler;
 import com.urremote.classifier.activity.MainTabActivity;
+import com.urremote.classifier.auth.AuthManager;
 import com.urremote.classifier.common.ActivityNames;
 import com.urremote.classifier.common.Constants;
 import com.urremote.classifier.common.ExceptionHandler;
@@ -23,6 +24,7 @@ import com.urremote.classifier.db.ActivitiesTable;
 import com.urremote.classifier.db.DebugDataTable;
 import com.urremote.classifier.db.OptionsTable;
 import com.urremote.classifier.db.SqlLiteAdapter;
+import com.urremote.classifier.fusiontables.FusionTableActivitySync;
 import com.urremote.classifier.rpc.Classification;
 import com.urremote.classifier.service.threads.AccountThread;
 import com.urremote.classifier.service.threads.ClassifierThread;
@@ -92,7 +94,9 @@ public class RecorderService extends Service implements Runnable {
 	private PowerManager.WakeLock PARTIAL_WAKE_LOCK_MANAGER;
 	private PowerManager.WakeLock SCREEN_DIM_WAKE_LOCK_MANAGER;
 
-	private UploadActivityHistoryThread uploadActivityHistory;
+	//private UploadActivityHistoryThread uploadActivityHistory;
+	private AuthManager authManager;
+	private FusionTableActivitySync activityTableSync;
 
 	private SqlLiteAdapter sqlLiteAdapter;
 	private OptionsTable optionsTable;
@@ -117,7 +121,7 @@ public class RecorderService extends Service implements Runnable {
 	private MetUtilOrig metUtil;
 	private RawDump rawDump;
 
-	private Classification latestClassification;
+	private Classification latestClassification = new Classification();
 
 	/**
 	 * broadcastReceiver that receive phone's screen state
@@ -228,7 +232,7 @@ public class RecorderService extends Service implements Runnable {
 		}
 
 		public void submitClassification(long sampleTime, String classification, double eeAct, double met) throws RemoteException {
-			Log.i(Constants.DEBUG_TAG, "Recorder Service: Received classification: '" + classification + "'");
+			Log.i(Constants.TAG, "Recorder Service: Received classification: '" + classification + "'");
 			updateScores(sampleTime, classification, eeAct, met);
 		}
 
@@ -279,13 +283,13 @@ public class RecorderService extends Service implements Runnable {
 					//		period.
 					System.gc();
 
-					//					Log.v(Constants.DEBUG_TAG, "Sending an empty batch for sampling.");
+					//					Log.v(Constants.TAG, "Sending an empty batch for sampling.");
 
 					//	please note that this function blocks until an empty batch is found
 					//	which is why it is important to start with a sufficient number of batches
 					//	and process the batches as fast as possible
 					SampleBatch batch = batchBuffer.takeEmptyInstance();
-					Log.i(Constants.DEBUG_TAG, "Sampling Batch");
+					Log.i(Constants.TAG, "Sampling Batch");
 					sampler.start(batch);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -338,13 +342,10 @@ public class RecorderService extends Service implements Runnable {
 	private void updateScores(long sampleTime, String best, double eeAct, double met) {
 		long start = sampleTime;
 		long end = sampleTime+Constants.DELAY_SAMPLE_BATCH;
-
-
-		if (latestClassification!=null
-				&& best.equals(latestClassification.getClassification())) {
-			
+		
+		if (activitiesTable.loadLatest(latestClassification) && best.equals(latestClassification.getClassification())) {
 			latestClassification.setNumberOfBatches(latestClassification.getNumberOfBatches()+1);
-			latestClassification.setTotalEeAct(latestClassification.getTotalEeAct()+(float)eeAct);
+			//latestClassification.setTotalEeAct(latestClassification.getTotalEeAct()+(float)eeAct);
 			latestClassification.setTotalMet(latestClassification.getTotalMet()+(float)met);
 			latestClassification.setEnd(end);
 			
@@ -360,13 +361,13 @@ public class RecorderService extends Service implements Runnable {
 			}
 			
 			latestClassification.setNumberOfBatches(1);
-			latestClassification.setTotalEeAct((float)eeAct);
+			//latestClassification.setTotalEeAct((float)eeAct);
 			latestClassification.setTotalMet((float)met);
 
 			activityWatcher.processLatest(latestClassification);
 			activitiesTable.insert(latestClassification);
 		}
-
+		
 		if (Constants.OUTPUT_DEBUG_INFO) {
 			debugDataTable.updateFinalSystemOutput(sampleTime, best);
 		}
@@ -389,7 +390,7 @@ public class RecorderService extends Service implements Runnable {
 		//		if (Constants.IS_DEV_VERSION) {
 		//			LogRedirect.redirect(new File(Constants.PATH_SD_CARD_LOG));			
 		//		}
-		Log.v(Constants.DEBUG_TAG, "RecorderService.onCreate()");
+		Log.v(Constants.TAG, "RecorderService.onCreate()");
 	}
 
 	/**
@@ -399,7 +400,7 @@ public class RecorderService extends Service implements Runnable {
 	public void onStart(final Intent intent, final int startId) {
 		super.onStart(intent, startId);
 
-		Log.v(Constants.DEBUG_TAG, "RecorderService.onStart()");
+		Log.v(Constants.TAG, "RecorderService.onStart()");
 
 		//	all the initialization code that was here,
 		//		has been moved to the run() function		
@@ -410,14 +411,14 @@ public class RecorderService extends Service implements Runnable {
 	@Override
 	public void onLowMemory() {
 		super.onLowMemory();
-		Log.v(Constants.DEBUG_TAG, "Low Memory Call Received");
+		Log.v(Constants.TAG, "Low Memory Call Received");
 	}
 
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
 
-		Log.v(Constants.DEBUG_TAG, "RecorderService.onDestroy()");
+		Log.v(Constants.TAG, "RecorderService.onDestroy()");
 
 		stopService();
 	}
@@ -455,7 +456,7 @@ public class RecorderService extends Service implements Runnable {
 		//		in the onDestroy method.
 		Looper.loop();
 
-		Log.v(Constants.DEBUG_TAG, "Recorder Service Exitting!!");		
+		Log.v(Constants.TAG, "Recorder Service Exitting!!");		
 	}
 
 	/**
@@ -500,9 +501,7 @@ public class RecorderService extends Service implements Runnable {
 		else {
 			rawDump = null;
 		}
-
-		latestClassification = null;
-
+		
 		activityWatcher = new ActivityWatcher(this);
 		activityWatcher.init();
 		
@@ -548,15 +547,16 @@ public class RecorderService extends Service implements Runnable {
 		// if the account wasn't previously sent,
 		// start a thread to register the account.
 		if (!optionsTable.isAccountSent()) {
-			registerAccountThread = new AccountThread(this, binder, phoneInfo);
-			registerAccountThread.start();
+			//registerAccountThread = new AccountThread(this, binder, phoneInfo);
+			//registerAccountThread.start();
 		} else {
 			registerAccountThread = null;
 		}
 
 		// start to upload un-posted activities to Web server
-		uploadActivityHistory = new UploadActivityHistoryThread(this, phoneInfo);		
-		uploadActivityHistory.startUploads();
+		//uploadActivityHistory = new UploadActivityHistoryThread(this, phoneInfo);		
+		//uploadActivityHistory.startUploads();
+		activityTableSync = new FusionTableActivitySync(this);
 
 		handler.postDelayed(registerRunnable, Constants.DELAY_SAMPLE_BATCH);
 
@@ -581,7 +581,7 @@ public class RecorderService extends Service implements Runnable {
 
 		CharSequence contentText;
 
-		if (ClassifierThread.bForceCalibration)
+		if (ClassifierThread.forceCalibration)
 			contentText = "Avocado AC calibration is running";
 		else
 			contentText = "Avocado AC service is running";
@@ -612,7 +612,8 @@ public class RecorderService extends Service implements Runnable {
 		}
 
 		//	stop threads
-		uploadActivityHistory.cancelUploads();
+		//uploadActivityHistory.cancelUploads();
+		activityTableSync.quit();
 		classifierThread.exit();
 		if (registerAccountThread!=null) {
 			registerAccountThread.exit();

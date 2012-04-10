@@ -37,12 +37,12 @@ public class Constants {
 	 * being debugged (i.e. plugged into the computer), and normal
 	 * usage.
 	 */
-	public final static boolean IS_DEBUGGING = false; 
+	public final static boolean IS_DEBUGGING = true; 
 	
 	/**
 	 * Should we or should we output debugging data?
 	 */
-	public static final boolean OUTPUT_DEBUG_INFO = true;
+	public static final boolean OUTPUT_DEBUG_INFO = false;
 	
 	/**
 	 * While outputting debugging data,
@@ -101,7 +101,7 @@ public class Constants {
 	/**
 	 * The interval between successive data uploads in {@link UploadActivityHistoryThread}
 	 */
-	public static final int DELAY_UPLOAD_DATA = 5*60*1000;	//	5min in ms
+	public static final int DELAY_UPLOAD_DATA = IS_DEBUGGING?(10*1000):(5*60*1000);	//	5min in ms
 	
 	/**
 	 * The delay after the dialog appears and before the {@link RecorderService} in
@@ -112,7 +112,7 @@ public class Constants {
 	/**
 	 * A tag that can be used to identify this application's log entries.
 	 */
-	public static final String DEBUG_TAG = "AvocadoAC";
+	public static final String TAG = "AvocadoAC";
 	
 	/**
 	 * Records file name.
@@ -253,6 +253,11 @@ public class Constants {
 	 * The maximum duration that activity data should be maintained in the database
 	 */
 	public final static long DURATION_KEEP_DB_ACTIVITY_DATA = 7*24*60*60*1000L;
+	
+	/**
+	 * The period between successive authentication retries
+	 */
+	public final static long PERIOD_RETRY_AUTHENTICATION = 5000L;//15*60*1000L; // 15min
 
 	/*
 	 ****************************************************************************************************************
@@ -292,6 +297,8 @@ public class Constants {
 	 */
 	public static final int NOTIFICATION_ID_ONGOING_SERVICE = 1;
 	public static final int NOTIFICATION_ID_HARDWARE_FAULT = 2;
+	public static final int NOTIFICATION_ID_AUTHENTICATION_FAILURE = 3;
+	public static final int NOTIFICATION_ID_NO_ACCOUNT = 3;
  
 	/*
 	 ****************************************************************************************************************
@@ -304,5 +311,10 @@ public class Constants {
 	 */
 	public static final long DURATION_SLEEP_AFTER_FAULT = IS_DEBUGGING?(30*1000L):(10*60*1000L);
 	
-	
+	/*
+	 ****************************************************************************************************************
+	 *		FUSION TABLES
+	 ****************************************************************************************************************
+	 */
+	public static final String FUSION_TABLE_NAME = "AvocadoAC_Activities";
 }

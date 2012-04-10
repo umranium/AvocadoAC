@@ -10,7 +10,7 @@ public class LogRedirect {
 
 	public static void dumpLog(File outputFile) {
 		try {
-			Log.i(Constants.DEBUG_TAG, "Redirecting device debug logs to sdcard...");
+			Log.i(Constants.TAG, "Redirecting device debug logs to sdcard...");
 			if (!outputFile.getParentFile().exists()) {
 				outputFile.getParentFile().mkdirs();
 			}
@@ -22,7 +22,7 @@ public class LogRedirect {
 		    //	clear
 //		    String clearCmd = "logcat -c";
 //		    Runtime.getRuntime().exec(clearCmd);
-			Log.i(Constants.DEBUG_TAG, "\tDebug logs redirected to "+outputFile.getAbsolutePath());
+			Log.i(Constants.TAG, "\tDebug logs redirected to "+outputFile.getAbsolutePath());
 		} catch (Exception e) {
 			throw new RuntimeException("Exception while trying to redirect device debug logs", e);
 		}

@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -22,14 +23,17 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.text.util.Linkify;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.flurry.android.FlurryAgent;
 import com.urremote.classifier.common.Constants;
 import com.urremote.classifier.common.ExceptionHandler;
 import com.urremote.classifier.db.ActivitiesTable;
+import com.urremote.classifier.db.OptionUpdateHandler;
 import com.urremote.classifier.db.OptionsTable;
 import com.urremote.classifier.db.SqlLiteAdapter;
 import com.urremote.classifier.rpc.Classification;
@@ -48,7 +52,7 @@ public class ActivityListActivity extends Activity {
 
 	public static boolean serviceIsRunning = false;
 
-	private final Handler handler = new Handler();
+	private Handler handler;
 
 	private SqlLiteAdapter sqlLiteAdapter;
 	private OptionsTable optionsTable;
@@ -77,6 +81,7 @@ public class ActivityListActivity extends Activity {
 	@Override
 	public void onCreate(Bundle icicle) {
 		super.onCreate(icicle);
+		this.handler = new Handler(this.getMainLooper());
 		
 		//set exception handler
 		Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler(this));
@@ -88,7 +93,9 @@ public class ActivityListActivity extends Activity {
 		setContentView(R.layout.main);
 
 		ListView listView = (ListView) findViewById(R.id.list); 
-		listView.setAdapter(new ArrayAdapter<Classification>(this,R.layout.item));
+		if (listView!=null) {
+			listView.setAdapter(new ArrayAdapter<Classification>(this,R.layout.item));
+		}
 	}
 
 	/**
@@ -104,6 +111,8 @@ public class ActivityListActivity extends Activity {
 	 */
 	protected void onResume() {
 		super.onResume();
+		updateFusionTableUrl();
+		optionsTable.registerUpdateHandler(optionUpdateHandler);
 		updateInterfaceRunnable.start();
 	}
 
@@ -113,6 +122,7 @@ public class ActivityListActivity extends Activity {
 	protected void onPause() {
 		super.onPause();
 		updateInterfaceRunnable.stop();
+		optionsTable.unregisterUpdateHandler(optionUpdateHandler);
 	}
 
 	/**
@@ -132,6 +142,22 @@ public class ActivityListActivity extends Activity {
 		super.onStop();
 		// wl.release();
 		FlurryAgent.onEndSession(this);
+	}
+	
+	private void updateFusionTableUrl() {
+		TextView txtFusionTableUrl = (TextView)findViewById(R.id.txtFusionTableUrl);
+		String fusionTableId = optionsTable.getFusionTableId();
+		if (fusionTableId==null || fusionTableId.length()==0) {
+			txtFusionTableUrl.setText("Not yet uploading to google fusion tables");
+			//txtFusionTableUrl.setTextColor(0xFF0000);
+			//txtFusionTableUrl.setAutoLinkMask(0);
+			txtFusionTableUrl.setEnabled(false);
+		} else {
+			txtFusionTableUrl.setText("https://www.google.com/fusiontables/DataSource?docid="+fusionTableId);
+			//txtFusionTableUrl.setTextColor(0x0000FF);
+			//txtFusionTableUrl.setAutoLinkMask(Linkify.WEB_URLS);
+			txtFusionTableUrl.setEnabled(true);
+		}
 	}
 	
 	/**
@@ -209,7 +235,7 @@ public class ActivityListActivity extends Activity {
 			//				try {
 			//					throw new RuntimeException();
 			//				} catch (Exception e) {
-			//					Log.v(Constants.DEBUG_TAG, "Update Chart UI Exception", e);
+			//					Log.v(Constants.TAG, "Update Chart UI Exception", e);
 			//				}
 			//
 			//		To avoid this, we make sure that the last call was at least
@@ -222,8 +248,13 @@ public class ActivityListActivity extends Activity {
 				lastUiUpdateTime = currentTime;
 			}
 
+			ListView listView = (ListView)findViewById(R.id.list);
+			if (listView==null) {
+				return;
+			}
+			
 			@SuppressWarnings("unchecked")
-			final ArrayAdapter<Classification> adapter = (ArrayAdapter<Classification>) ((ListView) findViewById(R.id.list)).getAdapter();
+			final ArrayAdapter<Classification> adapter = (ArrayAdapter<Classification>)listView.getAdapter();
 			
 			//	define the required period in which we want items to appear on the list
 			long periodStart = currentTime;
@@ -291,7 +322,7 @@ public class ActivityListActivity extends Activity {
 			
 			//	if any item has been updated or inserted
 			if (itemsUpdated>0 || itemsInserted>0) {
-				//Log.v(Constants.DEBUG_TAG, "List UI: updates="+itemsUpdated+", inserts="+itemsInserted+". Notifying list adapter that items have changed.");
+				//Log.v(Constants.TAG, "List UI: updates="+itemsUpdated+", inserts="+itemsInserted+". Notifying list adapter that items have changed.");
 				//	notify that the list data set has changed
 				adapter.notifyDataSetChanged();
 				
@@ -301,5 +332,20 @@ public class ActivityListActivity extends Activity {
 			}
 		}
 	}
-	
+
+
+	/**
+	 * Handles changes in the options
+	 */
+	private OptionUpdateHandler optionUpdateHandler = new OptionUpdateHandler() {
+		public void onFieldChange(Set<String> updatedKeys) {
+			if (updatedKeys.contains(OptionsTable.KEY_FUSION_TABLE_ID)) {
+				ActivityListActivity.this.runOnUiThread(new Runnable() {
+					public void run() {
+						updateFusionTableUrl();
+					}
+				});
+			}
+		}
+	};
 }

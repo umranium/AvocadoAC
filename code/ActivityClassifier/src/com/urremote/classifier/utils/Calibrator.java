@@ -145,7 +145,7 @@ public class Calibrator {
 				measurementsBuffer.returnEmptyInstance(measurementsBuffer.takeFilledInstance());
 			}
 		} catch (InterruptedException e) {
-			Log.e(Constants.DEBUG_TAG, "Error while resting calibration class", e);
+			Log.e(Constants.TAG, "Error while resting calibration class", e);
 		}
 	}
 
@@ -357,13 +357,13 @@ public class Calibrator {
 			if (measurement.axisSd[axis]>resetSd[axis]*allowedMultiplesOfDeviation &&
 					measurement.axisSd[axis]>Constants.CALIBARATION_MIN_ALLOWED_BASE_DEVIATION*allowedMultiplesOfDeviation
 			) {
-				Log.v(Constants.DEBUG_TAG, "Motion detected in current measurement, sd["+axis+"]="+measurement.axisSd[axis]+" max="+(resetSd[axis]*allowedMultiplesOfDeviation));
+				Log.v(Constants.TAG, "Motion detected in current measurement, sd["+axis+"]="+measurement.axisSd[axis]+" max="+(resetSd[axis]*allowedMultiplesOfDeviation));
 				motionDetected = true;
 				break;
 			}
 		}
 		if (!motionDetected) {
-			Log.v(Constants.DEBUG_TAG, "No motion detected in current measurement");
+			Log.v(Constants.TAG, "No motion detected in current measurement");
 		}
 		return motionDetected;
 	}
@@ -395,7 +395,7 @@ public class Calibrator {
 				last = measurementsBuffer.peekFilledInstance();
 			}
 		} catch (InterruptedException e) {
-			Log.e(Constants.DEBUG_TAG, 
+			Log.e(Constants.TAG, 
 					"Exception while attempting to find latest measurement " +
 					"taken before the period "+(currentSampleTime/1000)+"s", 
 					e);
@@ -419,7 +419,7 @@ public class Calibrator {
 				last = measurementsBuffer.peekFilledInstance();
 			}
 		} catch (InterruptedException e) {
-			Log.e(Constants.DEBUG_TAG, 
+			Log.e(Constants.TAG, 
 					"Exception while attempting to find latest measurement " +
 					"taken before the period "+(lTimeStamp/1000)+"s", 
 					e);
@@ -455,13 +455,13 @@ public class Calibrator {
 	synchronized
 	public void MainForceCalibrationProcess(long sampleTime, float[] mean, float[] sd, float[] sum, float[] sumSqr, int count) throws InterruptedException, RemoteException
 	{
-		if(ClassifierThread.bForceCalibration)
+		if(ClassifierThread.forceCalibration)
 		{
 			Measurement currGravity = UpdateGravity(sampleTime,mean,sd,sum,sumSqr,count);
 			//resetCalibrationOptionsBasedOnOrientation(calibrationState);
 			//		if(CalibrationAttempts>3)
 			//		{
-			//			ClassifierThread.bForceCalibration = false;
+			//			ClassifierThread.forceCalibration = false;
 			//			service.showServiceToast("Calibration failed due to phone not being still.");
 			//			//	reset data
 			//			reset();
@@ -474,7 +474,7 @@ public class Calibrator {
 			//			service.showServiceToast(/*"Attempt " + Integer.toString(CalibrationAttempts) +*/ "Calibration is failed. Please hold the phone still.");
 			//			//	return the current sample as unusable
 			//			measurementsBuffer.returnEmptyInstance(currGravity);
-			//			ClassifierThread.bForceCalibration = false;
+			//			ClassifierThread.forceCalibration = false;
 			//
 			//			////	reset data
 			//			//reset();
@@ -499,7 +499,7 @@ public class Calibrator {
 
 				setToCalibratedStateBasedOnOrientation(calibrationState);
 
-				ClassifierThread.bForceCalibration = false;
+				ClassifierThread.forceCalibration = false;
 
 				//	get rid of extra measurements...
 				emptyAllBeforeTheTimeStamp(sampleTime);
@@ -548,7 +548,7 @@ public class Calibrator {
 		Measurement lastGravity = measurementsBuffer.peekFilledInstance();
 
 		// check if there is any movement detected
-		while (lastGravity!=null && (hasMovement(lastGravity, currGravity) /* || !ClassifierThread.bForceCalibration*/)) {
+		while (lastGravity!=null && (hasMovement(lastGravity, currGravity) /* || !ClassifierThread.forceCalibration*/)) {
 			//	get rid of it
 			measurementsBuffer.returnEmptyInstance(measurementsBuffer.takeFilledInstance());
 			//	get the next
@@ -566,7 +566,7 @@ public class Calibrator {
 		Measurement lastGravity = measurementsBuffer.peekFilledInstance();
 
 		// check if there is any movement detected
-		while (lastGravity!=null && currMeasurement.time > lastGravity.time /* || !ClassifierThread.bForceCalibration*/)
+		while (lastGravity!=null && currMeasurement.time > lastGravity.time /* || !ClassifierThread.forceCalibration*/)
 		{
 			//	get rid of it
 			measurementsBuffer.returnEmptyInstance(measurementsBuffer.takeFilledInstance());
@@ -637,7 +637,7 @@ public class Calibrator {
 	synchronized
 	public void processData(long sampleTime, float[] mean, float[] sd, float[] sum, float[] sumSqr, int count) throws InterruptedException
 	{
-		//		Log.v(Constants.DEBUG_TAG, "Calibration/Uncarried process start: total instances="+measurementsBuffer.getTotalSize()+"/"+measurementsBuffer.getCapacity()+", empty="+measurementsBuffer.getEmptySize()+", filled="+measurementsBuffer.getFilledSize());
+		//		Log.v(Constants.TAG, "Calibration/Uncarried process start: total instances="+measurementsBuffer.getTotalSize()+"/"+measurementsBuffer.getCapacity()+", empty="+measurementsBuffer.getEmptySize()+", filled="+measurementsBuffer.getFilledSize());
 		try {
 			//	current found gravity
 			Measurement currGravity = UpdateGravity(sampleTime,mean,sd,sum,sumSqr,count);
@@ -661,18 +661,18 @@ public class Calibrator {
 				lastGravity = UpdateSecondSampleBatch(currGravity);
 
 				if (movementDetected)
-					Log.v(Constants.DEBUG_TAG, "Some movement detected in current measurement");
+					Log.v(Constants.TAG, "Some movement detected in current measurement");
 				else
-					Log.v(Constants.DEBUG_TAG, "No movement detected in current measurement");
+					Log.v(Constants.TAG, "No movement detected in current measurement");
 			}
 
 			if (lastGravity!=null) {
-				Log.d(Constants.DEBUG_TAG, "Stationary period: "+((sampleTime-lastGravity.time)/1000)+"s");
+				Log.d(Constants.TAG, "Stationary period: "+((sampleTime-lastGravity.time)/1000)+"s");
 
 				//	check and perhaps do calibration
 				//	is the stationary period more than the required stationary period for calibration
-				if (!isCalibrated && (sampleTime-lastGravity.time>Constants.DURATION_OF_CALIBRATION /*|| ClassifierThread.bForceCalibration*/)) {
-					Log.d(Constants.DEBUG_TAG, "Performing calibration.");
+				if (!isCalibrated && (sampleTime-lastGravity.time>Constants.DURATION_OF_CALIBRATION /*|| ClassifierThread.forceCalibration*/)) {
+					Log.d(Constants.TAG, "Performing calibration.");
 					/* TODO: Removed, because it is too late to show this toast here. The data is already collected here.
 					 * Therefore keeping the phone still would help to get better a calibration.
 					 */
@@ -691,7 +691,7 @@ public class Calibrator {
 					doCalibration(sSum, sSumSqr, sCount);
 
 					setToCalibratedState();
-					ClassifierThread.bForceCalibration = false;
+					ClassifierThread.forceCalibration = false;
 				}
 
 				//	check uncarried state
@@ -701,13 +701,13 @@ public class Calibrator {
 				emptyAllBefore(sampleTime, Math.max(Constants.DURATION_OF_CALIBRATION, Constants.DURATION_WAIT_FOR_UNCARRIED)*2);
 
 			} else {
-				Log.d(Constants.DEBUG_TAG, "No stationary period found.");
+				Log.d(Constants.TAG, "No stationary period found.");
 				//	set uncarried state
 				isUncarried = false;
 			}
 		} finally {
 			measurementsBuffer.assertAllAvailable();
-			//			Log.v(Constants.DEBUG_TAG, "Calibration/Uncarried process total instances: "+measurementsBuffer.getTotalSize()+"/"+measurementsBuffer.getCapacity()+", empty="+measurementsBuffer.getEmptySize()+", filled="+measurementsBuffer.getFilledSize());
+			//			Log.v(Constants.TAG, "Calibration/Uncarried process total instances: "+measurementsBuffer.getTotalSize()+"/"+measurementsBuffer.getCapacity()+", empty="+measurementsBuffer.getEmptySize()+", filled="+measurementsBuffer.getFilledSize());
 		}
 
 	}

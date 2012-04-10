@@ -82,7 +82,7 @@ public class AsyncSampler implements Sampler {
 			        startSamplingHardwareErrorCount = 0;
 				} catch (HardwareFaultException e) {
 		        	++startSamplingHardwareErrorCount;
-					Log.e(Constants.DEBUG_TAG, "Hardware Fault While Sampling", e);
+					Log.e(Constants.TAG, "Hardware Fault While Sampling", e);
 		            if (callback != null)
 		            	callback.samplerError(currentBatch, e);
 					finalizeSampling();
@@ -120,7 +120,7 @@ public class AsyncSampler implements Sampler {
 	        startSamplingHardwareErrorCount = 0;
         } catch (HardwareFaultException e) {
         	++startSamplingHardwareErrorCount;
-			Log.e(Constants.DEBUG_TAG, "Hardware Fault While Starting Sampling ("+startSamplingHardwareErrorCount+")", e);
+			Log.e(Constants.TAG, "Hardware Fault While Starting Sampling ("+startSamplingHardwareErrorCount+")", e);
 			
             if (callback != null)
             	callback.samplerError(currentBatch, e);
@@ -137,16 +137,16 @@ public class AsyncSampler implements Sampler {
 		}
         
         this.sampling = true;
-        Log.i(Constants.DEBUG_TAG, "Starting Timer");
+        Log.i(Constants.TAG, "Starting Timer");
         timer.scheduleAtFixedRate(this.timerTask, Constants.DELAY_BETWEEN_SAMPLES, Constants.DELAY_BETWEEN_SAMPLES);
-        Log.i(Constants.DEBUG_TAG, "Started Sampling.");
+        Log.i(Constants.TAG, "Started Sampling.");
     }
     
     private void finalizeSampling() {
         this.sampling = false;
     	reader.stopSampling();
         
-        Log.i(Constants.DEBUG_TAG, "Cancelling Timer");
+        Log.i(Constants.TAG, "Cancelling Timer");
     	timerTask.cancel();		//	cancel timer task
     	timer.purge();			//	purge timer task
     							//	replace timer task to make sure previous one is gc
@@ -159,7 +159,7 @@ public class AsyncSampler implements Sampler {
 	        	callback.samplerStopped(currentBatch);
 	    	finalizeSampling();
     	}
-        Log.i(Constants.DEBUG_TAG, "Sampling Stopped.");
+        Log.i(Constants.TAG, "Sampling Stopped.");
     }
 
 	public boolean isSampling() {

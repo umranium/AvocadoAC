@@ -70,7 +70,7 @@ public class RotateSamplesToVerticalHorizontal {
 		
 	private boolean internRotateToWorldCoordinates(float[][] samples, float[] gravityVec, float[] horVec)
 	{
-		Log.v(Constants.DEBUG_TAG, "gravity="+Arrays.toString(gravityVec)+", hor="+Arrays.toString(horVec));
+		Log.v(Constants.TAG, "gravity="+Arrays.toString(gravityVec)+", hor="+Arrays.toString(horVec));
 		if (!SensorManager.getRotationMatrix(rotationMat, null, gravityVec, horVec)) {
 			//	sometimes fails, according to the api
 			return false;

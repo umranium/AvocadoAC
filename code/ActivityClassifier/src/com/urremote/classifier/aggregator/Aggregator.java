@@ -152,7 +152,7 @@ public class Aggregator {
 
     void updateScores(final Map<String, Double> map, final String target) {
         for (Map.Entry<String, Double> entry : map.entrySet()) {
-//            Log.d(Constants.DEBUG_TAG, "Score for " + entry.getKey() + " was: " + entry.getValue());
+//            Log.d(Constants.TAG, "Score for " + entry.getKey() + " was: " + entry.getValue());
             entry.setValue(entry.getValue() * (1 - DELTA));
 
             if (entry.getKey().equals(target)) {
@@ -170,7 +170,7 @@ public class Aggregator {
                     }
             	}
             }
-            Log.d(Constants.DEBUG_TAG, "Score for " + entry.getKey() + " is now: " + entry.getValue());
+            Log.d(Constants.TAG, "Score for " + entry.getKey() + " is now: " + entry.getValue());
         }
     }
 

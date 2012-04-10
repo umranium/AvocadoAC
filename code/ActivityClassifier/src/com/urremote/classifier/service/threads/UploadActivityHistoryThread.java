@@ -155,83 +155,83 @@ public class UploadActivityHistoryThread extends Thread {
 
 	private void uploadData(String accountName)
 	{
-		Log.v(Constants.DEBUG_TAG, "Upload Activity History Thread attempting to upload data.");
-		
-		HttpClient client = new DefaultHttpClient();
-
-		final HttpPost post = new HttpPost(Constants.URL_ACTIVITY_POST);
-		//final File file = new File(Constants.PATH_ACTIVITY_RECORDS_FILE);
-		//final FileEntity entity = new FileEntity(file, "text/plain");
-
-		/*
-		 * if there are un-posted activities in the device repository,
-		 * then merge every information of activity into one string(message),
-		 * then upload to Web server.
-		 */
-		activitiesTable.loadUnchecked(classification, new ActivitiesTable.ClassificationDataCallback() {
-			boolean first = true;
-			boolean bufferFull = false;
-			
-			public void onRetrieve(Classification cl) {
-				//	if previously the buffer was full, don't do any more processing...
-				if (bufferFull)
-					return;
-				
-				//	compute what we have to append
-				String[] dbStartSplitted =  cl.getDbStartTime().split(" ");
-				String[] dbEndSplitted =  cl.getDbEndTime().split(" ");
-				String appenditure = cl.getClassification()+"&&"+
-									dbStartSplitted[0]+" "+
-									dbStartSplitted[1]+"&&"+
-									dbEndSplitted[0]+" "+
-									dbEndSplitted[1]+"&&"+
-									df1.format(tempdate);
-				if (!first)
-					appenditure = "##" + appenditure;
-				else
-					first = false;
-				
-				//	check, after appending, does the size go past 500?
-				bufferFull = (appenditure.length() + htmlMessage.length()) > 500;
-				
-				//	if it does, don't append
-				if (bufferFull)
-					return;
-				
-				//	append message...
-				tempdate.setTime(cl.getStart());
-				htmlMessage.append(appenditure);
-				processed.add(cl.getStart());
-			}
-		});
-		
-	    //send un-posted activities with the size, date, and Google account to Web server.
-	    try {
-	    	StringEntity entity = new StringEntity("Okiey");
-	    	
-	    	String message = htmlMessage.toString();
-	    	
-	    	Date systemdate = Calendar.getInstance().getTime();
-	    	String reportDate = df.format(systemdate);
-	    	post.setHeader("sysdate",reportDate);
-	    	post.setHeader("size",Integer.toString(processed.size()));
-  	        post.setHeader("message", message);
-  	        post.setHeader("UID", accountName);
-  	        post.setEntity(entity);
-  	        
-  	        Log.i(Constants.DEBUG_TAG, "Uploading activities using account: "+accountName);
-  	        int code = new DefaultHttpClient().execute(post).getStatusLine().getStatusCode();
-  	        //Log.i(Constants.DEBUG_TAG, "Upload Activity History Result Code: "+code+"\n"+message);
-  	        
-  	        for (Long st:processed) {
-  	        	activitiesTable.updateChecked(st);
-  	        }
-	    } catch (Exception ex) {
-	    	Log.e(Constants.DEBUG_TAG, "Unable to upload sensor logs: "+ex.getMessage());
-	    } 
-	    
-		htmlMessage.setLength(0);
-		processed.clear();
+//		Log.v(Constants.TAG, "Upload Activity History Thread attempting to upload data.");
+//		
+//		HttpClient client = new DefaultHttpClient();
+//
+//		final HttpPost post = new HttpPost(Constants.URL_ACTIVITY_POST);
+//		//final File file = new File(Constants.PATH_ACTIVITY_RECORDS_FILE);
+//		//final FileEntity entity = new FileEntity(file, "text/plain");
+//
+//		/*
+//		 * if there are un-posted activities in the device repository,
+//		 * then merge every information of activity into one string(message),
+//		 * then upload to Web server.
+//		 */
+//		activitiesTable.loadUnchecked(classification, new ActivitiesTable.ClassificationDataCallback() {
+//			boolean first = true;
+//			boolean bufferFull = false;
+//			
+//			public void onRetrieve(Classification cl) {
+//				//	if previously the buffer was full, don't do any more processing...
+//				if (bufferFull)
+//					return;
+//				
+//				//	compute what we have to append
+//				String[] dbStartSplitted =  cl.getDbStartTime().split(" ");
+//				String[] dbEndSplitted =  cl.getDbEndTime().split(" ");
+//				String appenditure = cl.getClassification()+"&&"+
+//									dbStartSplitted[0]+" "+
+//									dbStartSplitted[1]+"&&"+
+//									dbEndSplitted[0]+" "+
+//									dbEndSplitted[1]+"&&"+
+//									df1.format(tempdate);
+//				if (!first)
+//					appenditure = "##" + appenditure;
+//				else
+//					first = false;
+//				
+//				//	check, after appending, does the size go past 500?
+//				bufferFull = (appenditure.length() + htmlMessage.length()) > 500;
+//				
+//				//	if it does, don't append
+//				if (bufferFull)
+//					return;
+//				
+//				//	append message...
+//				tempdate.setTime(cl.getStart());
+//				htmlMessage.append(appenditure);
+//				processed.add(cl.getStart());
+//			}
+//		});
+//		
+//	    //send un-posted activities with the size, date, and Google account to Web server.
+//	    try {
+//	    	StringEntity entity = new StringEntity("Okiey");
+//	    	
+//	    	String message = htmlMessage.toString();
+//	    	
+//	    	Date systemdate = Calendar.getInstance().getTime();
+//	    	String reportDate = df.format(systemdate);
+//	    	post.setHeader("sysdate",reportDate);
+//	    	post.setHeader("size",Integer.toString(processed.size()));
+//  	        post.setHeader("message", message);
+//  	        post.setHeader("UID", accountName);
+//  	        post.setEntity(entity);
+//  	        
+//  	        Log.i(Constants.TAG, "Uploading activities using account: "+accountName);
+//  	        int code = new DefaultHttpClient().execute(post).getStatusLine().getStatusCode();
+//  	        //Log.i(Constants.TAG, "Upload Activity History Result Code: "+code+"\n"+message);
+//  	        
+//  	        for (Long st:processed) {
+//  	        	activitiesTable.updateChecked(st);
+//  	        }
+//	    } catch (Exception ex) {
+//	    	Log.e(Constants.TAG, "Unable to upload sensor logs: "+ex.getMessage());
+//	    } 
+//	    
+//		htmlMessage.setLength(0);
+//		processed.clear();
 		
 	}
 

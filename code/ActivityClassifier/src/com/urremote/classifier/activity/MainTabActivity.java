@@ -63,21 +63,21 @@ public class MainTabActivity extends TabActivity {
 			service = ActivityRecorderBinder.Stub.asInterface(iBinder);
 			updateButtonRunnable.updateNow();
 			
-			Log.v(Constants.DEBUG_TAG, "MainTabActivity: Connected to service");
+			Log.v(Constants.TAG, "MainTabActivity: Connected to service");
 			
 			try {
-				Log.v(Constants.DEBUG_TAG, "Was the service previously started by the user? "+optionsTable.isServiceUserStarted()+", Is Running? "+service.isRunning());
+				Log.v(Constants.TAG, "Was the service previously started by the user? "+optionsTable.isServiceUserStarted()+", Is Running? "+service.isRunning());
 				if (optionsTable.isServiceUserStarted() && !service.isRunning()) {
 					MainTabActivity.this.startService();
 				}
 			} catch (RemoteException e) {
-				Log.v(Constants.DEBUG_TAG, "Error while attempting to automatically start service", e);
+				Log.v(Constants.TAG, "Error while attempting to automatically start service", e);
 			}
 		}
 
 		public void onServiceDisconnected(ComponentName componentName) {
 			service = null;
-			Log.v(Constants.DEBUG_TAG, "MainTabActivity: Disconnected from service");
+			Log.v(Constants.TAG, "MainTabActivity: Disconnected from service");
 		}
 
 
@@ -203,7 +203,7 @@ public class MainTabActivity extends TabActivity {
 	{
 		try {
 
-			Log.v(Constants.DEBUG_TAG, "User starting RecorderService");
+			Log.v(Constants.TAG, "User starting RecorderService");
 			EnableDeletion = false;
 			FlurryAgent.onEvent("recording_start");
 			startServiceRunnable.startService();
@@ -213,14 +213,14 @@ public class MainTabActivity extends TabActivity {
 
 			
 		} catch (Exception ex) {
-			Log.e(Constants.DEBUG_TAG, "Unable to get service state", ex);
+			Log.e(Constants.TAG, "Unable to get service state", ex);
 		}
 	}
 	
 	private void stopService()
 	{
 		try {
-			Log.v(Constants.DEBUG_TAG, "User stopping RecorderService");
+			Log.v(Constants.TAG, "User stopping RecorderService");
 			if (service.isRunning()) {
 				
 				optionsTable.setServiceUserStarted(false);
@@ -237,7 +237,7 @@ public class MainTabActivity extends TabActivity {
 
 			}
 		} catch (RemoteException ex) {
-			Log.e(Constants.DEBUG_TAG, "Unable to get service state", ex);
+			Log.e(Constants.TAG, "Unable to get service state", ex);
 		}
 	}
 
@@ -300,7 +300,7 @@ public class MainTabActivity extends TabActivity {
 						builder.show();							
 					}
 				} catch (RemoteException e) {
-					Log.e(Constants.DEBUG_TAG, "Error Starting Recorder Service", e);
+					Log.e(Constants.TAG, "Error Starting Recorder Service", e);
 				}
 				break;
 			}
@@ -339,7 +339,7 @@ public class MainTabActivity extends TabActivity {
 				try {
 					updateButton();
 				} catch (ParseException ex) {
-					Log.e(Constants.DEBUG_TAG, "Error while performing scheduled UI update.", ex);
+					Log.e(Constants.TAG, "Error while performing scheduled UI update.", ex);
 				}
 
 				reentrantLock.unlock();
@@ -396,7 +396,7 @@ public class MainTabActivity extends TabActivity {
 				prevServiceRunning = isServiceRunning;
 
 			} catch (RemoteException ex) {
-				Log.e(Constants.DEBUG_TAG, "Error while updating user interface", ex);
+				Log.e(Constants.TAG, "Error while updating user interface", ex);
 			}
 		}
 

@@ -48,11 +48,11 @@ public class MyTracksIntergration {
 				service = ITrackRecordingService.Stub.asInterface(iBinder);
 				try {
 					if (!service.isRecording()) {
-						Log.i(Constants.DEBUG_TAG, "Starting new MyTracks Track");
+						Log.i(Constants.TAG, "Starting new MyTracks Track");
 						currentTrackId = service.startNewTrack();
 					}
 					else {
-						Log.i(Constants.DEBUG_TAG, "Found Tracks already recording a Track");
+						Log.i(Constants.TAG, "Found Tracks already recording a Track");
 						currentTrackId = service.getRecordingTrackId();
 					}
 				} catch (RemoteException e) {
@@ -82,14 +82,14 @@ public class MyTracksIntergration {
 			intent.setComponent(new ComponentName(MY_TRACKS_SERVICE_PACKAGE,
 					MY_TRACKS_SERVICE_CLASS));
 			if (!context.bindService(intent, connection, Context.BIND_AUTO_CREATE)) {
-				Log.e(Constants.DEBUG_TAG, "Couldn't bind to MyTracks service.");
+				Log.e(Constants.TAG, "Couldn't bind to MyTracks service.");
 				return false;
 			} else {
-				Log.i(Constants.DEBUG_TAG, "Connected to MyTracks service");
+				Log.i(Constants.TAG, "Connected to MyTracks service");
 				return true;
 			}
 		} catch (Exception e) {
-			Log.e(Constants.DEBUG_TAG, "Error while connecting to MyTracks service", e);
+			Log.e(Constants.TAG, "Error while connecting to MyTracks service", e);
 			return false;
 		}
 	}
@@ -101,14 +101,14 @@ public class MyTracksIntergration {
 		if (service!=null) {
 			try {
 				if (service.isRecording()){
-					Log.i(Constants.DEBUG_TAG, "End MyTracks from recording track");
+					Log.i(Constants.TAG, "End MyTracks from recording track");
 					service.endCurrentTrack();
 				}
 			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
 			context.unbindService(connection);
-			Log.i(Constants.DEBUG_TAG, "Disconnected from MyTracks service");
+			Log.i(Constants.TAG, "Disconnected from MyTracks service");
 			service = null;
 		}
 	}
@@ -154,7 +154,7 @@ public class MyTracksIntergration {
 	 * Whether or not the attempt was successful
 	 */
 	public void startRecording() {
-		Log.i(Constants.DEBUG_TAG, "Attempting to start MyTracks Recording");
+		Log.i(Constants.TAG, "Attempting to start MyTracks Recording");
 		if (service!=null)
 			disconnect();
 		connect();
@@ -164,7 +164,7 @@ public class MyTracksIntergration {
 	 * Stops recording the current track.
 	 */
 	public void stopRecording() {
-		Log.i(Constants.DEBUG_TAG, "Attempting to stop MyTracks Recording");
+		Log.i(Constants.TAG, "Attempting to stop MyTracks Recording");
 		disconnect();
 	}
 
@@ -185,7 +185,7 @@ public class MyTracksIntergration {
 						WaypointType.MARKER, name, description, WaypointCreationRequest.DEFAULT_MARKER.getIconUrl());
 	//			WaypointCreationRequest request = WaypointCreationRequest.DEFAULT_MARKER;
 				service.insertWaypoint(request);
-				Log.i(Constants.DEBUG_TAG, "MyTracks way-point marker inserted: "+name+", "+description);
+				Log.i(Constants.TAG, "MyTracks way-point marker inserted: "+name+", "+description);
 			}
 		} catch (RemoteException e) {
 			throw new RuntimeException(
@@ -210,7 +210,7 @@ public class MyTracksIntergration {
 				WaypointCreationRequest request = new WaypointCreationRequest(
 						WaypointType.STATISTICS, name, description, WaypointCreationRequest.DEFAULT_STATISTICS.getIconUrl());
 	//			WaypointCreationRequest request = WaypointCreationRequest.DEFAULT_STATISTICS;
-				Log.i(Constants.DEBUG_TAG, "MyTracks way-point statistics inserted: "+name+", "+description);
+				Log.i(Constants.TAG, "MyTracks way-point statistics inserted: "+name+", "+description);
 				service.insertWaypoint(request);
 			}
 		} catch (RemoteException e) {

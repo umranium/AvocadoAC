@@ -91,7 +91,7 @@ public class ActivityWatcher {
 					this.walkingActivityQueue.returnFilledInstance(activity);
 					previousWalkingActivitiy = activity;
 				} catch (InterruptedException e) {
-					Log.e(Constants.DEBUG_TAG, "Interrupted", e);
+					Log.e(Constants.TAG, "Interrupted", e);
 				}
 			}
 			
@@ -123,11 +123,11 @@ public class ActivityWatcher {
 					this.walkingActivityQueue.returnFilledInstance(activity);
 				}
 			} catch (InterruptedException e) {
-				Log.e(Constants.DEBUG_TAG, "Interrupted", e);
+				Log.e(Constants.TAG, "Interrupted", e);
 			}
 			
 			if (durationOfWalking<Constants.DURATION_MIN_KEEP_MYTRACKS) {
-				Log.i(Constants.DEBUG_TAG, "Turning off MyTracks");
+				Log.i(Constants.TAG, "Turning off MyTracks");
 				if (this.myTracks.isRecording())
 					this.myTracks.stopRecording();
 				wasWalking = false;
@@ -167,7 +167,7 @@ public class ActivityWatcher {
 				last = walkingActivityQueue.peekFilledInstance();
 			}
 		} catch (InterruptedException e) {
-			Log.e(Constants.DEBUG_TAG, "Interrupted", e);
+			Log.e(Constants.TAG, "Interrupted", e);
 		}
 	}
 	

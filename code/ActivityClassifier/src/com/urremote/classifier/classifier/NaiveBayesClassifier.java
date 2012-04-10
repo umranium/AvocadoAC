@@ -78,7 +78,7 @@ public class NaiveBayesClassifier implements Classifier {
 	private void initModel(Set<Entry<Float[], Object[]>> model) {
 
 		Map<String, List<float[]>> activityFeatures = new TreeMap<String, List<float[]>>(
-				new StringComparator(false));
+				StringComparator.CASE_INSENSITIVE_INSTANCE);
 
 		this.numOfFeatures = Integer.MAX_VALUE;
 
@@ -140,7 +140,7 @@ public class NaiveBayesClassifier implements Classifier {
 								classDetails[ACTIVITY_FEATURE_CLASS_VAR][f]
 								);
 			}
-			Log.i(Constants.DEBUG_TAG, debugOut);
+			Log.i(Constants.TAG, debugOut);
 		}
 
 		// int walking = -1;

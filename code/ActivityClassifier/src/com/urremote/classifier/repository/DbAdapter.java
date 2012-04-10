@@ -49,45 +49,10 @@ public class DbAdapter {
 	 * @param ctx context from Activity or Service classes
 	 */
 	public DbAdapter(Context ctx) {
-		isActivityBetweenToday=false;
 		this.mCtx = ctx;
 		this.sqlLiteAdapter = SqlLiteAdapter.getInstance(this.mCtx);
 		this.activitiesTable = this.sqlLiteAdapter.getActivitiesTable();
 	}
 
-
-	//  ---------------------Start Activity Table----------------------------------
-	private boolean isActivityBetweenToday;
-
-	public synchronized  ArrayList<String[]> fetchTodayItemsFromActivityTable(Date todayTime, Date currDate) throws SQLException {
-		
-		Classification reusableClassification = new Classification();
-		
-		final ArrayList<String[]> todayItems = new ArrayList<String[]>();
-		
-		activitiesTable.loadAllBetween(
-				todayTime.getTime(),
-				currDate.getTime(),
-				reusableClassification,
-				new ActivitiesTable.ClassificationDataCallback() {
-					public void onRetrieve(Classification classification) {
-						String[] tempPara = {
-								Long.toString(classification.getStart()),
-								classification.getClassification(),
-								classification.getDbStartTime(),
-								classification.getDbEndTime(),
-								classification.isChecked()?"1":"0"
-							};
-						todayItems.add(tempPara);
-					}
-				}
-				);
-		
-		isActivityBetweenToday=false;
-
-		return todayItems;
-	}
-	
-	//  ---------------------End Activity Table----------------------------------
 
 }

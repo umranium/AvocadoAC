@@ -90,7 +90,7 @@ public class ChartHelper {
 		this.col_size = COL_DURATIONS.length;
 		this.row_size = allActivities.size();
 		
-		this.activityIndexes = new TreeMap<String,Integer>(new StringComparator(false));
+		this.activityIndexes = new TreeMap<String,Integer>(StringComparator.CASE_INSENSITIVE_INSTANCE);
 		{
 			int index = 0;
 			for (String activity:allActivities) {
@@ -99,7 +99,7 @@ public class ChartHelper {
 			}
 		}
 		
-		this.activityNiceNames = new TreeMap<String,String>(new StringComparator(false));
+		this.activityNiceNames = new TreeMap<String,String>(StringComparator.CASE_INSENSITIVE_INSTANCE);
 		for (String activity:allActivities) {
 			String niceName = Classification.getNiceName(context, activity);
 			this.activityNiceNames.put(activity, niceName);
@@ -138,7 +138,7 @@ public class ChartHelper {
 				new ActivitiesTable.ClassificationDataCallback() {
 					public void onRetrieve(Classification classification) {
 						if (!activityIndexes.containsKey(classification.getClassification())) {
-							Log.e(Constants.DEBUG_TAG, "ERROR: UNKNOWN ACTIVITY '"+classification.getClassification()+"' FOUND");
+							Log.e(Constants.TAG, "ERROR: UNKNOWN ACTIVITY '"+classification.getClassification()+"' FOUND");
 							return;
 						}
 						int index = activityIndexes.get(classification.getClassification());
@@ -220,7 +220,7 @@ public class ChartHelper {
 	 * Colors of activities
 	 */
 	@SuppressWarnings("serial")
-	public final static Map<String,Integer> COLOR_ACTIVITIES = new TreeMap<String,Integer>(new StringComparator(true)) {
+	public final static Map<String,Integer> COLOR_ACTIVITIES = new TreeMap<String,Integer>(StringComparator.CASE_SENSITIVE_INSTANCE) {
 		{
 			this.put(ActivityNames.OFF,					Color.argb(255, 128, 128, 128));
 			this.put(ActivityNames.END,					Color.argb(255, 255, 255, 255));

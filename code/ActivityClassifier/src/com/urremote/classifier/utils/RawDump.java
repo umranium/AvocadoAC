@@ -28,7 +28,7 @@ public class RawDump {
 		if (!Constants.OUTPUT_DEBUG_INFO ||
 				!Constants.OUTPUT_RAW_DATA)
 			throw new RuntimeException("RawDump class created when it shouldn't have been!");
-		Log.d(Constants.DEBUG_TAG, "RawDump class created when it shouldn't have been!");
+		Log.d(Constants.TAG, "RawDump class created when it shouldn't have been!");
 		
 		this.dumpFolder = new File(PATH_DUMP_FOLDER);
 		
@@ -82,10 +82,10 @@ public class RawDump {
 			String delFName = dumpFiles.get(0);
 			File delF = new File(dumpFolder, delFName);
 			if (!delF.delete()) {
-				Log.e(Constants.DEBUG_TAG, "Unable to delete dump file "+delF.getAbsolutePath());
+				Log.e(Constants.TAG, "Unable to delete dump file "+delF.getAbsolutePath());
 				break;
 			} else {
-				Log.i(Constants.DEBUG_TAG, "Deleted dump file "+delF.getAbsolutePath());
+				Log.i(Constants.TAG, "Deleted dump file "+delF.getAbsolutePath());
 			}
 			dumpFiles.remove(0);
 			--index;
@@ -97,7 +97,7 @@ public class RawDump {
 	public void dumpRawData(SampleBatch batch)
 	{
 		try {
-			Log.i(Constants.DEBUG_TAG, "Dumping raw-data to file");
+			Log.i(Constants.TAG, "Dumping raw-data to file");
 			
 			if (!dumpFolder.exists())
 				throw new RuntimeException("Unable to create folder:"+PATH_DUMP_FOLDER);

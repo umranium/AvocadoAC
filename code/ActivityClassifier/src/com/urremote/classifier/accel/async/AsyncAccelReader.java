@@ -136,7 +136,7 @@ public class AsyncAccelReader {
     
     public void startSampling() throws HardwareFaultException {
     	if (!accelListenerRegistered) {
-    		Log.i(Constants.DEBUG_TAG, "Turning accelerometer on");
+    		Log.i(Constants.TAG, "Turning accelerometer on");
             manager.registerListener(accelListener,
                     manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
                     SensorManager.SENSOR_DELAY_FASTEST);
@@ -152,7 +152,7 @@ public class AsyncAccelReader {
     	//		so wait for the sensor to change.
     	if (valuesAssigned<2)
     	{
-    		Log.v(Constants.DEBUG_TAG, "No values assigned yet from accelerometer, going to wait for values.");
+    		Log.v(Constants.TAG, "No values assigned yet from accelerometer, going to wait for values.");
     		long startWait = System.currentTimeMillis();
     		long current = startWait;
 	    	while (valuesAssigned<2)
@@ -164,7 +164,7 @@ public class AsyncAccelReader {
 	    			throw new HardwareFaultException("Unable to start accelerometer.");
 	    		}
 	    	}
-//	    	Log.v(Constants.DEBUG_TAG, "Done, waited for "+((current-startWait)/1000)+"s");
+//	    	Log.v(Constants.TAG, "Done, waited for "+((current-startWait)/1000)+"s");
     	}
     	
     }
@@ -173,7 +173,7 @@ public class AsyncAccelReader {
     	if (!optionsTable.getFullTimeAccel()) {
     		manager.unregisterListener(accelListener);
     		accelListenerRegistered = false;
-    		Log.i(Constants.DEBUG_TAG, "Turning accelerometer off");
+    		Log.i(Constants.TAG, "Turning accelerometer off");
     		
     		samplingQualityMean = samplingQualitySum / samplingQualityCount;
     		samplingQualityStdDev = Math.sqrt(
@@ -181,7 +181,7 @@ public class AsyncAccelReader {
     				samplingQualityMean * samplingQualityMean
 				);
     		
-    		Log.d(Constants.DEBUG_TAG, String.format("Sampling Quality: Delay: Mean=%.2f ms, S.D=%.2f ms", samplingQualityMean, samplingQualityStdDev));
+    		Log.d(Constants.TAG, String.format("Sampling Quality: Delay: Mean=%.2f ms, S.D=%.2f ms", samplingQualityMean, samplingQualityStdDev));
     	}
     }
 	

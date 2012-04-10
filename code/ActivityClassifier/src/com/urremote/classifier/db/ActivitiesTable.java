@@ -36,25 +36,19 @@ public class ActivitiesTable extends DbTableAdapter {
 	public static final String KEY_START_LONG		= "start_long";
 	public static final String KEY_END_LONG			= "end_long";
 	public static final String KEY_ACTIVITY			= "activity";
-	public static final String KEY_IS_CHECKED		= "isChecked";
-	public static final String KEY_START_STR		= "start_str";
-	public static final String KEY_END_STR 			= "end_str";
 	public static final String KEY_NUM_OF_BATCHES	= "num_of_batches";
-	public static final String KEY_TOTAL_EE_ACT 	= "total_ee_act";
+	//public static final String KEY_TOTAL_EE_ACT 	= "total_ee_act";
 	public static final String KEY_TOTAL_MET 		= "total_met";
 	public static final String KEY_MYTRACKS_ID 		= "myTracks_id";
-	private static final String KEY_LAST_UPDATED_AT = "lastUpdatedAt";	//	for system use only
+	public static final String KEY_LAST_UPDATED_AT = "lastUpdatedAt";	//	for system use only
 
 	private static final String SELECT_SQL =
 		"SELECT " +
 		KEY_START_LONG + ", " +
 		KEY_END_LONG + ", " +
 		KEY_ACTIVITY + ", " +
-		KEY_IS_CHECKED + ", " +
-		KEY_START_STR + ", " +
-		KEY_END_STR + ", " +
 		KEY_NUM_OF_BATCHES + ", " + 
-		KEY_TOTAL_EE_ACT + ", " + 
+		//KEY_TOTAL_EE_ACT + ", " + 
 		KEY_TOTAL_MET + ", " +
 		KEY_MYTRACKS_ID + ", " +
 		KEY_LAST_UPDATED_AT +
@@ -62,22 +56,13 @@ public class ActivitiesTable extends DbTableAdapter {
 	
 	//	reusable
 	private ContentValues insertContentValues;
-	private Date insertStartDate;
-	private Date insertEndDate;
 	private ContentValues updateContentValues;
-	private ContentValues updateCheckedContentValues;
 	
 	protected ActivitiesTable(Context context) {
 		super(context);
 		
-		this.insertContentValues = new ContentValues();
-		this.insertStartDate = new Date();
-		this.insertEndDate = new Date();
-		
+		this.insertContentValues = new ContentValues();		
 		this.updateContentValues = new ContentValues();
-		
-		this.updateCheckedContentValues = new ContentValues();
-		this.updateCheckedContentValues.put(KEY_IS_CHECKED, 1);
 	}
 	
 	@Override
@@ -88,18 +73,15 @@ public class ActivitiesTable extends DbTableAdapter {
 			KEY_START_LONG+" LONG PRIMARY KEY, " +
 			KEY_END_LONG+" LONG NOT NULL, " +
 			KEY_ACTIVITY+" TEXT NOT NULL, " +
-			KEY_START_STR+" TEXT NOT NULL, " +
-			KEY_END_STR+" TEXT NOT NULL, " +
-			KEY_IS_CHECKED+" INTEGER NOT NULL, " +
 			KEY_NUM_OF_BATCHES+" INTEGER NOT NULL, " +
-			KEY_TOTAL_EE_ACT+" REAL NOT NULL, " +
+			//KEY_TOTAL_EE_ACT+" REAL NOT NULL, " +
 			KEY_TOTAL_MET+" REAL NOT NULL, " +
 			KEY_MYTRACKS_ID + " LONG NULL, " +
 			KEY_LAST_UPDATED_AT+" LONG NOT NULL " +
 			")";
 		//	run the sql
 		database.execSQL(sql);
-		Log.v(Constants.DEBUG_TAG, "Activities Table Created");
+		Log.v(Constants.TAG, "Activities Table Created");
 	}
 
 	@Override
@@ -184,8 +166,9 @@ public class ActivitiesTable extends DbTableAdapter {
 	{
 		if (isDatabaseAvailable()) {
 			synchronized (insertContentValues) {
+				Log.i(Constants.TAG, "Classification being inserted: "+classification.getStart());
 				assignValuesToInsertContentValues(classification);
-				Log.i(Constants.DEBUG_TAG, insertContentValues.toString());
+				Log.i(Constants.TAG, insertContentValues.toString());
 				database.insertOrThrow(TABLE_NAME, null, insertContentValues);
 			}
 		}
@@ -199,10 +182,11 @@ public class ActivitiesTable extends DbTableAdapter {
 	{
 		if (isDatabaseAvailable()) {
 			synchronized (updateContentValues) {
+				Log.i(Constants.TAG, "Classification being updated: "+classification.getStart());
 				assignValuesToUpdateContentValues(classification);
 				int rows = database.update(TABLE_NAME, updateContentValues, KEY_START_LONG+"="+classification.getStart(), null);
 				if (rows==0)
-					Log.w(Constants.DEBUG_TAG, "Warning: Update Failed: table='"+TABLE_NAME+"', "+KEY_START_LONG+"="+classification.getStart()+
+					Log.w(Constants.TAG, "Warning: Update Failed: table='"+TABLE_NAME+"', "+KEY_START_LONG+"="+classification.getStart()+
 							", "+KEY_END_LONG+"="+classification.getEnd()+
 							", "+KEY_LAST_UPDATED_AT+"="+classification.getLastUpdate());
 			}
@@ -317,34 +301,34 @@ public class ActivitiesTable extends DbTableAdapter {
 				cursor.close();
 			}
 		} else {
-			Log.i(Constants.DEBUG_TAG, "Database unavailable!");
+			Log.e(Constants.TAG, "Database unavailable!");
 		}
 	}
 	
 	/** 
-	 * Loads all the classifications that started between the times given.
+	 * Loads all the classifications that have not been checked.
 	 * Please note, make sure to provide enough {@link Classification} instances
 	 */
-	public void loadUnchecked(Classification reusableClassification, ClassificationDataCallback callback)
-	{
-		if (isDatabaseAvailable()) {
-			Cursor cursor = database.rawQuery(
-					SELECT_SQL + 
-					" WHERE "+KEY_IS_CHECKED+"=0" +
-					" ORDER BY " + KEY_START_LONG + " ASC ",
-					null);
-			try {
-				while (cursor.moveToNext()) {
-					//	assign it
-					assignValuesToClassification(cursor, reusableClassification);
-					//	return it
-					callback.onRetrieve(reusableClassification);
-				}
-			} finally {
-				cursor.close();
-			}
-		}
-	}
+//	public void loadUnchecked(Classification reusableClassification, ClassificationDataCallback callback)
+//	{
+//		if (isDatabaseAvailable()) {
+//			Cursor cursor = database.rawQuery(
+//					SELECT_SQL + 
+//					" WHERE "+KEY_IS_CHECKED+"=0" +
+//					" ORDER BY " + KEY_START_LONG + " ASC ",
+//					null);
+//			try {
+//				while (cursor.moveToNext()) {
+//					//	assign it
+//					assignValuesToClassification(cursor, reusableClassification);
+//					//	return it
+//					callback.onRetrieve(reusableClassification);
+//				}
+//			} finally {
+//				cursor.close();
+//			}
+//		}
+//	}
 	
 	
 	/**
@@ -356,19 +340,50 @@ public class ActivitiesTable extends DbTableAdapter {
 	{
 		if (isDatabaseAvailable()) {
 			long cutOffLimit = System.currentTimeMillis() - Constants.DURATION_KEEP_DB_ACTIVITY_DATA;
-			database.delete(TABLE_NAME, KEY_LAST_UPDATED_AT+"<"+cutOffLimit+" OR "+KEY_IS_CHECKED+"<>0", null);
+			database.delete(TABLE_NAME, KEY_LAST_UPDATED_AT+"<"+cutOffLimit, null);
 		}
 	}
 	
 	/**
 	 * Updates the given row's ({@value #KEY_IS_CHECKED}) to true
 	 */
-	public void updateChecked(long startTime)
-	{
+//	public void updateChecked(long startTime)
+//	{
+//		if (isDatabaseAvailable()) {
+//			int rows = database.update(TABLE_NAME, updateCheckedContentValues, KEY_START_LONG+"="+startTime, null);
+//			if (rows==0)
+//				Log.w(Constants.TAG, "Warning: Update Failed: table='"+TABLE_NAME+"', "+KEY_START_LONG+"="+startTime+", "+KEY_IS_CHECKED+"=1");
+//		}
+//	}
+	
+	/**
+	 * Loads a single classification.
+	 * 
+	 * @param start
+	 * @return
+	 */
+	public Classification loadClassification(long start) {
 		if (isDatabaseAvailable()) {
-			int rows = database.update(TABLE_NAME, updateCheckedContentValues, KEY_START_LONG+"="+startTime, null);
-			if (rows==0)
-				Log.w(Constants.DEBUG_TAG, "Warning: Update Failed: table='"+TABLE_NAME+"', "+KEY_START_LONG+"="+startTime+", "+KEY_IS_CHECKED+"=1");
+			Cursor cursor = database.rawQuery(
+					SELECT_SQL + 
+					" WHERE "+KEY_START_LONG+"="+start +
+					" ORDER BY " + KEY_START_LONG + " ASC ",
+					null);
+			try {
+				if (cursor.moveToNext()) {
+					Classification result = new Classification();
+					//	assign it
+					assignValuesToClassification(cursor, result);
+					//	return it
+					return result;
+				}
+				return null;
+			} finally {
+				cursor.close();
+			}
+		} else {
+			Log.e(Constants.TAG, "Database unavailable!");
+			return null;
 		}
 	}
 	
@@ -379,17 +394,11 @@ public class ActivitiesTable extends DbTableAdapter {
 	 */
 	private void assignValuesToInsertContentValues(Classification classification)
 	{
-		insertStartDate.setTime(classification.getStart());
-		insertEndDate.setTime(classification.getEnd());
-		
 		insertContentValues.put(KEY_START_LONG, classification.getStart());
 		insertContentValues.put(KEY_END_LONG, classification.getEnd());
 		insertContentValues.put(KEY_ACTIVITY, classification.getClassification());
-		insertContentValues.put(KEY_START_STR, Constants.DB_DATE_FORMAT.format(insertStartDate));
-		insertContentValues.put(KEY_END_STR, Constants.DB_DATE_FORMAT.format(insertEndDate));
-		insertContentValues.put(KEY_IS_CHECKED, classification.isChecked()?1:0);
 		insertContentValues.put(KEY_NUM_OF_BATCHES, classification.getNumberOfBatches());
-		insertContentValues.put(KEY_TOTAL_EE_ACT, classification.getTotalEeAct());
+		//insertContentValues.put(KEY_TOTAL_EE_ACT, classification.getTotalEeAct());
 		insertContentValues.put(KEY_TOTAL_MET, classification.getTotalMet());
 		insertContentValues.put(KEY_MYTRACKS_ID, classification.getMyTracksId());
 		insertContentValues.put(KEY_LAST_UPDATED_AT, System.currentTimeMillis());
@@ -406,15 +415,10 @@ public class ActivitiesTable extends DbTableAdapter {
 	 */
 	private void assignValuesToUpdateContentValues(Classification classification)
 	{
-		insertStartDate.setTime(classification.getStart());
-		insertEndDate.setTime(classification.getEnd());
-		
 		updateContentValues.put(KEY_END_LONG, classification.getEnd());
 		updateContentValues.put(KEY_ACTIVITY, classification.getClassification());
-		updateContentValues.put(KEY_END_STR, Constants.DB_DATE_FORMAT.format(insertEndDate));
-		updateContentValues.put(KEY_IS_CHECKED, classification.isChecked());
 		updateContentValues.put(KEY_NUM_OF_BATCHES, classification.getNumberOfBatches());
-		updateContentValues.put(KEY_TOTAL_EE_ACT, classification.getTotalEeAct());
+		//updateContentValues.put(KEY_TOTAL_EE_ACT, classification.getTotalEeAct());
 		updateContentValues.put(KEY_TOTAL_MET, classification.getTotalMet());
 		updateContentValues.put(KEY_MYTRACKS_ID, classification.getMyTracksId());
 		updateContentValues.put(KEY_LAST_UPDATED_AT, System.currentTimeMillis());
@@ -432,12 +436,11 @@ public class ActivitiesTable extends DbTableAdapter {
 	 */
 	private void assignValuesToClassification(Cursor cursor, Classification classification)
 	{
-		classification.setStart(cursor.getLong(cursor.getColumnIndex(KEY_START_LONG)));
-		classification.setClassification(cursor.getString(cursor.getColumnIndex(KEY_ACTIVITY)));
-		classification.setEnd(cursor.getLong(cursor.getColumnIndex(KEY_END_LONG)));
-		classification.setChecked(cursor.getInt(cursor.getColumnIndex(KEY_IS_CHECKED))!=0);
+		classification.init(cursor.getString(cursor.getColumnIndex(KEY_ACTIVITY)),
+				cursor.getLong(cursor.getColumnIndex(KEY_START_LONG)),
+				cursor.getLong(cursor.getColumnIndex(KEY_END_LONG)));
 		classification.setNumberOfBatches(cursor.getInt(cursor.getColumnIndex(KEY_NUM_OF_BATCHES)));
-		classification.setTotalEeAct(cursor.getFloat(cursor.getColumnIndex(KEY_TOTAL_EE_ACT)));
+		//classification.setTotalEeAct(cursor.getFloat(cursor.getColumnIndex(KEY_TOTAL_EE_ACT)));
 		classification.setTotalMet(cursor.getFloat(cursor.getColumnIndex(KEY_TOTAL_MET)));
 		classification.setMyTracksId(cursor.getLong(cursor.getColumnIndex(KEY_MYTRACKS_ID)));
 		classification.setLastUpdate(cursor.getLong(cursor.getColumnIndex(KEY_LAST_UPDATED_AT)));

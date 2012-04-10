@@ -59,7 +59,7 @@ public class KnnClassifier implements Classifier {
     //	a comparator that compares between two ClassificationDist instances
     private ClassificationDistComparator distanceComparator = new ClassificationDistComparator();
     //	used to obtain the counts of different activities within the K-nearest neighbours in the KNN
-    private Map<String,Integer> activityCounts = new TreeMap<String,Integer>(new StringComparator(false));
+    private Map<String,Integer> activityCounts = new TreeMap<String,Integer>(StringComparator.CASE_INSENSITIVE_INSTANCE);
     
     /**
      * Set the clustered data set for classification.
@@ -73,7 +73,7 @@ public class KnnClassifier implements Classifier {
 		//	statistics about each feature selected
 		Map<String,CalcStatistics> activityFeatureStatistics;
 
-		activityFeatureStatistics = new TreeMap<String,CalcStatistics>(new StringComparator(false));
+		activityFeatureStatistics = new TreeMap<String,CalcStatistics>(StringComparator.CASE_INSENSITIVE_INSTANCE);
 		
 		int numOfFeatures = Integer.MAX_VALUE;
 		

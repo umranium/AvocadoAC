@@ -125,14 +125,14 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
         	File outputFile = new File(Constants.PATH_SD_CARD_APP_LOC + File.separator + filename);
         	
         	if (!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-        		Log.e(Constants.DEBUG_TAG, "Unable to write stacktrace to file. External media not mounted!");
+        		Log.e(Constants.TAG, "Unable to write stacktrace to file. External media not mounted!");
         		return;
         	}
         	
-        	Log.v(Constants.DEBUG_TAG, "Output Trace File:"+outputFile);
+        	Log.v(Constants.TAG, "Output Trace File:"+outputFile);
         	if (!outputFile.getParentFile().exists()) {
         		if (!outputFile.getParentFile().mkdirs()) {
-                    Log.e(Constants.DEBUG_TAG, 
+                    Log.e(Constants.TAG, 
                     		"Unable to create log file directory:\n"+
                     		outputFile.getParentFile()+
                     		"\nCaused when writing stack to file:\n"+
@@ -141,7 +141,7 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
         	}
         	if (!outputFile.exists()) {
         		if (!outputFile.createNewFile()) {
-                    Log.e(Constants.DEBUG_TAG, 
+                    Log.e(Constants.TAG, 
                     		"Unable to create log file:\n"+
                     		outputFile.getParentFile()+
                     		"\nCaused when writing stack to file:\n"+
@@ -152,7 +152,7 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
             bos.write(stacktrace);
             bos.flush();
             bos.close();
-            Log.e(Constants.DEBUG_TAG, stacktrace);
+            Log.e(Constants.TAG, stacktrace);
         } catch (Exception e) {
             e.printStackTrace();
         }

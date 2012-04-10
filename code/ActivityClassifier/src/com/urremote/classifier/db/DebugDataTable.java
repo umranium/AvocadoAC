@@ -201,7 +201,7 @@ public class DebugDataTable extends DbTableAdapter {
 				updateContentValues.put(KEY_FINAL_SYSTEM_OUTPUT, finalSystemOutput);
 				int rows = database.update(TABLE_NAME, updateContentValues, KEY_ID+"="+sampleTime, null);
 				if (rows==0)
-					Log.w(Constants.DEBUG_TAG, "Warning: Update Failed: table='"+TABLE_NAME+"', "+KEY_ID+"="+sampleTime+", "+KEY_FINAL_SYSTEM_OUTPUT+"='"+finalSystemOutput+"'");
+					Log.w(Constants.TAG, "Warning: Update Failed: table='"+TABLE_NAME+"', "+KEY_ID+"="+sampleTime+", "+KEY_FINAL_SYSTEM_OUTPUT+"='"+finalSystemOutput+"'");
 			}
 		}
 	}

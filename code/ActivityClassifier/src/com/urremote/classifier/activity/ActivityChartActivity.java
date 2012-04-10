@@ -126,14 +126,14 @@ public class ActivityChartActivity extends Activity {
 
 		//	starts scheduled interface updates
 		public void start() {
-			Log.v(Constants.DEBUG_TAG, "UpdateInterfaceRunnable started");
+			Log.v(Constants.TAG, "UpdateInterfaceRunnable started");
 			lastUpdateTime = 0;
 			handler.postDelayed(updateInterfaceRunnable, 1);
 		}
 
 		//	stops scheduled interface updates
 		public void stop() {
-			Log.v(Constants.DEBUG_TAG, "UpdateInterfaceRunnable stopped");
+			Log.v(Constants.TAG, "UpdateInterfaceRunnable stopped");
 			handler.removeCallbacks(updateInterfaceRunnable);
 		}
 
@@ -146,7 +146,7 @@ public class ActivityChartActivity extends Activity {
 				try {
 					updateUI();
 				} catch (ParseException ex) {
-					Log.e(Constants.DEBUG_TAG, "Error while performing scheduled UI update.", ex);
+					Log.e(Constants.TAG, "Error while performing scheduled UI update.", ex);
 				}
 
 				reentrantLock.unlock();
@@ -189,7 +189,7 @@ public class ActivityChartActivity extends Activity {
 			//				try {
 			//					throw new RuntimeException();
 			//				} catch (Exception e) {
-			//					Log.v(Constants.DEBUG_TAG, "Update Chart UI Exception", e);
+			//					Log.v(Constants.TAG, "Update Chart UI Exception", e);
 			//				}
 			//
 			//		To avoid this, we make sure that the last call was at least
@@ -202,7 +202,7 @@ public class ActivityChartActivity extends Activity {
 				lastUpdateTime = currentTime;
 			}
 			
-			Log.v(Constants.DEBUG_TAG, "Update Chart UI");
+			Log.v(Constants.TAG, "Update Chart UI");
 			
 			Classification latest = new Classification();
 			Classification beforeLatest = new Classification();

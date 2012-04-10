@@ -111,7 +111,7 @@ public class MetUtilFinal implements OptionUpdateHandler {
 		
 		double met = ee / restingEE;
 		
-		Log.i(Constants.DEBUG_TAG, "MET="+met);
+		Log.i(Constants.TAG, "MET="+met);
 		
 		//	MET = EE / EEresting
 		return met;
@@ -130,20 +130,20 @@ public class MetUtilFinal implements OptionUpdateHandler {
 		double horCounts = Math.sqrt(counts[0]*counts[0] + counts[1]*counts[1]);
 		double verCounts = counts[2];
 		
-		Log.i(Constants.DEBUG_TAG, "horCounts="+horCounts);
-		Log.i(Constants.DEBUG_TAG, "verCounts="+verCounts);
+		Log.i(Constants.TAG, "horCounts="+horCounts);
+		Log.i(Constants.TAG, "verCounts="+verCounts);
 		
-		Log.i(Constants.DEBUG_TAG, "param_p1="+param_p1);
-		Log.i(Constants.DEBUG_TAG, "param_p2="+param_p2);
-		Log.i(Constants.DEBUG_TAG, "param_a ="+param_a);
-		Log.i(Constants.DEBUG_TAG, "param_b ="+param_b);
+		Log.i(Constants.TAG, "param_p1="+param_p1);
+		Log.i(Constants.TAG, "param_p2="+param_p2);
+		Log.i(Constants.TAG, "param_a ="+param_a);
+		Log.i(Constants.TAG, "param_b ="+param_b);
 		
 		double eeAct = param_a * Math.pow(horCounts, param_p1) +
 					param_b * Math.pow(verCounts, param_p2); 
 		
-		Log.i(Constants.DEBUG_TAG, "eeAct="+eeAct);
+		Log.i(Constants.TAG, "eeAct="+eeAct);
 		
-		Log.i(Constants.DEBUG_TAG, "restingEE="+restingEE);
+		Log.i(Constants.TAG, "restingEE="+restingEE);
 		
 		return	eeAct;
 	}
@@ -217,7 +217,7 @@ public class MetUtilFinal implements OptionUpdateHandler {
 			results[dim] = counts / timePeriod;
 		}
 		
-		Log.d(Constants.DEBUG_TAG, "Average Counts: "+Arrays.toString(results));
+		Log.d(Constants.TAG, "Average Counts: "+Arrays.toString(results));
 	}
 
 	/**
@@ -245,9 +245,9 @@ public class MetUtilFinal implements OptionUpdateHandler {
 		double duration, currentMean, area;
 		double prevMean[] = new double[Constants.ACCEL_DIM];
 		
-//		Log.i(Constants.DEBUG_TAG, Arrays.toString(rotatedDataMeans));
+//		Log.i(Constants.TAG, Arrays.toString(rotatedDataMeans));
 //		for (int i=0; i<len; ++i) {
-//			Log.i(Constants.DEBUG_TAG, Arrays.toString(rotatedData[i]));
+//			Log.i(Constants.TAG, Arrays.toString(rotatedData[i]));
 //		}
 		
 		for (int dim=0; dim<Constants.ACCEL_DIM; ++dim) {
@@ -295,7 +295,7 @@ public class MetUtilFinal implements OptionUpdateHandler {
 		
 		
 		for (int dim=0; dim<Constants.ACCEL_DIM; ++dim) {
-			Log.d(Constants.DEBUG_TAG, "sum(area["+dim+"]^2)="+results[dim]);
+			Log.d(Constants.TAG, "sum(area["+dim+"]^2)="+results[dim]);
 			
 			//	get the square-root of the sum square of the area
 			results[dim] = Math.sqrt(results[dim]);
@@ -305,6 +305,6 @@ public class MetUtilFinal implements OptionUpdateHandler {
 			results[dim] *= 60.0;
 		}
 		
-		Log.d(Constants.DEBUG_TAG, "Average Counts: "+Arrays.toString(results));
+		Log.d(Constants.TAG, "Average Counts: "+Arrays.toString(results));
 	}
 }

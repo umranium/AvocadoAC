@@ -27,7 +27,7 @@ public class ActivityNames {
 	
 	//	model based activities
 	public static final String STATIONARY				= "CLASSIFIED/STATIONARY";
-	public static final String TRAVELING				= "CLASSIFIED/traveling";
+	public static final String TRAVELING				= "CLASSIFIED/TRAVELLING";
 	public static final String WALKING					= "CLASSIFIED/WALKING";
 	public static final String PADDLING					= "CLASSIFIED/PADDLING";
 	public static final String ROWING					= "CLASSIFIED/ROWING";
@@ -46,7 +46,7 @@ public class ActivityNames {
 		
 		Map<Float[],Object[]> model = ModelReader.getModel(context, R.raw.basic_model);
 		
-		Set<String> declaredActivities = new TreeSet<String>(new StringComparator(false));
+		Set<String> declaredActivities = new TreeSet<String>(StringComparator.CASE_INSENSITIVE_INSTANCE);
 		
 		try {
 			Field[] fields = ActivityNames.class.getFields();
@@ -66,7 +66,7 @@ public class ActivityNames {
 			e.printStackTrace();
 		}
 		
-		Set<String> modelActivities = new TreeSet<String>(new StringComparator(false));
+		Set<String> modelActivities = new TreeSet<String>(StringComparator.CASE_INSENSITIVE_INSTANCE);
 		
         for (Map.Entry<Float[], Object[]> entry : model.entrySet()) {
         	String activity = (String)entry.getValue()[0];

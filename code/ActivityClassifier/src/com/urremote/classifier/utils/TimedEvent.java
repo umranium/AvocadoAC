@@ -104,7 +104,7 @@ public abstract class TimedEvent implements Runnable {
 			++cyclesSkipped;
 		}
 		if (cyclesSkipped>0) {
-			Log.d(Constants.DEBUG_TAG, cyclesSkipped+" cycles skipped. Consider optimizing your code, or increasing the inter-cycle delay.");
+			Log.d(Constants.TAG, cyclesSkipped+" cycles skipped. Consider optimizing your code, or increasing the inter-cycle delay.");
 		}
 		handler.postAtTime(this, actualNextScheduledTime);
 	}

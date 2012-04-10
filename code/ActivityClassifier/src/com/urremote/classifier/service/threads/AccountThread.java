@@ -87,7 +87,7 @@ public class AccountThread extends Thread {
 				try {
 					service.showServiceToast(toastString);
 				} catch (RemoteException e) {
-					Log.d(Constants.DEBUG_TAG, "Error while attempting to show toast msg from service thread.", e);
+					Log.d(Constants.TAG, "Error while attempting to show toast msg from service thread.", e);
 				}
 				
 				sent = true;
@@ -114,7 +114,7 @@ public class AccountThread extends Thread {
     	
     	if (accountName!=null){
     		
-    		Log.v(Constants.DEBUG_TAG, "Account thread attempting to upload account details.");
+    		Log.v(Constants.TAG, "Account thread attempting to upload account details.");
     		
 			HttpClient client = new DefaultHttpClient();
 			final HttpPost post = new HttpPost(Constants.URL_USER_DETAILS_POST);
@@ -150,7 +150,7 @@ public class AccountThread extends Thread {
 
 			} catch (IOException ex) {
 				//Log.e(getClass().getName(), "Unable to upload sensor logs", ex);
-				Log.e(Constants.DEBUG_TAG, "Unable to upload account details: "+ex.getMessage());
+				Log.e(Constants.TAG, "Unable to upload account details: "+ex.getMessage());
 				//set the pop-up message
 				toastString = "Submission failed,\n check phone's Internet connectivity and try again.";
 				//set the account state to 0 (false)

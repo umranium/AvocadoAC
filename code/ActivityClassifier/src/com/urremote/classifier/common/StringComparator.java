@@ -7,10 +7,13 @@ import java.util.Comparator;
  * @author Umran
  */
 public class StringComparator implements Comparator<String> {
+	
+	public static final StringComparator CASE_SENSITIVE_INSTANCE = new StringComparator(true);
+	public static final StringComparator CASE_INSENSITIVE_INSTANCE = new StringComparator(false);
 
     private boolean caseSensitive;
 
-    public StringComparator(boolean caseSensitive) {
+    private StringComparator(boolean caseSensitive) {
         this.caseSensitive = caseSensitive;
     }
 

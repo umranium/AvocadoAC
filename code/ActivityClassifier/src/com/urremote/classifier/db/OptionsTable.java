@@ -1,7 +1,9 @@
 package com.urremote.classifier.db;
 
+import java.lang.ref.WeakReference;
 import java.security.acl.LastOwnerException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
@@ -65,6 +67,7 @@ public class OptionsTable extends DbTableAdapter {
 	public static final String KEY_FULLTIME_ACCEL = "fullTimeAccel";
 	public static final String KEY_SENSOR_RATE = "accelSensorRate";
 	public static final String KEY_UPLOAD_ACCOUNT = "uploadAccount";
+	public static final String KEY_FUSION_TABLE_ID = "fusionTableId";
 	private static final String KEY_LAST_UPDATED_AT = "lastUpdatedAt";	//	for system use only
 	
 	public static final String[] SD_KEYS;
@@ -121,6 +124,7 @@ public class OptionsTable extends DbTableAdapter {
 		KEY_FULLTIME_ACCEL + ", " +
 		KEY_SENSOR_RATE + ", " +
 		KEY_UPLOAD_ACCOUNT + ", " +
+		KEY_FUSION_TABLE_ID + ", " +
 		KEY_LAST_UPDATED_AT + 
 		" FROM " + TABLE_NAME;
 	
@@ -151,16 +155,21 @@ public class OptionsTable extends DbTableAdapter {
 	private int count;
 	private float allowedMultiplesOfSd;
 	
+	//	fusion tables
+	private String fusionTableId;
+	
 	//	updates
 	private long lastUpdatedAt;
 	private Set<String> updatedKeys; 
-	private List<OptionUpdateHandler> updateHandlers; 
+	//		use weak references to make sure that registered handlers don't keep
+	//		their owner/parent objects from being garbage collected
+	private List<WeakReference<OptionUpdateHandler>> updateHandlers; 
 	
 	protected OptionsTable(Context context) {
 		super(context);
 		this.contentValues = new ContentValues();
-		this.updatedKeys = new TreeSet<String>(new StringComparator(false));
-		this.updateHandlers = new ArrayList<OptionUpdateHandler>();
+		this.updatedKeys = new TreeSet<String>(StringComparator.CASE_INSENSITIVE_INSTANCE);
+		this.updateHandlers = new ArrayList<WeakReference<OptionUpdateHandler>>();
 		this.phoneInfo = new PhoneInfo(context);
 	}
 	
@@ -194,6 +203,7 @@ public class OptionsTable extends DbTableAdapter {
 			KEY_FULLTIME_ACCEL+" INTEGER NOT NULL, " +
 			KEY_SENSOR_RATE+" INTEGER NOT NULL, " +
 			KEY_UPLOAD_ACCOUNT+ " TEXT NULL, " +
+			KEY_FUSION_TABLE_ID+ " TEXT NULL, " +
 			KEY_LAST_UPDATED_AT+" LONG NOT NULL " +
 			")";
 		//	run the sql
@@ -254,22 +264,44 @@ public class OptionsTable extends DbTableAdapter {
 	public void registerUpdateHandler(OptionUpdateHandler updateHandler)
 	{
 		synchronized (updateHandlers) {
-			updateHandlers.add(updateHandler);
+			updateHandlers.add(new WeakReference<OptionUpdateHandler>(updateHandler));
 		}
 	}
 	
 	public void unregisterUpdateHandler(OptionUpdateHandler updateHandler)
 	{
 		synchronized (updateHandlers) {
-			updateHandlers.remove(updateHandler);
+			for (Iterator<WeakReference<OptionUpdateHandler>> it = updateHandlers.iterator();
+					it.hasNext();
+					)
+			{
+				WeakReference<OptionUpdateHandler> updateHandlerRef = it.next();
+				OptionUpdateHandler currUpdateHandler = updateHandlerRef.get();
+				if (currUpdateHandler!=null) {
+					if (currUpdateHandler==updateHandler) {
+						it.remove();
+					}
+				} else {
+					it.remove();
+				}
+			}
 		}
 	}
 	
 	private void notifyAllUpdateHandlers()
 	{
 		synchronized (updateHandlers) {
-			for (OptionUpdateHandler updateHandler:updateHandlers) {
-				updateHandler.onFieldChange(updatedKeys);
+			for (Iterator<WeakReference<OptionUpdateHandler>> it = updateHandlers.iterator();
+					it.hasNext();
+					)
+			{
+				WeakReference<OptionUpdateHandler> updateHandlerRef = it.next();
+				OptionUpdateHandler updateHandler = updateHandlerRef.get();
+				if (updateHandler!=null) {
+					updateHandler.onFieldChange(updatedKeys);
+				} else {
+					it.remove();
+				}
 			}
 		}
 	}
@@ -321,6 +353,8 @@ public class OptionsTable extends DbTableAdapter {
 				scale[Constants.ACCEL_Z_AXIS] = cursor.getFloat(cursor.getColumnIndex(KEY_SCALE_Z));
 				setScale(scale);
 				
+				setFusionTableId(cursor.getString(cursor.getColumnIndex(KEY_FUSION_TABLE_ID)));
+				
 				setLastUpdated(cursor.getLong(cursor.getColumnIndex(KEY_LAST_UPDATED_AT)));
 
 				updatedKeys.clear();	//	nothing has been updated yet
@@ -337,11 +371,11 @@ public class OptionsTable extends DbTableAdapter {
 	public void save()
 	{
 		if (this.updatedKeys.isEmpty()) {
-			Log.w(Constants.DEBUG_TAG, "WARNING: OptionsTable.save() function called while no changes have been made to options.");
+			Log.w(Constants.TAG, "WARNING: OptionsTable.save() function called while no changes have been made to options.");
 		}
 		
 		if (this.isDatabaseAvailable()) {
-			Log.v(Constants.DEBUG_TAG, "Saving Options: "+this.updatedKeys.toString());
+			Log.v(Constants.TAG, "Saving Options: "+this.updatedKeys.toString());
 			setLastUpdated(System.currentTimeMillis());
 			int rows = database.update(TABLE_NAME, contentValues, KEY_ID+"="+DEFAULT_ROW_ID, null);
 			if (rows==0)
@@ -654,6 +688,22 @@ public class OptionsTable extends DbTableAdapter {
 		this.invokeMyTracks = invokeMyTracks;
 		this.contentValues.put(KEY_INVOKE_MYTRACKS, invokeMyTracks);
 		this.updatedKeys.add(KEY_INVOKE_MYTRACKS);
+	}
+
+	/**
+	 * @return ID of the fusion table currently uploading to
+	 */
+	public String getFusionTableId() {
+		return fusionTableId;
+	}
+
+	/**
+	 * @param fusionTableId The ID of the fusion table currently uploading to 
+	 */
+	public void setFusionTableId(String fusionTableId) {
+		this.fusionTableId = fusionTableId;
+		this.contentValues.put(KEY_FUSION_TABLE_ID, fusionTableId);
+		this.updatedKeys.add(KEY_FUSION_TABLE_ID);
 	}
 	
 }

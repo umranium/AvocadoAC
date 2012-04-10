@@ -108,7 +108,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	private Classifier classifier;
 	private Aggregator aggregator;
 
-	public static boolean bForceCalibration;
+	public static boolean forceCalibration;
 	private boolean isCalibrated;
 	private Calibrator calibrator;
 	
@@ -169,7 +169,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 		// signal the thread to exit
 		this.shouldExit = true;
 
-		Log.v(Constants.DEBUG_TAG, "About to interrupt classifier thread");
+		Log.v(Constants.TAG, "About to interrupt classifier thread");
 
 		// if the thread is blocked waiting for a filled batch
 		// interrupt the thread
@@ -179,7 +179,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	/*
 	 * Calibrates the sensor based on the input data. This will be called instead of the classification process.
 	 */
-	public void StartCalibration(SampleBatch batch) throws InterruptedException, RemoteException
+	public void startCalibration(SampleBatch batch) throws InterruptedException, RemoteException
 	{
 		int size = batch.getSize();
 		long sampleTime = batch.sampleTime;
@@ -208,12 +208,12 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 
 			optionsTable.save();
 
-			//bForceCalibration = false;
+			//forceCalibration = false;
 
-			/*	If the bForceCalibration is false it implies the calibrator has finished the 
-			 	calibration and made the bForceCalibration false.
+			/*	If the forceCalibration is false it implies the calibrator has finished the 
+			 	calibration and made the forceCalibration false.
 			 */
-			if(!bForceCalibration && calibrator.CalibrationAttempts <= 3)
+			if(!forceCalibration && calibrator.CalibrationAttempts <= 3)
 			{
 				String ns = this.context.NOTIFICATION_SERVICE;
 
@@ -264,7 +264,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	public void run() {
 		try {
 			Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler(context));
-			Log.v(Constants.DEBUG_TAG, "Classification thread started.");
+			Log.v(Constants.TAG, "Classification thread started.");
 			this.optionsTable.registerUpdateHandler(this);
 			while (service.isRunning() && !this.shouldExit) {
 				try {
@@ -280,22 +280,18 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					// this function blocks until a filled sample batch is obtained
 					SampleBatch batch = batchBuffer.takeFilledInstance();
 
-					Log.v(Constants.DEBUG_TAG, "Classifier thread received batch");
+					Log.v(Constants.TAG, "Classifier thread received batch");
 
 					// process the sample batch to obtain the classification
 					long sampleTime = batch.sampleTime;
-					if(bForceCalibration)
-					{
-						StartCalibration(batch);
-					}
-					else
-					{
+					if (forceCalibration) {
+						startCalibration(batch);
+					} else {
 						String classification = processData(batch, eeAct, met);
-
 
 						//	submit the classification (if any)
 						if (classification!=null && classification.length()>0) {
-							Log.v(Constants.DEBUG_TAG, "Classification found: '"+classification+"'");
+							Log.v(Constants.TAG, "Classification found: '"+classification+"'");
 							// submit the classification
 							service.submitClassification(sampleTime, classification, eeAct[0], met[0]);
 						}
@@ -305,18 +301,18 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					batchBuffer.returnEmptyInstance(batch);
 
 				} catch (RemoteException ex) {
-					Log.e(Constants.DEBUG_TAG,
+					Log.e(Constants.TAG,
 					"Exception error occured in connection in ClassifierService class");
 				} catch (InterruptedException e) {
-					//					Log.d(Constants.DEBUG_TAG,
+					//					Log.d(Constants.TAG,
 					//							"Interruption occured while performing classification", e);
 				}
 			}
-			Log.d(Constants.DEBUG_TAG, "Classifier thread exitting");
+			Log.d(Constants.TAG, "Classifier thread exitting");
 		} catch (RemoteException e) {
 		} finally {
 			this.optionsTable.unregisterUpdateHandler(this);
-			Log.d(Constants.DEBUG_TAG, "Classification thread exiting.");
+			Log.d(Constants.TAG, "Classification thread exiting.");
 		}
 
 	}
@@ -324,7 +320,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	public void onFieldChange(Set<String> updatedKeys) {
 		if (updatedKeys.contains(OptionsTable.KEY_IS_CALIBRATED)) {
 			if (!this.optionsTable.isCalibrated()) {
-				Log.v(Constants.DEBUG_TAG, "Calibration Values Reset! Classifier Thread resetting calibration.");
+				Log.v(Constants.TAG, "Calibration Values Reset! Classifier Thread resetting calibration.");
 				this.isCalibrated = this.optionsTable.isCalibrated();
 				this.calibrator.setResetValues(
 						this.optionsTable.isCalibrated(),
@@ -342,7 +338,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	}
 	
 	private String processData(SampleBatch batch, double retEeAct[], double retMet[]) throws InterruptedException, RemoteException {
-		Log.v(Constants.DEBUG_TAG, "Processing batch.");
+		Log.v(Constants.TAG, "Processing batch.");
 		retEeAct[0] = 0.0;
 		retMet[0] = 0.0;
 
@@ -406,7 +402,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				calibrator.processData(sampleTime, dataMeans, dataSd, rawSampleStatistics.getSum(), rawSampleStatistics.getSumSqr(), rawSampleStatistics.getCount());
 
 				if (!isCalibrated && calibrator.isCalibrated()) {
-					Log.v(Constants.DEBUG_TAG, "Calibration just finished. Saving values to DB.");
+					Log.v(Constants.TAG, "Calibration just finished. Saving values to DB.");
 
 					float[] sd = calibrator.getSd();
 					float[] mean = calibrator.getMean();
@@ -440,7 +436,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 							
 							classification = classifier.classify(featureExtractor.extractRotated(data));
 
-							Log.v(Constants.DEBUG_TAG, "Classifier Algorithm Output: "+classification);
+							Log.v(Constants.TAG, "Classifier Algorithm Output: "+classification);
 
 							if (Constants.OUTPUT_DEBUG_INFO) {
 								logRotatedValues(dataMeans, data, size);
@@ -464,7 +460,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 //							metUtil.computeCountsIntegration(size, data, rotatedSampleStatistics.getMean(), batch.timeStamps, counts);
 //							retEeAct[0] = metUtil.computeEEact(counts);
 //							retMet[0] = metUtil.computeMET(retEeAct[0]);
-//							Log.d(Constants.DEBUG_TAG, "MET="+retMet[0]+", EEact="+retEeAct[0]);
+//							Log.d(Constants.TAG, "MET="+retMet[0]+", EEact="+retEeAct[0]);
 							
 //							retEeAct[0] = walkingHeight;
 //							retMet[0] = walkingSpeed;
@@ -480,13 +476,13 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 							}
 
 						} else {
-							Log.v(Constants.DEBUG_TAG, "Unable to perform classification, data could not be rotated!");
+							Log.v(Constants.TAG, "Unable to perform classification, data could not be rotated!");
 							if (Constants.OUTPUT_DEBUG_INFO) {
 								debugDataTable.setClassifierAlgoOutput("ERROR: Unable to rotate gravity "+Arrays.toString(dataMeans));
 							}
 						}
 					} else {
-						Log.v(Constants.DEBUG_TAG, "Unable to perform classification, Gravity "+calcGravity+" not within limits: ["+minGravity+","+maxGravity+"]!");
+						Log.v(Constants.TAG, "Unable to perform classification, Gravity "+calcGravity+" not within limits: ["+minGravity+","+maxGravity+"]!");
 						if (Constants.OUTPUT_DEBUG_INFO) {
 							debugDataTable.setClassifierAlgoOutput("ERROR: Gravity "+calcGravity+" not within limits: ["+minGravity+","+maxGravity+"]");
 						}
@@ -506,7 +502,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					classification = aggrClassification;
 				}
 
-				Log.v(Constants.DEBUG_TAG, "Aggregator Output: "+aggrClassification);
+				Log.v(Constants.TAG, "Aggregator Output: "+aggrClassification);
 
 				if (Constants.OUTPUT_DEBUG_INFO) {
 					debugDataTable.setAggregatorAlgoOutput(aggrClassification);
@@ -527,7 +523,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 			if (Constants.OUTPUT_DEBUG_INFO) {
 				debugDataTable.setFinalClassifierOutput(classification);
 			}
-			Log.v(Constants.DEBUG_TAG, "Final Classifier Output: "+classification);
+			Log.v(Constants.TAG, "Final Classifier Output: "+classification);
 			
 			//service.showServiceToast(classification);
 
@@ -537,7 +533,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				debugDataTable.trim();
 				debugDataTable.insert();
 			}
-			Log.i(Constants.DEBUG_TAG, "Processing Batch Took: "+(System.currentTimeMillis()-start)+"ms");	        
+			Log.i(Constants.TAG, "Processing Batch Took: "+(System.currentTimeMillis()-start)+"ms");	        
 		}
 	}
 

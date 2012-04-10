@@ -9,6 +9,8 @@ import java.util.Set;
 
 import com.urremote.classifier.R;
 import com.urremote.classifier.rpc.ActivityRecorderBinder;
+
+import android.accounts.Account;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ComponentName;
@@ -34,6 +36,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.flurry.android.FlurryAgent;
+import com.urremote.classifier.activity.AccountChooser.AccountHandler;
 import com.urremote.classifier.common.Constants;
 import com.urremote.classifier.db.OptionUpdateHandler;
 import com.urremote.classifier.db.OptionsTable;
@@ -78,7 +81,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 						public void run() {
 							String summary = getScreenSummary();
 							calibrationSummary.setSummary(summary);
-							if(!ClassifierThread.bForceCalibration)
+							if(!ClassifierThread.forceCalibration)
 							{
 								forceCalibPref.setEnabled(true);
 								forceCalibPref.setTitle("Start Calibration now");
@@ -92,10 +95,8 @@ public class MainSettingsActivity extends PreferenceActivity {
 				if (calibrationSummary!=null) {
 					mainLooperHandler.post(new Runnable() {
 						public void run() {
-
 							String summary = optionsTable.getUploadAccount();
 							selectAccountPref.setSummary(summary==null?"":summary);
-
 						}
 					});
 				}
@@ -106,7 +107,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 						public void run() {
 							//In case of any changes to the service the force calibration should become false
 							// This is to re initiate the manual calibration process.
-							ClassifierThread.bForceCalibration = false;
+							ClassifierThread.forceCalibration = false;
 
 							if(!optionsTable.isServiceUserStarted())
 							{
@@ -171,7 +172,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 		this.sqlLiteAdapter = SqlLiteAdapter.getInstance(this);
 		this.optionsTable = this.sqlLiteAdapter.getOptionsTable();
 		this.mainLooperHandler = new Handler(this.getMainLooper());
-		this.accountChooser = new AccountChooser(this);
+		this.accountChooser = new AccountChooser();
 		wakelock=false;
 		
 		optionsTable.registerUpdateHandler(optionUpdateHandler);
@@ -183,7 +184,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 	 */
 	protected void onResume() {
 		super.onResume();
-		optionsTable.registerUpdateHandler(optionUpdateHandler);
 	}
 
 	/**
@@ -191,7 +191,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 	 */
 	protected void onPause() {
 		super.onPause();
-		optionsTable.unregisterUpdateHandler(optionUpdateHandler);
 	}
 
 	/**
@@ -218,6 +217,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 	 */
 	@Override
 	protected void onDestroy() {
+		optionsTable.unregisterUpdateHandler(optionUpdateHandler);
 		super.onDestroy();
 	}
 	/**
@@ -337,7 +337,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 			forceCalibPref.setEnabled(false);
 			forceCalibPref.setSelectable(false);
 		}
-		else if(!ClassifierThread.bForceCalibration)
+		else if(!ClassifierThread.forceCalibration)
 			forceCalibPref.setTitle("Start Calibration now");
 		else
 		{
@@ -359,7 +359,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 				} catch (RemoteException e) {
 				}
 
-				ClassifierThread.bForceCalibration = true;
+				ClassifierThread.forceCalibration = true;
 				//Calibrator.isCalibrated = false;
 
 				preference.setEnabled(false);
@@ -413,7 +413,12 @@ public class MainSettingsActivity extends PreferenceActivity {
 		selectAccountPref.setSummary(currentUploadAccount==null?"":currentUploadAccount);
 		selectAccountPref.setOnPreferenceClickListener(new PreferenceScreen.OnPreferenceClickListener(){
 			public boolean onPreferenceClick(Preference preference) {
-				MainSettingsActivity.this.accountChooser.chooseAccount();
+				MainSettingsActivity.this.accountChooser.chooseAccount(MainSettingsActivity.this, 
+						new AccountHandler() {
+					public void onAccountSelected(Account account) {
+						optionsTable.setUploadAccount(account.name);
+					}
+				});
 				return false;
 			}
 		});
@@ -433,7 +438,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 				} else {
 					File dbDstFile = new File(Constants.PATH_SD_CARD_DUMP_DB);
 					if (!dbDstFile.getParentFile().exists()) {
-						Log.d(Constants.DEBUG_TAG, "Create DB directory. " + dbDstFile.getParentFile().getAbsolutePath());
+						Log.d(Constants.TAG, "Create DB directory. " + dbDstFile.getParentFile().getAbsolutePath());
 						dbDstFile.getParentFile().mkdirs();
 					}
 
@@ -526,7 +531,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 							Toast.makeText(getBaseContext(), "Database is not available!", Toast.LENGTH_LONG).show();
 						}
 					} catch (RemoteException ex) {
-						Log.e(Constants.DEBUG_TAG, "Unable to get service state", ex);
+						Log.e(Constants.TAG, "Unable to get service state", ex);
 					}
 
 
@@ -576,7 +581,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 					} catch (RemoteException e) {
 					}
 
-					ClassifierThread.bForceCalibration = true;
+					ClassifierThread.forceCalibration = true;
 					Calibrator.isCalibrated = false;
 
 					//Calibrator.resetCalibrationOptions(optionsTable);
@@ -624,7 +629,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 			lm_oOutPut.flush();
 			lm_oOutPut.close();
 		} catch (Exception e) {
-			Log.e(Constants.DEBUG_TAG, "Copy database to SD Card Error", e);
+			Log.e(Constants.TAG, "Copy database to SD Card Error", e);
 		}
 	}
 	public class CheckBoxPreferenceWithLongSummary extends CheckBoxPreference{
