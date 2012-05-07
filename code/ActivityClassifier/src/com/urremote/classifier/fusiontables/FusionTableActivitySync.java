@@ -3,14 +3,17 @@ package com.urremote.classifier.fusiontables;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
+import java.util.WeakHashMap;
 
 import android.content.Context;
 import android.os.Handler;
@@ -37,15 +40,21 @@ public class FusionTableActivitySync extends FusionTables {
 		ActivitiesTable.KEY_NUM_OF_BATCHES,
 		ActivitiesTable.KEY_START_LONG,
 		//ActivitiesTable.KEY_TOTAL_EE_ACT,
-		ActivitiesTable.KEY_TOTAL_MET
+		ActivitiesTable.KEY_MET
 	};
+	
+	private static long ROWID_CACHE_DURATION = 24*60*60*1000L; // 24hrs
+	private static long ROWID_CACHE_TRIM_PERIOD = 6*60*60*1000L; // 6hrs
 	
 	Handler handler;
 	OptionsTable optionsTable;
 	ActivitiesTable activitiesTable;
 	Table table;
-	long latestUploadTime;
+	long latestUpdateTime; // the latest update time
 	final Object LATEST_UPLOAD_TIME_MUTEX = new Object();
+	long latestStartTime; // the latest start time
+	final Object LATEST_START_TIME_MUTEX = new Object();
+	RowIdCache rowIdCache;
 	FusionTableUpdater updater;
 	boolean running;
 
@@ -70,7 +79,7 @@ public class FusionTableActivitySync extends FusionTables {
 		String tableId = this.optionsTable.getFusionTableId();
 		
 		if (tableId!=null) {
-			Log.i(Constants.TAG, "Previous Fusion Table Id found: "+tableId);
+			Log.i(TAG, "Previous Fusion Table Id found");
 			
 			List<Table> serverTables = retrieveTables();
 			if (serverTables==null)
@@ -101,13 +110,22 @@ public class FusionTableActivitySync extends FusionTables {
 	}
 	
 	private void updateLatestUpdateTime(long updateTime) {
-		if (latestUploadTime<updateTime) {
+		if (latestUpdateTime<updateTime) {
 			synchronized (LATEST_UPLOAD_TIME_MUTEX) {
-				if (latestUploadTime<updateTime) {
-					latestUploadTime = updateTime;
+				if (latestUpdateTime<updateTime) {
+					latestUpdateTime = updateTime;
 				}
 			}
-			latestUploadTime = updateTime;
+		}
+	}
+	
+	private void updateLatestStartTime(long startTime) {
+		if (latestStartTime<startTime) {
+			synchronized (LATEST_START_TIME_MUTEX) {
+				if (latestStartTime<startTime) {
+					latestStartTime = startTime;
+				}
+			}
 		}
 	}
 	
@@ -152,13 +170,19 @@ public class FusionTableActivitySync extends FusionTables {
 			this.optionsTable.setFusionTableId(table.id);
 			this.optionsTable.save();
 			
-			Long latestUpload = fetchLatestUploadTime(table.id);
+//			processDefaultLatestStartAndUpdateTimes();
 			
+			rowIdCache = new RowIdCache(table.id);
+			
+			Long latestUpload = fetchLatestUploadTime(table.id);
 			if (latestUpload!=null && latestUpload>0) {
-				latestUploadTime = latestUpload;
+				latestUpdateTime = latestUpload;
 			}
-		} else {
-			latestUploadTime = 0;
+
+			Long latestStart = fetchLatestStartTime(table.id);
+			if (latestStart!=null && latestStart>0) {
+				latestStartTime = latestStart;
+			}
 		}
 	}
 	
@@ -169,7 +193,7 @@ public class FusionTableActivitySync extends FusionTables {
 		outputMap.put(ActivitiesTable.KEY_ACTIVITY, classification.getClassification());
 		outputMap.put(ActivitiesTable.KEY_NUM_OF_BATCHES, (long)classification.getNumberOfBatches());
 		//outputMap.put(ActivitiesTable.KEY_TOTAL_EE_ACT, (double)classification.getTotalEeAct());
-		outputMap.put(ActivitiesTable.KEY_TOTAL_MET, (double)classification.getTotalMet());
+		outputMap.put(ActivitiesTable.KEY_MET, (double)classification.getMet());
 		outputMap.put(ActivitiesTable.KEY_MYTRACKS_ID, (long)classification.getMyTracksId());
 		outputMap.put(ActivitiesTable.KEY_LAST_UPDATED_AT, (long)classification.getLastUpdate());
 	}
@@ -200,10 +224,10 @@ public class FusionTableActivitySync extends FusionTables {
 		//} else {
 		//	classification.setTotalEeAct(Float.NaN);
 		//}
-		if (inputMap.containsKey(ActivitiesTable.KEY_TOTAL_MET)) {
-			classification.setTotalMet((float)(double)(Double)inputMap.get(ActivitiesTable.KEY_TOTAL_MET));
+		if (inputMap.containsKey(ActivitiesTable.KEY_MET)) {
+			classification.setMet((float)(double)(Double)inputMap.get(ActivitiesTable.KEY_MET));
 		} else {
-			classification.setTotalMet(Float.NaN);
+			classification.setMet(Float.NaN);
 		}
 		if (inputMap.containsKey(ActivitiesTable.KEY_MYTRACKS_ID)) {
 			classification.setMyTracksId((Long)inputMap.get(ActivitiesTable.KEY_MYTRACKS_ID));
@@ -217,16 +241,34 @@ public class FusionTableActivitySync extends FusionTables {
 		}
 	}
 	
-	private String getRowId(String tableId, Classification classification) {
+	private String getRowId(String tableId, Long startTime) {
 		String query = "SELECT ROWID FROM "+tableId+
 				" WHERE '"+ACTIVITY_TABLE.getFusionColumn(ActivitiesTable.KEY_START_LONG)+"'="+
-				Long.toString(classification.getStart())+"";
+				Long.toString(startTime)+"";
 		List<String[]> results = new ArrayList<String[]>();
 		if (runQuery(true, query.toString(), results)) {
 			if (results.size()>=2)
 				return results.get(results.size()-1)[0];
 			else
 				return "";
+		}
+		return null;
+	}
+	
+	private Map<Long,String> fetchAllRowIds(String tableId, Long startTime) {
+		String query = "SELECT '"+ACTIVITY_TABLE.getFusionColumn(ActivitiesTable.KEY_START_LONG)+"',ROWID FROM "+tableId+
+				" WHERE '"+ACTIVITY_TABLE.getFusionColumn(ActivitiesTable.KEY_START_LONG)+"'>="+Long.toString(startTime)+"";
+		List<String[]> results = new ArrayList<String[]>();
+		if (runQuery(true, query.toString(), results)) {
+			if (results.size()>=2) {
+				Map<Long, String> map = new HashMap<Long, String>(results.size()-1);
+				for (int i=1; i<results.size(); ++i) {
+					map.put(Long.parseLong(results.get(i)[0]), results.get(i)[1]);
+				}
+				return map;
+			}
+			else
+				return Collections.EMPTY_MAP;
 		}
 		return null;
 	}
@@ -254,6 +296,7 @@ public class FusionTableActivitySync extends FusionTables {
 		List<String[]> results = new ArrayList<String[]>();
 		if (runQuery(true, query.toString(), results)) {
 			updateLatestUpdateTime(classification.getLastUpdate());
+			updateLatestStartTime(classification.getStart());
 			return true;
 		}
 		return false;
@@ -308,8 +351,17 @@ public class FusionTableActivitySync extends FusionTables {
 		
 		List<String[]> results = new ArrayList<String[]>();
 		if (runQuery(true, query.toString(), results)) {
-			for (Classification classification:classifications)
+			for (Classification classification:classifications) {
 				updateLatestUpdateTime(classification.getLastUpdate());
+				updateLatestStartTime(classification.getStart());
+			}
+			if (rowIdCache!=null && results.size()==classifications.size()+1) {
+				for (int i=0; i<classifications.size(); ++i) {
+					long start = classifications.get(i).getStart();
+					String rowId = results.get(i+1)[0];
+					rowIdCache.put(start, rowId);
+				}
+			}
 			return true;
 		}
 		return false;
@@ -320,58 +372,44 @@ public class FusionTableActivitySync extends FusionTables {
 		private List<Classification> inserts = new ArrayList<Classification>();
 		private Classification reusableClassification = new Classification();
 		private boolean connectionError = false;
-		private Long latestUploadedStart;
 		
 		private void doSync() {
 			if (table==null)
 				return;
 			
-			latestUploadedStart = fetchLatestStartTime(table.id);
-			if (latestUploadedStart==null)
-				return;
-			
-			Log.d(Constants.TAG, "latestUploadedStart="+latestUploadedStart);
-			
 			connectionError = false;
 			
 			inserts.clear();
-			Log.d(Constants.TAG, "Fetching all records updated after: "+latestUploadTime);
-			activitiesTable.loadUpdated(Long.MIN_VALUE, Long.MAX_VALUE, latestUploadTime, reusableClassification, new ClassificationDataCallback() {
+			Log.d(TAG, "Fetching all records either inserted after "+latestStartTime+
+					" or updated after ("+latestUpdateTime+"+"+Constants.DURATION_SERVER_UPDATE_ACTIVITY+")");
+			activitiesTable.loadUploadable(latestStartTime, latestUpdateTime+Constants.DURATION_SERVER_UPDATE_ACTIVITY,
+					reusableClassification, new ClassificationDataCallback() {
 				public void onRetrieve(Classification classification) {
 					if (connectionError)
 						return;
 					
-					Log.d(Constants.TAG, "\tObtained start="+classification.getStart()+" lastUpdate="+classification.getLastUpdate());
-					if (classification.getStart()>latestUploadedStart) {
-						Log.d(Constants.TAG, "\t\tGoing to insert");
-						inserts.add(new Classification(classification));
-					} else {
-						Log.d(Constants.TAG, "\t\tAttempting to update");
-						String rowId = getRowId(table.id, classification);
-						if (rowId==null) {
+					Log.d(TAG, "\tObtained start="+classification.getStart()+" lastUpdate="+classification.getLastUpdate());
+					if (rowIdCache.hasRow(classification.getStart())) {
+						Log.d(TAG, "\t\tAttempting to update");
+						if (!update(table.id, rowIdCache.getRowId(classification.getStart()), classification)) {
 							connectionError = true;
-						} else {
-							if (rowId.length()==0) {
-								Log.d(Constants.TAG, "\t\tRow doesn't exist in fusion table, going to insert instead");
-								inserts.add(new Classification(classification));
-							} else
-								if (!update(table.id, rowId, classification)) {
-									connectionError = true;
-								}
 						}
+					} else {
+						Log.d(TAG, "\t\tGoing to insert");
+						inserts.add(new Classification(classification));
 					}
 				}
 			});
 			
 			if (!connectionError && !inserts.isEmpty()) {
-				Log.d(Constants.TAG, "\t\tAttempting inserts");
+				Log.d(TAG, "\t\tAttempting inserts");
 				for (int start=0; start<inserts.size(); start+=10) {
 					int end = start + 10;
 					if (end>inserts.size())
 						end = inserts.size();
 					
 					if (insert(table.id, inserts.subList(start, end))) {
-						Log.d(Constants.TAG, "\t\t\tInserts ["+start+","+end+") successfull");
+						Log.d(TAG, "\t\t\tInserts ["+start+","+end+") successfull");
 					}
 				}
 			}
@@ -422,7 +460,7 @@ public class FusionTableActivitySync extends FusionTables {
 			try {
 				return simpleDateFormat.parse(val).getTime();
 			} catch (ParseException e) {
-				Log.e(Constants.TAG, "Error parsing fusion table value: '"+val+"'", e);
+				Log.e(TAG, "Error parsing fusion table value: '"+val+"'", e);
 				return null;
 			}
 		}
@@ -465,31 +503,22 @@ public class FusionTableActivitySync extends FusionTables {
 		
 	};
 	
-	private static final DataExtractor DURATION_EXTRACTOR = new DataExtractor() {
-		public Object extract(Classification classification, Map classificationValueMap) {
+	private static final DataExtractor<Double> DURATION_EXTRACTOR = new DataExtractor<Double>() {
+		public Double extract(Classification classification, Map classificationValueMap) {
 			long duration = classification.getEnd() - classification.getStart();
-			final long[] componentLengths = new long[] {1000,60,60,24};
-			long[] components = new long[componentLengths.length+1];
-			for (int i=0; i<componentLengths.length; ++i) {
-				components[i] = duration % componentLengths[i];
-				duration /= componentLengths[i];
-			}
-			components[componentLengths.length] = duration;
-			
-			if (components[0]>500) {
-				++components[1];
-			}
-			if (components[4]>0) {
-				return String.format("%d days %02d:%02d:%02d", components[4], components[3], components[2], components[1]);
-			} else {
-				return String.format("%02d:%02d:%02d", components[3], components[2], components[1]);
-			}
+			return (double)duration/(60*1000.0);
 		}
 	};
 	
-	private static final DataExtractor ACTIVITY_NICE_NAME_EXTRACTOR = new DataExtractor() {
-		public Object extract(Classification classification, Map classificationValueMap) {
+	private static final DataExtractor<String> ACTIVITY_NICE_NAME_EXTRACTOR = new DataExtractor<String>() {
+		public String extract(Classification classification, Map classificationValueMap) {
 			return classification.getNiceClassification();
+		};
+	};
+	
+	private static final DataExtractor<Double> MET_EXTRACTOR = new DataExtractor<Double>() {
+		public Double extract(Classification classification, Map classificationValueMap) {
+			return (double)classification.getMet() / classification.getNumberOfBatches();
 		};
 	};
 	
@@ -559,11 +588,11 @@ public class FusionTableActivitySync extends FusionTables {
 			addColumn("End", null, "NUMBER", new ColumnExtractor(ActivitiesTable.KEY_END_LONG), LONG_CONVERTER, ActivitiesTable.KEY_END_LONG);
 			addColumn("Start Time", "Start Time", "DATETIME", new ColumnExtractor(ActivitiesTable.KEY_START_LONG), TIMESTAMP_TO_DATETIME_CONVERTER, null);
 			addColumn("End Time", null, "DATETIME", new ColumnExtractor(ActivitiesTable.KEY_END_LONG), TIMESTAMP_TO_DATETIME_CONVERTER, null);
-			addColumn("Duration", "Duration", "STRING", DURATION_EXTRACTOR, STRING_QUOTE_CONVERTER, null);
+			addColumn("Duration", "Duration", "NUMBER", DURATION_EXTRACTOR, DOUBLE_CONVERTER, null);
 			addColumn("Activity", null, "STRING", new ColumnExtractor(ActivitiesTable.KEY_ACTIVITY), STRING_QUOTE_CONVERTER, ActivitiesTable.KEY_ACTIVITY);
 			addColumn("Activity Nice Name", "Activity", "STRING", ACTIVITY_NICE_NAME_EXTRACTOR, STRING_QUOTE_CONVERTER, null);
 			addColumn("Number of Batches", null, "NUMBER", new ColumnExtractor(ActivitiesTable.KEY_NUM_OF_BATCHES), LONG_CONVERTER, ActivitiesTable.KEY_NUM_OF_BATCHES);
-			addColumn("MET", "MET", "NUMBER", new ColumnExtractor(ActivitiesTable.KEY_TOTAL_MET), DOUBLE_CONVERTER, ActivitiesTable.KEY_TOTAL_MET);
+			addColumn("MET", "MET", "NUMBER", new ColumnExtractor(ActivitiesTable.KEY_MET), DOUBLE_CONVERTER, ActivitiesTable.KEY_MET);
 			addColumn("MyTracks ID", null, "NUMBER", new ColumnExtractor(ActivitiesTable.KEY_MYTRACKS_ID), LONG_CONVERTER, ActivitiesTable.KEY_MYTRACKS_ID);
 			addColumn("Last Updated Time", null, "NUMBER", new ColumnExtractor(ActivitiesTable.KEY_LAST_UPDATED_AT), LONG_CONVERTER, ActivitiesTable.KEY_LAST_UPDATED_AT);
 			
@@ -610,5 +639,91 @@ public class FusionTableActivitySync extends FusionTables {
 	}
 	
 	private static final ActivityTable ACTIVITY_TABLE = new ActivityTable();
+	
+	private class RowIdCache {
+		String tableId;
+		Map<Long,String> startToRowIdMap;
+		Long minCachedStartTime;
+		Long maxStartTime;
+		long lastTrim;
+//		long lastCheckServerUpdate;
+		
+		public RowIdCache(String tableId) {
+			this.tableId = tableId;
+			this.minCachedStartTime = System.currentTimeMillis()-ROWID_CACHE_DURATION;
+			this.startToRowIdMap = new HashMap<Long, String>(2048);
+//			lastCheckServerUpdate = System.currentTimeMillis();
+			lastTrim = System.currentTimeMillis();
+			
+//			Map<Long,String> map = fetchAllRowIds(tableId, minCachedStartTime);
+//			for (Map.Entry<Long, String> item:map.entrySet()) {
+//				put(item.getKey(), item.getValue());
+//			}
+		}
+		
+		private void fetchAndPut(Long start) {
+			if (lastTrim<System.currentTimeMillis()-ROWID_CACHE_TRIM_PERIOD) {
+				trim();
+			}
+			
+			Log.d(TAG, "RowId cache is fetching the RowId of the row with start="+start);
+			String rowId = FusionTableActivitySync.this.getRowId(tableId, start);
+			if (rowId!=null && rowId.length()>0) {
+				put(start, rowId);
+			}
+		}
+		
+		public boolean hasRow(Long start) {
+			Log.d(TAG, "RowId Cache check if row start="+start+" is in cache");
+			if (maxStartTime==null || start>maxStartTime) {
+				Log.d(TAG, "RowId Cache: Row start="+start+" too new (latest is "+maxStartTime+")");
+				return false;
+			}
+			boolean found = startToRowIdMap.containsKey(start);
+			if (!found && start<minCachedStartTime) {
+				fetchAndPut(start);
+				return startToRowIdMap.containsKey(start);
+			} else
+				return found;
+		}
+		
+		/**
+		 * Make sure to call {@link #hasRow(Long)} first.
+		 * @param start starting time
+		 * @return RowId of row with start
+		 */
+		public String getRowId(Long start) {
+			return startToRowIdMap.get(start);
+		}
+		
+		public void put(Long start, String rowId) {
+			startToRowIdMap.put(start, rowId);
+			if (maxStartTime==null || start>maxStartTime) {
+				maxStartTime = start;
+			}
+		}
+		
+		public void trim() {
+			Log.d(TAG, "Trimming Row ID Cache");
+			lastTrim = System.currentTimeMillis();
+			minCachedStartTime = maxStartTime - ROWID_CACHE_DURATION;
+			Iterator<Long> it = startToRowIdMap.keySet().iterator();
+			while (it.hasNext()) {
+				Long val = it.next();
+				if (val<minCachedStartTime) {
+					it.remove();
+				}
+			}
+		}
+		
+//		public void checkServerUpdates() {
+//			Log.d(TAG, "RowId cache is checking for any server table updates");
+//			Map<Long,String> updates = fetchAllRowIds(tableId, maxStartTime);
+//			for (Map.Entry<Long, String> update:updates.entrySet()) {
+//				put(update.getKey(), update.getValue());
+//			}
+//		}
+		
+	}
 	
 }

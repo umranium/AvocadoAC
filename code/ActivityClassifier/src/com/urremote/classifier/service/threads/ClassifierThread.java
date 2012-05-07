@@ -100,11 +100,11 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	private CalcStatistics rawSampleStatistics = new CalcStatistics(Constants.ACCEL_DIM);
 	private CalcStatistics rotatedSampleStatistics = new CalcStatistics(Constants.ACCEL_DIM);	
 
-	private float[][] rotatedMergedSamples = new float[Constants.NUM_OF_SAMPLES_PER_BATCH][2];
+	private float[][] rotatedMergedSamples = new float[Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH][2];
 	private CalcStatistics rotatedMergedSampleStatistics = new CalcStatistics(2);	
 
 	private RotateSamplesToVerticalHorizontal rotateSamples = new RotateSamplesToVerticalHorizontal();
-	private FeatureExtractor featureExtractor = new FeatureExtractor(Constants.NUM_OF_SAMPLES_PER_BATCH);
+	private FeatureExtractor featureExtractor = new FeatureExtractor();
 	private Classifier classifier;
 	private Aggregator aggregator;
 
@@ -340,7 +340,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	private String processData(SampleBatch batch, double retEeAct[], double retMet[]) throws InterruptedException, RemoteException {
 		Log.v(Constants.TAG, "Processing batch.");
 		retEeAct[0] = 0.0;
-		retMet[0] = 0.0;
+		retMet[0] = 1.0;
 
 		long start = System.currentTimeMillis();
 		String classification = ActivityNames.UNKNOWN;
@@ -402,22 +402,25 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 				calibrator.processData(sampleTime, dataMeans, dataSd, rawSampleStatistics.getSum(), rawSampleStatistics.getSumSqr(), rawSampleStatistics.getCount());
 
 				if (!isCalibrated && calibrator.isCalibrated()) {
-					Log.v(Constants.TAG, "Calibration just finished. Saving values to DB.");
-
-					float[] sd = calibrator.getSd();
-					float[] mean = calibrator.getMean();
-
-					optionsTable.setCalibrated(true);
-					optionsTable.setMean(mean);
-					optionsTable.setSd(sd);
-					optionsTable.setCount(calibrator.getCount());
-					optionsTable.setValueOfGravity(calibrator.getValueOfGravity());
-
-					//mean[Constants.ACCEL_Z_AXIS] -= Constants.GRAVITY;
-					mean[Constants.ACCEL_Z_AXIS] = 0.0f;
-					optionsTable.setOffset(mean);
-
-					optionsTable.save();
+					//	Calibration was happening at odd angles, during testing.
+					//		Algorithm is not good enough for picking when the phone was flat.
+					
+//					Log.v(Constants.TAG, "Calibration just finished. Saving values to DB.");
+//
+//					float[] sd = calibrator.getSd();
+//					float[] mean = calibrator.getMean();
+//
+//					optionsTable.setCalibrated(true);
+//					optionsTable.setMean(mean);
+//					optionsTable.setSd(sd);
+//					optionsTable.setCount(calibrator.getCount());
+//					optionsTable.setValueOfGravity(calibrator.getValueOfGravity());
+//
+//					//mean[Constants.ACCEL_Z_AXIS] -= Constants.GRAVITY;
+//					mean[Constants.ACCEL_Z_AXIS] = 0.0f;
+//					optionsTable.setOffset(mean);
+//
+//					optionsTable.save();
 					this.isCalibrated = true;
 				}
 
@@ -431,10 +434,10 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 
 					if (calcGravity>=minGravity && calcGravity<=maxGravity) {
 						// first rotate samples to world-orientation
-						if (rotateSamples.rotateToWorldCoordinates(dataMeans, data)) {
+						if (rotateSamples.rotateToWorldCoordinates(dataMeans, data, size)) {
 							rotatedSampleStatistics.assign(data, size);
 							
-							classification = classifier.classify(featureExtractor.extractRotated(data));
+							classification = classifier.classify(featureExtractor.extractRotated(data, size));
 
 							Log.v(Constants.TAG, "Classifier Algorithm Output: "+classification);
 
@@ -539,7 +542,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 
 	private void logRotatedValues(float[] dataMeans, float[][] rotatedData, int dataSize)
 	{
-		for (int j=0; j<Constants.NUM_OF_SAMPLES_PER_BATCH; ++j) {
+		for (int j=0; j<dataSize; ++j) {
 			rotatedMergedSamples[j][0] = (float)Math.sqrt(
 					rotatedData[j][0]*rotatedData[j][0] +
 					rotatedData[j][1]*rotatedData[j][1]);

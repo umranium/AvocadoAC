@@ -61,14 +61,14 @@ public class RotateSamplesToVerticalHorizontal {
 	 * Returns false if the function is unable to compute the rotation
 	 * matrix and hence unable to change the samples to world coordinates.
 	 */
-	public synchronized boolean rotateToWorldCoordinates(float[] gravityVec, float[][] samples)
+	public synchronized boolean rotateToWorldCoordinates(float[] gravityVec, float[][] samples, int numSamples)
 	{
 		convertToHorVec(gravityVec, horizontalVec);
 		
-		return internRotateToWorldCoordinates(samples, gravityVec, horizontalVec);
+		return internRotateToWorldCoordinates(samples, numSamples, gravityVec, horizontalVec);
 	}
 		
-	private boolean internRotateToWorldCoordinates(float[][] samples, float[] gravityVec, float[] horVec)
+	private boolean internRotateToWorldCoordinates(float[][] samples, int numSamples, float[] gravityVec, float[] horVec)
 	{
 		Log.v(Constants.TAG, "gravity="+Arrays.toString(gravityVec)+", hor="+Arrays.toString(horVec));
 		if (!SensorManager.getRotationMatrix(rotationMat, null, gravityVec, horVec)) {
@@ -77,7 +77,7 @@ public class RotateSamplesToVerticalHorizontal {
 		}
 		
 		//	apply to current samples
-		applyRotation(samples);
+		applyRotation(samples,numSamples);
 		
 		return true;
 	}
@@ -95,9 +95,9 @@ public class RotateSamplesToVerticalHorizontal {
 	 * [ 6 ][ 7 ][ 8 ]
 	 *
 	 */
-	private void applyRotation(float[][] samples)
+	private void applyRotation(float[][] samples, int numSamples)
 	{
-		for (int s=0; s<samples.length; ++s) {
+		for (int s=0; s<numSamples; ++s) {
 			for (int d=0; d<Constants.ACCEL_DIM; ++d) {
 				tempVec[d] = 0.0f;
 				

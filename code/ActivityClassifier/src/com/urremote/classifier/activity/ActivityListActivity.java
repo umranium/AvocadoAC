@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Pattern;
 
 import com.urremote.classifier.R;
 import com.urremote.classifier.rpc.ActivityRecorderBinder;
@@ -20,11 +21,16 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.text.util.Linkify;
 import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -96,6 +102,18 @@ public class ActivityListActivity extends Activity {
 		if (listView!=null) {
 			listView.setAdapter(new ArrayAdapter<Classification>(this,R.layout.item));
 		}
+		
+//		TextView txtFusionTableUrl = (TextView)findViewById(R.id.txtFusionTableUrl);
+//		txtFusionTableUrl.setOnClickListener(new OnClickListener() {
+//			public void onClick(View v) {
+//				String fusionTableId = optionsTable.getFusionTableId();
+//				if (fusionTableId!=null && fusionTableId.length()>0) {
+//					String url = "https://www.google.com/fusiontables/DataSource?docid="+fusionTableId;
+//					Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+//					startActivity(browserIntent);
+//				}
+//			}
+//		});
 	}
 
 	/**
@@ -149,13 +167,11 @@ public class ActivityListActivity extends Activity {
 		String fusionTableId = optionsTable.getFusionTableId();
 		if (fusionTableId==null || fusionTableId.length()==0) {
 			txtFusionTableUrl.setText("Not yet uploading to google fusion tables");
-			//txtFusionTableUrl.setTextColor(0xFF0000);
-			//txtFusionTableUrl.setAutoLinkMask(0);
 			txtFusionTableUrl.setEnabled(false);
 		} else {
-			txtFusionTableUrl.setText("https://www.google.com/fusiontables/DataSource?docid="+fusionTableId);
-			//txtFusionTableUrl.setTextColor(0x0000FF);
-			//txtFusionTableUrl.setAutoLinkMask(Linkify.WEB_URLS);
+			String url = "https://www.google.com/fusiontables/DataSource?docid="+fusionTableId;
+			txtFusionTableUrl.setText(Html.fromHtml("Go to <a href=\""+url+"\">Google Fusion Table</a>"));
+			txtFusionTableUrl.setMovementMethod(LinkMovementMethod.getInstance());
 			txtFusionTableUrl.setEnabled(true);
 		}
 	}

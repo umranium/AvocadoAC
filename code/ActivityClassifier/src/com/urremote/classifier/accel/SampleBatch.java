@@ -27,28 +27,65 @@ public class SampleBatch {
 	private boolean charging;
 	
 	public SampleBatch() {
-		data = new float[Constants.NUM_OF_SAMPLES_PER_BATCH][Constants.ACCEL_DIM];
-		timeStamps = new long[Constants.NUM_OF_SAMPLES_PER_BATCH];
+		data = new float[Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH][Constants.ACCEL_DIM];
+		timeStamps = new long[Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH];
 		currentSample = 0;
 	}
 	
-	public void assignSample(float[] data) {
-		timeStamps[currentSample] = System.currentTimeMillis();
-		for (int d=0; d<Constants.ACCEL_DIM; ++d)
-			this.data[currentSample][d] = data[d];
+	public boolean hasLastSample() {
+		return currentSample>0;
 	}
 	
-	public boolean nextSample() {
-		++currentSample;
-		
-		if (currentSample>=Constants.NUM_OF_SAMPLES_PER_BATCH) {
-			currentSample = Constants.NUM_OF_SAMPLES_PER_BATCH;
-			return false;
-		}
-		else {
-			return true;
-		}
+	public float[] getLastSample() {
+		return this.data[currentSample-1];
 	}
+	
+	public long getFirstSampleTime() {
+		return this.timeStamps[0];
+	}
+	
+	public long getLastSampleTime() {
+		return this.timeStamps[currentSample-1];
+	}
+	
+	public void assignSample(long time, float[] data) {
+		timeStamps[currentSample] = time;
+		for (int d=0; d<Constants.ACCEL_DIM; ++d)
+			this.data[currentSample][d] = data[d];
+		++currentSample;
+	}
+	
+	public boolean hasSpace() {
+		return currentSample<Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH;
+	}
+	
+	public void downSample(int size) {
+		if (size>currentSample) {
+			return;
+		}
+		
+		int step = currentSample / size;
+		int write = 0;
+		for (int read=0; read<currentSample; read+=step) {
+			for (int d=0; d<Constants.ACCEL_DIM; ++d)
+				data[write][d] = data[read][d];
+			++write;
+		}
+		
+		currentSample = write;
+	}
+	
+//	public boolean nextSample() {
+//		++currentSample;
+//		
+//		if (currentSample>=Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH) {
+//			currentSample = Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH;
+//			return false;
+//		}
+//		else {
+//			return true;
+//		}
+//	}
 	
 	public void reset() {
 		currentSample = 0;

@@ -71,8 +71,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 	private Handler mainLooperHandler;
 
-	private AccountChooser accountChooser;
-
 	private OptionUpdateHandler optionUpdateHandler = new OptionUpdateHandler() {
 		public void onFieldChange(Set<String> updatedKeys) {
 			if (updatedKeys.contains(OptionsTable.KEY_IS_CALIBRATED)) {
@@ -140,8 +138,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 	};
 
 	/**
-	 * When the Service connection is established in this class,
-	 * bind the Wake Lock status to notify RecorderService.
+	 * When the Service connection is established in this class
 	 */
 	private final ServiceConnection connection = new ServiceConnection() {
 
@@ -149,9 +146,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 			service = ActivityRecorderBinder.Stub.asInterface(iBinder);
 			try {
 				if(service==null || !service.isRunning()) {
-				}
-				else{
-					service.setWakeLock();
 				}
 			} catch (RemoteException e) {
 				e.printStackTrace();
@@ -172,7 +166,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 		this.sqlLiteAdapter = SqlLiteAdapter.getInstance(this);
 		this.optionsTable = this.sqlLiteAdapter.getOptionsTable();
 		this.mainLooperHandler = new Handler(this.getMainLooper());
-		this.accountChooser = new AccountChooser();
 		wakelock=false;
 		
 		optionsTable.registerUpdateHandler(optionUpdateHandler);
@@ -247,45 +240,45 @@ public class MainSettingsActivity extends PreferenceActivity {
 		root.addPreference(lockPrefCat);
 
 		// Toggle preference
-		final CheckBoxPreference screenPref = new CheckBoxPreference(this);
-		screenPref.setKey("screen_preference");
-		screenPref.setTitle("Screen Locked On");
-		screenPref.setSummary("Some phones (e.g. HTC Desire) require this.");
-		wakelock = optionsTable.isWakeLockSet();
-		Log.i("wake",wakelock+"");
-		screenPref.setChecked(wakelock);  
-		Log.i("wake",screenPref.isChecked()+"");
-		//		getApplicationContext().bindService(new Intent(this, RecorderService.class),
-		//				connection, Context.BIND_AUTO_CREATE);
-		screenPref.setOnPreferenceChangeListener(new CheckBoxPreference.OnPreferenceChangeListener(){
-
-			public boolean onPreferenceChange(Preference arg0, Object arg1) {
-				if((Boolean) arg1){
-					wakelock=(Boolean) arg1;//true value
-					Toast.makeText(getBaseContext(), "Screen Locked On", Toast.LENGTH_SHORT).show();
-					//update Wake Lock state to 1 (true)
-					optionsTable.setWakeLockSet(true);
-					optionsTable.save();
-					//					getApplicationContext().unbindService(connection);
-					//					getApplicationContext().bindService(new Intent(getBaseContext(), RecorderService.class),
-					//							connection, Context.BIND_AUTO_CREATE);
-
-				}
-				else{
-					wakelock=(Boolean) arg1;
-					Toast.makeText(getBaseContext(), "Screen Locked Off", Toast.LENGTH_SHORT).show();
-					optionsTable.setWakeLockSet(false);
-					optionsTable.save();
-				}
-				getApplicationContext().unbindService(connection);
-				getApplicationContext().bindService(new Intent(getBaseContext(), RecorderService.class),
-						connection, Context.BIND_AUTO_CREATE);
-				screenPref.setChecked(wakelock);
-
-				return false;
-			}
-
-		});
+//		final CheckBoxPreference screenPref = new CheckBoxPreference(this);
+//		screenPref.setKey("screen_preference");
+//		screenPref.setTitle("Screen Locked On");
+//		screenPref.setSummary("Some phones (e.g. HTC Desire) require this.");
+//		wakelock = optionsTable.isWakeLockSet();
+//		Log.i("wake",wakelock+"");
+//		screenPref.setChecked(wakelock);  
+//		Log.i("wake",screenPref.isChecked()+"");
+//		//		getApplicationContext().bindService(new Intent(this, RecorderService.class),
+//		//				connection, Context.BIND_AUTO_CREATE);
+//		screenPref.setOnPreferenceChangeListener(new CheckBoxPreference.OnPreferenceChangeListener(){
+//
+//			public boolean onPreferenceChange(Preference arg0, Object arg1) {
+//				if((Boolean) arg1){
+//					wakelock=(Boolean) arg1;//true value
+//					Toast.makeText(getBaseContext(), "Screen Locked On", Toast.LENGTH_SHORT).show();
+//					//update Wake Lock state to 1 (true)
+//					optionsTable.setWakeLockSet(true);
+//					optionsTable.save();
+//					//					getApplicationContext().unbindService(connection);
+//					//					getApplicationContext().bindService(new Intent(getBaseContext(), RecorderService.class),
+//					//							connection, Context.BIND_AUTO_CREATE);
+//
+//				}
+//				else{
+//					wakelock=(Boolean) arg1;
+//					Toast.makeText(getBaseContext(), "Screen Locked Off", Toast.LENGTH_SHORT).show();
+//					optionsTable.setWakeLockSet(false);
+//					optionsTable.save();
+//				}
+//				getApplicationContext().unbindService(connection);
+//				getApplicationContext().bindService(new Intent(getBaseContext(), RecorderService.class),
+//						connection, Context.BIND_AUTO_CREATE);
+//				screenPref.setChecked(wakelock);
+//
+//				return false;
+//			}
+//
+//		});
 		
 		fulltimeAccelPref = new CheckBoxPreference(this);
 		fulltimeAccelPref.setKey("fulltime_accel_preference");
@@ -305,7 +298,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 		fulltimeAccelPref.setChecked(optionsTable.getFullTimeAccel());
 
 		
-		lockPrefCat.addPreference(screenPref);
+//		lockPrefCat.addPreference(screenPref);
 		lockPrefCat.addPreference(fulltimeAccelPref);
 
 		// Dialog based preferences
@@ -413,10 +406,13 @@ public class MainSettingsActivity extends PreferenceActivity {
 		selectAccountPref.setSummary(currentUploadAccount==null?"":currentUploadAccount);
 		selectAccountPref.setOnPreferenceClickListener(new PreferenceScreen.OnPreferenceClickListener(){
 			public boolean onPreferenceClick(Preference preference) {
-				MainSettingsActivity.this.accountChooser.chooseAccount(MainSettingsActivity.this, 
+				AccountChooser accountChooser = new AccountChooser();
+				accountChooser.chooseAccount(MainSettingsActivity.this, 
 						new AccountHandler() {
 					public void onAccountSelected(Account account) {
-						optionsTable.setUploadAccount(account.name);
+						if (account!=null) {
+							optionsTable.setUploadAccount(account.name);
+						}
 					}
 				});
 				return false;

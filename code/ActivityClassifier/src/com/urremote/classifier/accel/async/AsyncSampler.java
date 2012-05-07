@@ -57,111 +57,102 @@ public class AsyncSampler implements Sampler {
 	private final ActivityRecorderBinder service;
     private final AsyncAccelReader reader;
     private final SamplerCallback callback;
+    private final Handler handler; 
     
     private SampleBatch currentBatch;
     private boolean sampling;
     
-    private Timer timer;
-    private SamplerTimerTask timerTask;
-    
     private int startSamplingHardwareErrorCount = 0; 
     
-    private class SamplerTimerTask extends TimerTask
-    {
-		@Override
+    private Runnable finishSampling = new Runnable() {
 		public void run() {
-			//	make sure we're sampling...
-			if (AsyncSampler.this.sampling) {
-		    	try {
-					reader.assignSample(currentBatch);
-			    	if (!currentBatch.nextSample()) {
-			            if (callback != null)
-			            	callback.samplerFinished(currentBatch);
-			    		finalizeSampling();
-			    	}
-			        startSamplingHardwareErrorCount = 0;
-				} catch (HardwareFaultException e) {
-		        	++startSamplingHardwareErrorCount;
-					Log.e(Constants.TAG, "Hardware Fault While Sampling", e);
-		            if (callback != null)
-		            	callback.samplerError(currentBatch, e);
-					finalizeSampling();
-					if (startSamplingHardwareErrorCount>=3) {
-						try {
-							service.handleHardwareFaultException("Faulty Accelerometer", e.getMessage());
-						} catch (RemoteException e1) {
-							e1.printStackTrace();
-						}
-					}
-				}
-				
+			if (sampling) {
+				Log.d(Constants.TAG, "Finished sampling: sampled "+currentBatch.getSize()+" samples.");
+	    		finalizeSampling();
+	            if (callback != null) {
+	            	callback.samplerFinished(currentBatch);
+	            	currentBatch = null;
+	            }
 			}
 		}
 	};
-    
+
     public AsyncSampler(
     		final ActivityRecorderBinder service, 
     		final AsyncAccelReader reader,
-            final SamplerCallback callback) {
+            final SamplerCallback callback,
+            final Handler handler) {
     	this.service = service;
         this.reader = reader;
         this.callback = callback;
-        this.timer = new Timer("Async Sampler Timer");
-        this.timerTask = new SamplerTimerTask();
+        this.handler = handler;
     }
-
+    
     public void start(SampleBatch currentBatch) {
     	this.currentBatch = currentBatch;
     	this.currentBatch.reset();
     	this.currentBatch.sampleTime = System.currentTimeMillis();
     	
         try {
-			reader.startSampling();
-	        startSamplingHardwareErrorCount = 0;
+			reader.startSampling(currentBatch);
+	        Log.d(Constants.TAG, "Started sampling");
+	        this.sampling = true;
+	        handler.postDelayed(finishSampling, Constants.SAMPLING_BATCH_DURATION);
+	        try {
+				if (startSamplingHardwareErrorCount>0) {
+					startSamplingHardwareErrorCount = 0;
+					if (service.isHardwareNotificationOn())
+						service.cancelHardwareNotification();
+				}
+			} catch (RemoteException e) {
+			}
         } catch (HardwareFaultException e) {
         	++startSamplingHardwareErrorCount;
-			Log.e(Constants.TAG, "Hardware Fault While Starting Sampling ("+startSamplingHardwareErrorCount+")", e);
+			Log.w(Constants.TAG, "Hardware Fault While Starting Sampling ("+startSamplingHardwareErrorCount+")", e);
 			
-            if (callback != null)
+            if (callback != null) {
             	callback.samplerError(currentBatch, e);
+            	currentBatch = null;
+            }
 			
 			if (startSamplingHardwareErrorCount>=3) {
-				try {
-					service.handleHardwareFaultException("Faulty Accelerometer", e.getMessage());
-				} catch (RemoteException e1) {
-					e1.printStackTrace();
+				if (reader.getCurrentSamplingRate()>10) {
+					reader.setCurrentSamplingRate(AsyncAccelReader.GENERIC_SAMPLING_RATE);
+					startSamplingHardwareErrorCount = 0;
+				} else {
+					try {
+						if (!service.isHardwareNotificationOn()) {
+							service.handleHardwareFaultException("Faulty Accelerometer", e.getMessage());
+						}
+					} catch (RemoteException e1) {
+						e1.printStackTrace();
+					}
 				}
 			}
 			
 			return;
+		} finally {
+			
 		}
         
-        this.sampling = true;
-        Log.i(Constants.TAG, "Starting Timer");
-        timer.scheduleAtFixedRate(this.timerTask, Constants.DELAY_BETWEEN_SAMPLES, Constants.DELAY_BETWEEN_SAMPLES);
-        Log.i(Constants.TAG, "Started Sampling.");
     }
     
     private void finalizeSampling() {
         this.sampling = false;
     	reader.stopSampling();
-        
-        Log.i(Constants.TAG, "Cancelling Timer");
-    	timerTask.cancel();		//	cancel timer task
-    	timer.purge();			//	purge timer task
-    							//	replace timer task to make sure previous one is gc
-        this.timerTask = new SamplerTimerTask();
     }
 
     public void stop() {
-    	if (this.isSampling()) {
-	        if (callback != null)
-	        	callback.samplerStopped(currentBatch);
+    	if (sampling) {
 	    	finalizeSampling();
+	        if (callback != null) {
+	        	callback.samplerStopped(currentBatch);
+	        	currentBatch = null;
+	        }
     	}
         Log.i(Constants.TAG, "Sampling Stopped.");
     }
-
+    
 	public boolean isSampling() {
 		return sampling;
 	}

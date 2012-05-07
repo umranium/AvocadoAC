@@ -19,7 +19,7 @@ public class WalkingSpeedUtil {
 	private static final int DATA_V_DIM = 2;
 	private static final float MIN_UPPER_BAND = 1.1f;	// m/s^2
 	private static final float MIN_PEAK_HEIGHT = Constants.GRAVITY*0.25f;	// m/s^2
-	private static final int BUFFER_LEN = Constants.NUM_OF_SAMPLES_PER_BATCH;
+	private static final int BUFFER_LEN = Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH;
 	
 	//	minimum and maximum, step frequencies for walking
 	private static final float MAX_WALKING_STEP_FREQUENCY = 2.5f;	// Hz
@@ -32,8 +32,8 @@ public class WalkingSpeedUtil {
 	private static final int MIN_WALKING_ZERO_CROSSINGS = 2;
 	private static final int MAX_WALKING_ZERO_CROSSINGS = 8;
 	
-	//	maximum allowable sampling delay (in milli-seconds)
-	private static final long MAX_SAMPLING_INTERVAL = Constants.DELAY_BETWEEN_SAMPLES*2;	// milliseconds
+	//	maximum allowable sampling delay (in milli-seconds) 2 sampling periods @ 20Hz
+	private static final long MAX_SAMPLING_INTERVAL = 50*2;	// milliseconds
 	
 	private String printOutputFolder;
 	private SimpleDateFormat dateFormat;

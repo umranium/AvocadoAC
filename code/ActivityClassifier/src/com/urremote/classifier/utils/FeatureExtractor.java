@@ -38,25 +38,22 @@ public class FeatureExtractor {
     public static final int FEATURE_HOR_SD   	= 4;
     public static final int FEATURE_VER_SD   	= 5;
 	
-    private int windowSize;
     private RotateSamplesToVerticalHorizontal rotate;
     private float[][] twoDimSamples;
     private CalcStatistics twoDimSampleStats;
     private float[] features;
     
 
-    public FeatureExtractor(int windowSize) {
-        this.windowSize = windowSize;
-
+    public FeatureExtractor() {
         this.rotate = new RotateSamplesToVerticalHorizontal();
-        this.twoDimSamples = new float[windowSize][2];
+        this.twoDimSamples = new float[Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH][2];
         this.twoDimSampleStats = new CalcStatistics(2);
         this.features = new float[NUM_FEATURES];
         
     }
 
     synchronized
-    public float[] extractRotated(float[][] input)
+    public float[] extractRotated(float[][] input, int windowSize)
     {
         for (int j=0; j<windowSize; ++j) {
             twoDimSamples[j][0] = (float)Math.sqrt(
@@ -65,10 +62,10 @@ public class FeatureExtractor {
             twoDimSamples[j][1] = input[j][2];
         }
 
-        return internExtract();
+        return internExtract(windowSize);
     }
 	
-    private float[] internExtract() {
+    private float[] internExtract(int windowSize) {
         twoDimSampleStats.assign(twoDimSamples, windowSize);
 
         float[] min = twoDimSampleStats.getMin();

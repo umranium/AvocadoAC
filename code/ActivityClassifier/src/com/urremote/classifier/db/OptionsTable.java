@@ -61,7 +61,6 @@ public class OptionsTable extends DbTableAdapter {
 	public static final String KEY_COUNT = "count";
 	public static final String KEY_ALLOWED_MULTIPLES_OF_SD = "allowedMultiplesOfSd";
 	public static final String KEY_IS_ACCOUNT_SENT = "isAccountSent";
-	public static final String KEY_IS_WAKE_LOCK_SET = "isWakeLockSet";
 	public static final String KEY_USE_AGGREGATOR = "useAggregator";
 	public static final String KEY_INVOKE_MYTRACKS = "invokeMyTracks";
 	public static final String KEY_FULLTIME_ACCEL = "fullTimeAccel";
@@ -118,7 +117,6 @@ public class OptionsTable extends DbTableAdapter {
 		KEY_COUNT + ", " +
 		KEY_ALLOWED_MULTIPLES_OF_SD + ", " +
 		KEY_IS_ACCOUNT_SENT + ", " +
-		KEY_IS_WAKE_LOCK_SET + ", " +
 		KEY_USE_AGGREGATOR + ", " +
 		KEY_INVOKE_MYTRACKS + ", " +
 		KEY_FULLTIME_ACCEL + ", " +
@@ -138,7 +136,7 @@ public class OptionsTable extends DbTableAdapter {
 	//	various system states
 	private boolean isServiceUserStarted;
 	private boolean isAccountSent;
-	private boolean isWakeLockSet;
+
 	private boolean useAggregator;
 	private boolean fullTimeAccel;
 	private boolean invokeMyTracks;
@@ -197,7 +195,6 @@ public class OptionsTable extends DbTableAdapter {
 			KEY_COUNT+" INTEGER NOT NULL, " +
 			KEY_ALLOWED_MULTIPLES_OF_SD+" REAL NOT NULL, " + 
 			KEY_IS_ACCOUNT_SENT+" INTEGER NOT NULL, " +
-			KEY_IS_WAKE_LOCK_SET+" INTEGER NOT NULL, " +
 			KEY_USE_AGGREGATOR+" INTEGER NOT NULL, " +
 			KEY_INVOKE_MYTRACKS+" INTEGER NOT NULL, " +
 			KEY_FULLTIME_ACCEL+" INTEGER NOT NULL, " +
@@ -212,8 +209,8 @@ public class OptionsTable extends DbTableAdapter {
 		//	insert default values
 		setServiceUserStarted(true);
 		setAccountSent(false);
-		setWakeLockSet(false);
-		setUseAggregator(false);
+//		setWakeLockSet(false);
+		setUseAggregator(true);
 		setInvokeMyTracks(Constants.DEF_USE_MYTRACKS);
 		setFullTimeAccel(false);
 		setAccelSensorRate(SensorManager.SENSOR_DELAY_NORMAL);
@@ -326,7 +323,6 @@ public class OptionsTable extends DbTableAdapter {
 				setCount(cursor.getInt(cursor.getColumnIndex(KEY_COUNT)));
 				setAllowedMultiplesOfSd(cursor.getFloat(cursor.getColumnIndex(KEY_ALLOWED_MULTIPLES_OF_SD)));
 				setAccountSent(cursor.getInt(cursor.getColumnIndex(KEY_IS_ACCOUNT_SENT))!=0);
-				setWakeLockSet(cursor.getInt(cursor.getColumnIndex(KEY_IS_WAKE_LOCK_SET))!=0);
 				setUseAggregator(cursor.getInt(cursor.getColumnIndex(KEY_USE_AGGREGATOR))!=0);
 				setInvokeMyTracks(cursor.getInt(cursor.getColumnIndex(KEY_INVOKE_MYTRACKS))!=0);
 				setFullTimeAccel(cursor.getInt(cursor.getColumnIndex(KEY_FULLTIME_ACCEL))!=0);
@@ -458,24 +454,6 @@ public class OptionsTable extends DbTableAdapter {
 		this.isAccountSent = isAccountSent;
 		this.contentValues.put(KEY_IS_ACCOUNT_SENT, isAccountSent?1:0);
 		this.updatedKeys.add(KEY_IS_ACCOUNT_SENT);
-	}
-
-	/**
-	 * @return the isWakeLockSet
-	 */
-	public boolean isWakeLockSet() {
-		return isWakeLockSet;
-	}
-
-	/**
-	 * Make sure to call {@link #save()} after setting.
-	 * 
-	 * @param isWakeLockSet the isWakeLockSet to set
-	 */
-	public void setWakeLockSet(boolean isWakeLockSet) {
-		this.isWakeLockSet = isWakeLockSet;
-		this.contentValues.put(KEY_IS_WAKE_LOCK_SET, isWakeLockSet?1:0);
-		this.updatedKeys.add(KEY_IS_WAKE_LOCK_SET);
 	}
 
 	/**

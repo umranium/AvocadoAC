@@ -4,10 +4,13 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.net.URLEncoder;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
@@ -32,10 +35,13 @@ import com.urremote.classifier.gdata.GDataWrapper;
 import com.urremote.classifier.gdata.GDataWrapper.QueryFunction;
 
 public class FusionTables {
+	
 	private static final String CONTENT_TYPE = "application/x-www-form-urlencoded";
 
 	/** The GData service id for Fusion Tables. */
 	public static final String SERVICE_ID = "fusiontables";
+	
+	public static final String TAG = Constants.TAG+"FusionHttp";
 
 	// /** The path for viewing a map visualization of a table. */
 	// private static final String FUSIONTABLES_MAP =
@@ -202,7 +208,7 @@ public class FusionTables {
 				query.append("'").append(col.name).append("' AS '").append(col.viewName).append("'");
 			}
 		}
-		query.append("FROM "+refTableId+")");
+		query.append(" FROM "+refTableId+")");
 		
 		List<String[]> results = new ArrayList<String[]>();
 		if (runQuery(true, query.toString(), results)) {
@@ -224,7 +230,6 @@ public class FusionTables {
 	 */
 	public boolean runQuery(final boolean usePost, final String query, final List<String[]> results) {
 		if (auth.getAuthToken() == null) {
-			Log.e(Constants.TAG, "Attempting a query when no auth-token available");
 			return false;
 		}
 
@@ -232,73 +237,93 @@ public class FusionTables {
 		wrapper.setAuthManager(auth);
 		wrapper.setRetryOnAuthFailure(false);
 		wrapper.setClient(httpRequestFactory);
-		wrapper.runQuery(new QueryFunction<HttpRequestFactory>() {
-			public void query(HttpRequestFactory factory) throws IOException,
-					GDataWrapper.ParseException, GDataWrapper.HttpException,
-					GDataWrapper.AuthenticationException {
-				GenericUrl url = new GenericUrl(FUSIONTABLES_BASE_FEED_URL);
-				url.set("encid", Boolean.toString(true));
-				Log.d(Constants.TAG, "Fusion Table Query: "+query);
-
-				HttpRequest request;
-				if (usePost) {
-					String encodedQuery = URLEncoder.encode(query, "UTF-8");
-					ByteArrayInputStream inputStream = new ByteArrayInputStream(
-							Strings.toBytesUtf8("sql="+encodedQuery));
-					InputStreamContent isc = new InputStreamContent(null,
-							inputStream);
-					request = factory.buildPostRequest(url, isc);
-				} else {
-					url.set("sql", query); // no need to encode, GenericUrl class encodes
-					request = factory.buildGetRequest(url);
-				}
-				
-				GoogleHeaders headers = new GoogleHeaders();
-				headers.setApplicationName(APP_NAME);
-				headers.gdataVersion = GDATA_VERSION;
-				headers.setGoogleLogin(auth.getAuthToken());
-				if (usePost) {
-					headers.setContentType(CONTENT_TYPE);
-				} else {
-					headers.setContentType("text/plain");
-				}
-				
-				request.setHeaders(headers);
-
-				Log.d(Constants.TAG, "Running query: " + url.toString());
-				HttpResponse response;
-				try {
-					response = request.execute();
-				} catch (HttpResponseException e) {
-					throw new GDataWrapper.HttpException(e.getResponse()
-							.getStatusCode(), e.getResponse()
-							.getStatusMessage());
-				}
-				boolean success = response.isSuccessStatusCode();
-				if (success) {
-					BufferedReader bufferedStreamReader =
-							new BufferedReader(new InputStreamReader(response.getContent(), "UTF8"));
-					CSVReader reader = new CSVReader(bufferedStreamReader);
-					List<String[]> csvLines = reader.readAll();
-					
-					Log.d(Constants.TAG, "Query Response: ("+csvLines.size()+" lines)");
-					for (String[] line:csvLines) {
-						Log.d(Constants.TAG, "\t"+Arrays.toString(line));
+		try {
+			wrapper.runQuery(new QueryFunction<HttpRequestFactory>() {
+				public void query(HttpRequestFactory factory) throws IOException,
+						GDataWrapper.ParseException, GDataWrapper.HttpException,
+						GDataWrapper.AuthenticationException {
+					GenericUrl url = new GenericUrl(FUSIONTABLES_BASE_FEED_URL);
+					url.set("encid", Boolean.toString(true));
+					Log.d(TAG, "Fusion Table Query: "+query);
+	
+					HttpRequest request;
+					if (usePost) {
+						String encodedQuery = URLEncoder.encode(query, "UTF-8");
+						ByteArrayInputStream inputStream = new ByteArrayInputStream(
+								Strings.toBytesUtf8("sql="+encodedQuery));
+						InputStreamContent isc = new InputStreamContent(null,
+								inputStream);
+						request = factory.buildPostRequest(url, isc);
+					} else {
+						url.set("sql", query); // no need to encode, GenericUrl class encodes
+						request = factory.buildGetRequest(url);
 					}
 					
-					if (results!=null) {
-						results.clear();
-						results.addAll(csvLines);
+					GoogleHeaders headers = new GoogleHeaders();
+					headers.setApplicationName(APP_NAME);
+					headers.gdataVersion = GDATA_VERSION;
+					headers.setGoogleLogin(auth.getAuthToken());
+					if (usePost) {
+						headers.setContentType(CONTENT_TYPE);
+					} else {
+						headers.setContentType("text/plain");
 					}
-				} else {
-					Log.d(Constants.TAG,
-							"Query failed: " + response.getStatusMessage()
-									+ " (" + response.getStatusCode() + ")");
-					throw new GDataWrapper.HttpException(response
-							.getStatusCode(), response.getStatusMessage());
+					
+					request.setHeaders(headers);
+	
+					Log.d(TAG, "Running query: " + url.toString());
+					HttpResponse response;
+					try {
+						response = request.execute();
+					} catch (HttpResponseException e) {
+						throw new GDataWrapper.HttpException(e.getResponse()
+								.getStatusCode(), e.getResponse()
+								.getStatusMessage());
+					}
+					boolean success = response.isSuccessStatusCode();
+					if (success) {
+						BufferedReader bufferedStreamReader =
+								new BufferedReader(new InputStreamReader(response.getContent(), "UTF8"));
+						StringBuilder replyBldr = new StringBuilder();
+						char[] input = new char[1024];
+						int readCount;
+						do {
+							readCount = bufferedStreamReader.read(input);
+							for (int i=0; i<readCount; ++i) {
+								replyBldr.append(input[i]);
+							}
+						} while (readCount>=0);
+						
+						String reply = replyBldr.toString();
+						
+						Log.d(TAG, "Server Reply: "+reply);
+						
+						CSVReader reader = new CSVReader(new StringReader(reply));
+						List<String[]> csvLines = reader.readAll();
+						
+	//					Log.d(TAG, "CSV: ("+csvLines.size()+" lines)");
+	//					for (String[] line:csvLines) {
+	//						Log.d(TAG, "\t"+Arrays.toString(line));
+	//					}
+						
+						if (results!=null) {
+							results.clear();
+							results.addAll(csvLines);
+						}
+					} else {
+						Log.d(TAG,
+								"Query failed: " + response.getStatusMessage()
+										+ " (" + response.getStatusCode() + ")");
+						throw new GDataWrapper.HttpException(response
+								.getStatusCode(), response.getStatusMessage());
+					}
 				}
-			}
-		});
+			});
+		} catch (Exception e) {
+			Log.w(Constants.TAG, "Error while attempting query: "+query, e);
+			return false;
+		}
+		
 		return wrapper.getErrorType() == GDataWrapper.ERROR_NO_ERROR;
 	}
 

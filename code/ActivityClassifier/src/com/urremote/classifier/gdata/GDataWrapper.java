@@ -135,7 +135,7 @@ public class GDataWrapper<C> {
   // An unknown error occurred.
   public static final int ERROR_UNKNOWN = 100;
 
-  private static final int AUTH_TOKEN_INVALIDATE_REFRESH_NUM_RETRIES = 1;
+  private static final int AUTH_TOKEN_INVALIDATE_REFRESH_NUM_RETRIES = 3;
   private static final int AUTH_TOKEN_INVALIDATE_REFRESH_TIMEOUT = 5000;
 
   private String errorMessage;
@@ -156,11 +156,13 @@ public class GDataWrapper<C> {
   }
 
   public boolean runAuthenticatedFunction(
-      final AuthenticatedFunction function) {
+      final AuthenticatedFunction function)  throws AuthenticationException, IOException, ParseException,
+      ConflictDetectedException, HttpException {
     return runCommon(function, null);
   }
 
-  public boolean runQuery(final QueryFunction<C> query) {
+  public boolean runQuery(final QueryFunction<C> query) throws AuthenticationException, IOException, ParseException,
+  ConflictDetectedException, HttpException  {
     return runCommon(null, query);
   }
 
@@ -168,8 +170,9 @@ public class GDataWrapper<C> {
    * Runs an arbitrary piece of code.
    */
   private boolean runCommon(final AuthenticatedFunction function,
-      final QueryFunction<C> query) {
-    //for (int i = 0; i <= AUTH_TOKEN_INVALIDATE_REFRESH_NUM_RETRIES; i++)
+      final QueryFunction<C> query) throws AuthenticationException, IOException, ParseException,
+      ConflictDetectedException, HttpException {
+    for (int i = 0; i <= AUTH_TOKEN_INVALIDATE_REFRESH_NUM_RETRIES; i++)
     {
       runOne(function, query);
       if (errorType == ERROR_NO_ERROR) {
@@ -178,7 +181,8 @@ public class GDataWrapper<C> {
 
       Log.d(Constants.TAG, "GData error encountered: " + errorMessage);
       if (errorType == ERROR_AUTH && auth != null) {
-        if (!retryOnAuthFailure || !invalidateAndRefreshAuthToken()) {
+    	  Log.d(Constants.TAG, "Authentication Error, attempt invalidating and refreshing token");
+        if (!invalidateAndRefreshAuthToken() || !retryOnAuthFailure) {
           return false;
         }
       }
@@ -193,7 +197,8 @@ public class GDataWrapper<C> {
    * errorMessage will contain the result/status of the function/query.
    */
   private void runOne(final AuthenticatedFunction function,
-      final QueryFunction<C> query) {
+      final QueryFunction<C> query) throws AuthenticationException, IOException, ParseException,
+      ConflictDetectedException, HttpException {
     try {
       if (function != null) {
         function.run(this.auth.getAuthToken());

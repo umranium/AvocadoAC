@@ -8,6 +8,9 @@ package com.urremote.classifier.service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.urremote.classifier.accel.SampleBatch;
 import com.urremote.classifier.accel.SampleBatchBuffer;
@@ -22,6 +25,7 @@ import com.urremote.classifier.common.Constants;
 import com.urremote.classifier.common.ExceptionHandler;
 import com.urremote.classifier.db.ActivitiesTable;
 import com.urremote.classifier.db.DebugDataTable;
+import com.urremote.classifier.db.OptionUpdateHandler;
 import com.urremote.classifier.db.OptionsTable;
 import com.urremote.classifier.db.SqlLiteAdapter;
 import com.urremote.classifier.fusiontables.FusionTableActivitySync;
@@ -91,9 +95,6 @@ public class RecorderService extends Service implements Runnable {
 
 	private int isWakeLockSet;
 
-	private PowerManager.WakeLock PARTIAL_WAKE_LOCK_MANAGER;
-	private PowerManager.WakeLock SCREEN_DIM_WAKE_LOCK_MANAGER;
-
 	//private UploadActivityHistoryThread uploadActivityHistory;
 	private AuthManager authManager;
 	private FusionTableActivitySync activityTableSync;
@@ -105,11 +106,15 @@ public class RecorderService extends Service implements Runnable {
 
 	private boolean running;
 
-	private Boolean SCREEN_DIM_WAKE_LOCK_MANAGER_IsAcquired = false;
-	private Boolean PARTIAL_WAKE_LOCK_MANAGER_IsAcquired = false;
-
-	private PowerManager pm;
-
+	private PowerManager powerManager;
+	private PowerManager.WakeLock partialWakeLock;
+	private boolean partialWakeLockShouldBeOn;
+	private AlarmManager alarmManager;
+	private PendingIntent pendingSamplingIntent;
+	private ExecutorService samplingExecutorService;
+	
+	private NotificationManager notificationManager;
+	
 	private final List<Classification> adapter = new ArrayList<Classification>();
 
 	private PhoneInfo phoneInfo;
@@ -120,29 +125,11 @@ public class RecorderService extends Service implements Runnable {
 	private ActivityWatcher activityWatcher;
 	private MetUtilOrig metUtil;
 	private RawDump rawDump;
+	
+	private boolean hardwareNotificationOn = false;
 
 	private Classification latestClassification = new Classification();
-
-	/**
-	 * broadcastReceiver that receive phone's screen state
-	 */
-	private BroadcastReceiver myScreenReceiver = new BroadcastReceiver() {
-
-		public void onReceive(Context arg0, Intent arg1) {
-
-			if (arg1.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
-				Log.i("screen", "off");
-				if (!PARTIAL_WAKE_LOCK_MANAGER_IsAcquired) {
-					SCREEN_DIM_WAKE_LOCK_MANAGER_IsAcquired = false;
-					applyWakeLock(true);
-				}
-			} else
-				if (arg1.getAction().equals(Intent.ACTION_SCREEN_ON)) {
-					Log.i("screen", "on");
-				}
-		}
-	};
-
+	
 	/**
 	 * Broadcast receiver for battery manager
 	 */
@@ -160,43 +147,32 @@ public class RecorderService extends Service implements Runnable {
 	};
 
 	/**
+	 * Option table update handler
+	 */
+	private OptionUpdateHandler optionUpdateHandler = new OptionUpdateHandler() {
+		public void onFieldChange(Set<String> updatedKeys) {
+			if (updatedKeys.contains(OptionsTable.KEY_FULLTIME_ACCEL)) {
+				applyWakeLock(partialWakeLockShouldBeOn);
+			}
+		}
+	};
+	
+	/**
 	 * Performs screen wake lock depends on the screen on/off
 	 * 
 	 * @param wakelock
 	 */
 	private void applyWakeLock(boolean wakelock) {
-		/*
-		 * if wake lock is set, PARTIAL_WAKE_LOCK is released, then use
-		 * SCREEN_DIM_WAKE_LOCK to turn the screen on.
-		 */
-		if (wakelock) {
-			Log.i("Wakelock", "true? " + wakelock);
-			if (PARTIAL_WAKE_LOCK_MANAGER != null) {
-				PARTIAL_WAKE_LOCK_MANAGER.release();
-				PARTIAL_WAKE_LOCK_MANAGER = null;
-				PARTIAL_WAKE_LOCK_MANAGER_IsAcquired = false;
-				Log.i("Wakelock", "PARTIAL_WAKE_LOCK_MANAGER is released");
+		if (partialWakeLock!=null) {
+			if (wakelock && !partialWakeLock.isHeld()) {
+				partialWakeLock.acquire();
+				partialWakeLockShouldBeOn = true;
 			}
-			if (!SCREEN_DIM_WAKE_LOCK_MANAGER_IsAcquired) {
-				SCREEN_DIM_WAKE_LOCK_MANAGER = pm.newWakeLock(PowerManager.ACQUIRE_CAUSES_WAKEUP
-						| PowerManager.SCREEN_DIM_WAKE_LOCK, "screen onon");
-				SCREEN_DIM_WAKE_LOCK_MANAGER.acquire();
-				SCREEN_DIM_WAKE_LOCK_MANAGER_IsAcquired = true;
-				Log.i("Wakelock", "SCREEN_DIM_WAKE_LOCK_MANAGE is 2acquired");
-			}
-		} else {
-			Log.i("Wakelock", "false? " + wakelock);
-			if (!PARTIAL_WAKE_LOCK_MANAGER_IsAcquired) {
-				PARTIAL_WAKE_LOCK_MANAGER = pm.newWakeLock(	PowerManager.PARTIAL_WAKE_LOCK,
-				"Activity recorder");
-				PARTIAL_WAKE_LOCK_MANAGER.acquire();
-				PARTIAL_WAKE_LOCK_MANAGER_IsAcquired = true;
-				Log.i("Wakelock", "PARTIAL_WAKE_LOCK_MANAGER is acquired");
-			}
-			if (SCREEN_DIM_WAKE_LOCK_MANAGER != null) {
-				SCREEN_DIM_WAKE_LOCK_MANAGER.release();
-				SCREEN_DIM_WAKE_LOCK_MANAGER = null;
-				SCREEN_DIM_WAKE_LOCK_MANAGER_IsAcquired = false;
+			if (!wakelock && partialWakeLock.isHeld()) {
+				if (!optionsTable.getFullTimeAccel()) {
+					partialWakeLock.release();
+				}
+				partialWakeLockShouldBeOn = false;
 			}
 		}
 	}
@@ -243,15 +219,7 @@ public class RecorderService extends Service implements Runnable {
 		public boolean isRunning() throws RemoteException {
 			return running;
 		}
-
-		public void setWakeLock() throws RemoteException {
-			Log.i("Wakelock", "GOt messege setWakelock from Setting");
-			boolean wakelock = optionsTable.isWakeLockSet();
-			Log.i("Wakelock", " " + wakelock);
-			applyWakeLock(wakelock);
-
-		}
-
+		
 		public void showServiceToast(final String message) {
 			Handler mainLooperHandler = getMainLooperHandler();
 
@@ -262,19 +230,39 @@ public class RecorderService extends Service implements Runnable {
 			});
 		}
 		
+		public boolean isHardwareNotificationOn() {
+			return hardwareNotificationOn;
+		}
+		
 		public void handleHardwareFaultException(String title, String msg)
 				throws RemoteException {
 			RecorderService.this.handleHardwareFaultException(title, msg);
 		}
 		
+		public void cancelHardwareNotification() {
+			RecorderService.this.cancelHardwareNotification();
+		}
 	};
-
-	private final Runnable registerRunnable = new Runnable() {
-
+	
+	private BroadcastReceiver startSamplingBroadcastReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (!samplingExecutorService.isShutdown()) {
+				samplingExecutorService.execute(samplingInvoker);
+			}
+		}
+	};
+	
+	/**
+	 * Sampling has to be started in another thread, since it's time consuming.
+	 * If done in the main UI thread, the UI gets unresponsive and the application crashes.
+	 */
+	private Runnable samplingInvoker = new Runnable() {
 		public void run() {
-
 			//	if the sampler is not sampling...
 			if (!sampler.isSampling()) {
+				applyWakeLock(true); // start of sampling/classification cycle, turn on wake lock
+				
 				//	take an empty batch and give it to the sampler to sample...
 				try {
 					//	to make the sample timing more accurate,
@@ -295,26 +283,25 @@ public class RecorderService extends Service implements Runnable {
 					e.printStackTrace();
 				}
 			}
-
-			//	run next batch after some time
-			handler.postDelayed(registerRunnable, Constants.DELAY_SAMPLE_BATCH);
 		}
-
 	};
 
 	//	called by the sampler when sampling a batch of samples is done.
 	private final SamplerCallback samplerCallback = new SamplerCallback() {
 
 		public void samplerFinished(SampleBatch batch) {
-			if(batch!=null)
+			if (batch.getSize()==0) {
+				samplerStopped(batch);
+			} else {
 				//	set any required properties
 				batch.setCharging(charging);
-
-			//	put it back into the buffer as a filled batch
-			try {
-				batchBuffer.returnFilledInstance(batch);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+				
+				//	put it back into the buffer as a filled batch
+				try {
+					batchBuffer.returnFilledInstance(batch);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 
@@ -344,9 +331,14 @@ public class RecorderService extends Service implements Runnable {
 		long end = sampleTime+Constants.DELAY_SAMPLE_BATCH;
 		
 		if (activitiesTable.loadLatest(latestClassification) && best.equals(latestClassification.getClassification())) {
-			latestClassification.setNumberOfBatches(latestClassification.getNumberOfBatches()+1);
+			int prevNumBatches = latestClassification.getNumberOfBatches();
+			int currNumBatches = prevNumBatches + 1;
+			
+			double totalMet = latestClassification.getMet() * prevNumBatches + met;
+			
+			latestClassification.setNumberOfBatches(currNumBatches);
 			//latestClassification.setTotalEeAct(latestClassification.getTotalEeAct()+(float)eeAct);
-			latestClassification.setTotalMet(latestClassification.getTotalMet()+(float)met);
+			latestClassification.setMet((float)(totalMet / currNumBatches));
 			latestClassification.setEnd(end);
 			
 			activityWatcher.processLatest(latestClassification);
@@ -362,7 +354,7 @@ public class RecorderService extends Service implements Runnable {
 			
 			latestClassification.setNumberOfBatches(1);
 			//latestClassification.setTotalEeAct((float)eeAct);
-			latestClassification.setTotalMet((float)met);
+			latestClassification.setMet((float)met);
 
 			activityWatcher.processLatest(latestClassification);
 			activitiesTable.insert(latestClassification);
@@ -371,8 +363,8 @@ public class RecorderService extends Service implements Runnable {
 		if (Constants.OUTPUT_DEBUG_INFO) {
 			debugDataTable.updateFinalSystemOutput(sampleTime, best);
 		}
-
-
+		
+		applyWakeLock(false); // end of sampling/classification cycle, turn off wake lock after updating
 	}
 
 	/**
@@ -467,19 +459,20 @@ public class RecorderService extends Service implements Runnable {
 	 */
 	private void initService()
 	{
-
-		pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-
+		powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+		partialWakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, Constants.TAG);
+		alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+		samplingExecutorService = Executors.newSingleThreadExecutor();
+		
 		// receive phone battery status
-		this.registerReceiver(	this.myBatteryReceiver,
-				new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-		this.registerReceiver(this.myScreenReceiver, new IntentFilter(Intent.ACTION_SCREEN_OFF));
-		this.registerReceiver(this.myScreenReceiver, new IntentFilter(Intent.ACTION_SCREEN_ON));
-
+		this.registerReceiver(this.myBatteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+		
 		sqlLiteAdapter = SqlLiteAdapter.getInstance(this);
 		optionsTable = sqlLiteAdapter.getOptionsTable();
 		debugDataTable = sqlLiteAdapter.getDebugDataTable();
 		activitiesTable = sqlLiteAdapter.getActivitiesTable();
+		
+		optionsTable.registerUpdateHandler(optionUpdateHandler);
 
 		phoneInfo = new PhoneInfo(this);
 		batchBuffer = new SampleBatchBuffer();
@@ -505,36 +498,44 @@ public class RecorderService extends Service implements Runnable {
 		activityWatcher = new ActivityWatcher(this);
 		activityWatcher.init();
 		
-		//		optionQuery.setServiceRunningState(true);
-		applyWakeLock(optionsTable.isWakeLockSet());
-		//		optionQuery.save();
-
 		/*
 		 * if the background service is dead somehow last time, there is no clue when the service is finished.
 		 * Check the last activity name whether it's finished properly or not by the activity name "END",
-		 * then if it was not "END", then insert "END" data into the database with the end time of the last activity. 
+		 * then if it was not "END", then insert "END" data into the database with the end time of the last activity.
+		 * 
+		 * No more inserting 'END', instead insert an 'off' activity for the duration from the last
+		 * classification till now.
 		 */
 		{
 			Classification lastClassification = new Classification();
 			//	load the latest classification available (false if the database is empty)
 			if (activitiesTable.loadLatest(lastClassification)) {
-				if(!ActivityNames.END.equals(lastClassification.getClassification())){
-					// the beginning of the new activity is the end of the last + 1,
-					//	we have to add one because if the end of the last activity is the same as its beginning (no duration passed)
-					//	then having another activity with the same start throws an exception in the INSERT statement
-					long start = lastClassification.getEnd() + 1;
-					Classification endClass = new Classification(ActivityNames.END, start, start);
-					activitiesTable.insert(endClass);
+				long start = lastClassification.getEnd() + 1;
+				
+//				if(!ActivityNames.END.equals(lastClassification.getClassification())){
+//					// the beginning of the new activity is the end of the last + 1,
+//					//	we have to add one because if the end of the last activity is the same as its beginning (no duration passed)
+//					//	then having another activity with the same start throws an exception in the INSERT statement
+//					Classification endClass = new Classification(ActivityNames.END, start, start);
+//					activitiesTable.insert(endClass);
+//				}
+				if (ActivityNames.OFF.equals(lastClassification.getClassification())) {
+					lastClassification.setEnd(System.currentTimeMillis());
+					activitiesTable.update(lastClassification);
+				} else {
+					Classification offClass = new Classification(ActivityNames.OFF, start, System.currentTimeMillis());
+					offClass.setMet(1.0f);
+					activitiesTable.insert(offClass);
 				}
 			} else {
-				long start = System.currentTimeMillis();
-				Classification endClass = new Classification(ActivityNames.END, start, start);
-				activitiesTable.insert(endClass);
+//				long start = System.currentTimeMillis();
+//				Classification endClass = new Classification(ActivityNames.END, start, start);
+//				activitiesTable.insert(endClass);
 			}
 		}
 
 		AsyncAccelReader reader = new AsyncAccelReader(this);
-		sampler = new AsyncSampler(binder, reader, samplerCallback);
+		sampler = new AsyncSampler(binder, reader, samplerCallback, handler);
 
 		//        SyncAccelReader reader = new SyncAccelReaderFactory().getReader(this);
 		//		sampler = new SyncSampler(reader, analyseRunnable);
@@ -554,11 +555,14 @@ public class RecorderService extends Service implements Runnable {
 		}
 
 		// start to upload un-posted activities to Web server
-		//uploadActivityHistory = new UploadActivityHistoryThread(this, phoneInfo);		
-		//uploadActivityHistory.startUploads();
 		activityTableSync = new FusionTableActivitySync(this);
 
-		handler.postDelayed(registerRunnable, Constants.DELAY_SAMPLE_BATCH);
+		String samplingIntentAction = Constants.DEFAULT_PACKAGE+".intent.sampling.start";
+		Intent samplingIntent = new Intent(samplingIntentAction);
+		pendingSamplingIntent = PendingIntent.getBroadcast(this, 0, samplingIntent, 0);
+		alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, 
+				Constants.DELAY_SAMPLE_BATCH, Constants.DELAY_SAMPLE_BATCH, pendingSamplingIntent);
+		this.registerReceiver(startSamplingBroadcastReceiver, new IntentFilter(samplingIntentAction));
 
 		//	if the service started successfully, then start set the system to show
 		//		that the service started
@@ -566,7 +570,7 @@ public class RecorderService extends Service implements Runnable {
 		optionsTable.save();
 
 		//	put on-going notification to show that service is running in the background
-		NotificationManager nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+		notificationManager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
 		int icon = R.drawable.icon;
 		CharSequence tickerText = "Avocado AC Running";
@@ -580,7 +584,6 @@ public class RecorderService extends Service implements Runnable {
 		CharSequence contentTitle = "Avocado AC";
 
 		CharSequence contentText;
-
 		if (ClassifierThread.forceCalibration)
 			contentText = "Avocado AC calibration is running";
 		else
@@ -589,8 +592,7 @@ public class RecorderService extends Service implements Runnable {
 		Intent notificationIntent = new Intent(this, MainTabActivity.class);
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 		notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
-
-		//notificationManager.notify(ONGOING_NOTIFICATION_ID, notification);
+		
 		this.startForeground(ONGOING_NOTIFICATION_ID, notification);
 	}
 
@@ -600,16 +602,17 @@ public class RecorderService extends Service implements Runnable {
 	 */
 	private void destroyService()
 	{
-		//	put on-going notification to show that service is running in the background
-		//NotificationManager notificationManager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-		//notificationManager.cancel(ONGOING_NOTIFICATION_ID);
 		this.stopForeground(true);
+		
+		optionsTable.unregisterUpdateHandler(optionUpdateHandler);
 
 		//	stop sampling
-		handler.removeCallbacks(registerRunnable);
 		if (sampler != null) {
 			sampler.stop();
 		}
+		this.unregisterReceiver(startSamplingBroadcastReceiver);
+		this.alarmManager.cancel(pendingSamplingIntent);
+		this.samplingExecutorService.shutdown();
 
 		//	stop threads
 		//uploadActivityHistory.cancelUploads();
@@ -623,28 +626,24 @@ public class RecorderService extends Service implements Runnable {
 
 		// save message "END" to recognise when the background service is
 		// finished.
-		long start = System.currentTimeMillis();
-		Classification endClass = new Classification(ActivityNames.END, start, start);
-		activitiesTable.insert(endClass);
+		//	No more inserting 'END', an 'OFF' will be inserted once the service is
+		// 		started again, with the duration the service was off
+//		long start = System.currentTimeMillis();
+//		Classification endClass = new Classification(ActivityNames.END, start, start);
+//		activitiesTable.insert(endClass);
 		MainTabActivity.serviceIsRunning = false;
 
 		this.unregisterReceiver(myBatteryReceiver);
-		this.unregisterReceiver(myScreenReceiver);
 
-		if (PARTIAL_WAKE_LOCK_MANAGER != null) {
-			PARTIAL_WAKE_LOCK_MANAGER.release();
-			PARTIAL_WAKE_LOCK_MANAGER = null;
-		}
-		if (SCREEN_DIM_WAKE_LOCK_MANAGER != null) {
-			SCREEN_DIM_WAKE_LOCK_MANAGER.release();
-			SCREEN_DIM_WAKE_LOCK_MANAGER = null;
+		if (partialWakeLock!=null) {
+			if (partialWakeLock.isHeld())
+				partialWakeLock.release();
+			partialWakeLock = null;
 		}
 
 	}
 
 	protected void handleHardwareFaultException(String title, String msg) {
-		NotificationManager nm = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-		AlarmManager am = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
 		Context context = getApplicationContext();
 		
 		// put up the fault notification
@@ -656,22 +655,31 @@ public class RecorderService extends Service implements Runnable {
 				title,
 				System.currentTimeMillis());
 		notification.defaults = Notification.DEFAULT_ALL;
-		notification.flags = Notification.FLAG_ONLY_ALERT_ONCE;
+		notification.flags = Notification.FLAG_ONLY_ALERT_ONCE | Notification.FLAG_AUTO_CANCEL;
 		notification.setLatestEventInfo(context, title, msg+ " Please restart service, after restarting phone.", pendingNotIntent);
-		nm.notify(Constants.NOTIFICATION_ID_HARDWARE_FAULT, notification);
+		notificationManager.notify(Constants.NOTIFICATION_ID_HARDWARE_FAULT, notification);
+		
+		hardwareNotificationOn = true;
 		
 		//	turn off the service
-		this.stopSelf();
-		stopService();
-		optionsTable.setServiceUserStarted(false);
-		optionsTable.save();
+//		this.stopSelf();
+//		stopService();
+//		optionsTable.setServiceUserStarted(false);
+//		optionsTable.save();
 		
 //		//	set an alarm to turn it on after a short while
 //		Intent alarmIntent = new Intent(this, RecorderService.class);
 //		PendingIntent pendingAlarmIntent = PendingIntent.getService(this, 0, alarmIntent, 0);
-//		am.set(	AlarmManager.RTC,
+//		alarmManager.set(	AlarmManager.RTC,
 //				System.currentTimeMillis()+Constants.DURATION_SLEEP_AFTER_FAULT,
 //				pendingAlarmIntent	);
+	}
+	
+	protected void cancelHardwareNotification() {
+		if (hardwareNotificationOn) {
+			notificationManager.cancel(Constants.NOTIFICATION_ID_HARDWARE_FAULT);
+			hardwareNotificationOn = false;
+		}
 	}
 	
 	private boolean shouldBeRunningRawDump() {

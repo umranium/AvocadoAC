@@ -37,7 +37,7 @@ public class Constants {
 	 * being debugged (i.e. plugged into the computer), and normal
 	 * usage.
 	 */
-	public final static boolean IS_DEBUGGING = true; 
+	public final static boolean IS_DEBUGGING = false; 
 	
 	/**
 	 * Should we or should we output debugging data?
@@ -71,14 +71,24 @@ public class Constants {
 	public static final int DELAY_SAMPLE_BATCH = IS_DEBUGGING?(10*1000):(30*1000); //	30 secs in ms
 	
 	/**
-	 * The delay between two consecutive samples in a sample batch.
+	 * The duration of a sampling batch (in ms)
 	 */
-	public static final int DELAY_BETWEEN_SAMPLES = 50; //	50ms
+	public static final int RECOMMENDED_SAMPLING_FREQUENCY = 20;
 	
 	/**
-	 *	The number of accelerometer (x,y & z) samples in a batch of samples.
+	 * The duration of a sampling batch (in ms)
 	 */
-	public static final int NUM_OF_SAMPLES_PER_BATCH = 128;
+	public static final int SAMPLING_BATCH_DURATION = 6000;
+	
+	/**
+	 * The highest possible frequency that this system can support
+	 */
+	public static final int MAXIMUM_SUPPORTED_FREQUENCY = 300;
+	
+	/**
+	 * The highest possible frequency that this system can support
+	 */
+	public static final int MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH = SAMPLING_BATCH_DURATION*MAXIMUM_SUPPORTED_FREQUENCY/1000;
 	
 	/**
 	 * Duration for the {@link AccountThread} to wait for the user's account
@@ -257,8 +267,13 @@ public class Constants {
 	/**
 	 * The period between successive authentication retries
 	 */
-	public final static long PERIOD_RETRY_AUTHENTICATION = 5000L;//15*60*1000L; // 15min
+	public final static long PERIOD_RETRY_AUTHENTICATION = 5*60*1000L; // 5min
 
+	/**
+	 * The duration before updating an activity on the server
+	 */
+	public final static long DURATION_SERVER_UPDATE_ACTIVITY = 60*60*1000L; // 60min
+	
 	/*
 	 ****************************************************************************************************************
 	 *		MY TRACKS INTERGRATION RELATED CONSTANTS

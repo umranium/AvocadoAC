@@ -16,13 +16,13 @@
 
     <TextView
         android:id="@+id/txtFusionTableUrl"
-        style="@style/Url"
         android:layout_width="fill_parent"
-        android:layout_height="50dp"
+        android:layout_height="30dp"
         android:layout_margin="10px"
         android:gravity="center"
-        android:text="www.google.com" />
-     
+        android:text="www.google.com"/>
+        <!-- style="@style/Url" -->
+    
      <ListView
         android:id="@+id/list"
         android:layout_width="fill_parent"

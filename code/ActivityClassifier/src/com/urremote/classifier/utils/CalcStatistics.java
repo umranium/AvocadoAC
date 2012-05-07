@@ -1,5 +1,7 @@
 package com.urremote.classifier.utils;
 
+import java.util.Arrays;
+
 import com.urremote.classifier.common.Constants;
 
 import android.util.Log;
@@ -105,6 +107,8 @@ public class CalcStatistics {
 		
 		assert(samples>0);
 		
+		Log.d(Constants.TAG+"CalcStatistics", "Processing "+samples+" samples.");
+		
 		this.count = samples;
 		
 		for (int i=0; i<dimensions; ++i) {
@@ -123,7 +127,7 @@ public class CalcStatistics {
 		float val;
 		// step through the array
 		for (int s = 0; s < samples; ++s) {
-
+			//Log.d(Constants.TAG+"CalcStatistics", s+". "+Arrays.toString(arrayIn[s]));
 			for (int j = 0; j < dimensions; j++) {
 				val = arrayIn[s][j];
 				sum[j] += val;

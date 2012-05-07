@@ -19,7 +19,7 @@ interface ActivityRecorderBinder {
 
     List<Classification> getClassifications();
     
-    void setWakeLock();
+    //void setWakeLock();
     
     /**
     *	Used by service thread's with no looper.
@@ -30,6 +30,10 @@ interface ActivityRecorderBinder {
     
     //public boolean isCalibrationForced();
     
+    boolean isHardwareNotificationOn();
+    
     void handleHardwareFaultException(String title, String msg);
+    
+    void cancelHardwareNotification();
 
 }

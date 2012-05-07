@@ -35,7 +35,7 @@ public class Classification implements Parcelable, Comparable<Classification> {
 	private Long myTracksId;
 	private long lastUpdate;
 	private int numberOfBatches;
-	private float totalMet;
+	private float met;
 	private float totalEeAct;
 	
 	private String uiStartTime;
@@ -67,7 +67,7 @@ public class Classification implements Parcelable, Comparable<Classification> {
 		this.myTracksId = other.myTracksId;
 		this.lastUpdate = other.lastUpdate;
 		this.numberOfBatches = other.numberOfBatches;
-		this.totalMet = other.totalMet;
+		this.met = other.met;
 		this.totalEeAct = other.totalEeAct;
 		this.uiStartTime = other.uiStartTime;
 		this.dbStartTime = other.dbStartTime;
@@ -86,7 +86,7 @@ public class Classification implements Parcelable, Comparable<Classification> {
 		this.myTracksId = null;
 		this.lastUpdate = 0;
 		this.numberOfBatches = 1;
-		this.totalMet = 0.0f;
+		this.met = 0.0f;
 		this.totalEeAct = 0.0f;
 		
 		computeDurationStr();
@@ -207,17 +207,17 @@ public class Classification implements Parcelable, Comparable<Classification> {
 	}
 
 	/**
-	 * @return the total MET
+	 * @return the MET
 	 */
-	public float getTotalMet() {
-		return totalMet;
+	public float getMet() {
+		return met;
 	}
 
 	/**
-	 * @param totalMet the total MET to set
+	 * @param the MET to set
 	 */
-	public void setTotalMet(float totalMet) {
-		this.totalMet = totalMet;
+	public void setMet(float met) {
+		this.met = met;
 	}
 	
 	/**
@@ -250,15 +250,10 @@ public class Classification implements Parcelable, Comparable<Classification> {
 
 	@Override 
 	public String toString() {
-		if (ActivityNames.isSystemActivity(classification)) {
-			return niceClassification+"";
-		}
-		else{
-			return String.format("%-20s %s for %s", 
-					niceClassification+" ("+String.format("%.1f", totalMet/numberOfBatches)+")",
-					uiStartTime,
-					durationStr);
-		}
+		return String.format("%-20s %s for %s", 
+				niceClassification+" ("+String.format("%.1f", met)+")",
+				uiStartTime,
+				durationStr);
 	}
 
 	public void writeToParcel(Parcel arg0, int arg1) {
