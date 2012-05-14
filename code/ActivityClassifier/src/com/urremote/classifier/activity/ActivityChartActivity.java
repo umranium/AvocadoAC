@@ -368,7 +368,7 @@ public class ActivityChartActivity extends Activity {
 			if (1 == 1)
 			{	
 				gScreenDensity = canvas.getDensity();
-				Log.d("saltfactory", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>gScreenDensity" + gScreenDensity);
+				//Log.d("saltfactory", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>gScreenDensity" + gScreenDensity);
 
 				densityMeasured = true;
 			}

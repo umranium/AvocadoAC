@@ -46,7 +46,7 @@ public class FeatureExtractor {
 
     public FeatureExtractor() {
         this.rotate = new RotateSamplesToVerticalHorizontal();
-        this.twoDimSamples = new float[Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH][2];
+        this.twoDimSamples = new float[Constants.NUMBER_OF_SAMPLES][2];
         this.twoDimSampleStats = new CalcStatistics(2);
         this.features = new float[NUM_FEATURES];
         

@@ -28,7 +28,7 @@ public interface Sampler {
      * Forces the sampler to stop sampling.
      */
     public void stop();
-
+    
     /**
      * 
      * @return
@@ -37,4 +37,10 @@ public interface Sampler {
      */
 	public boolean isSampling();
 	
+	
+	/**
+	 * Number of accelerometer faults counted 
+	 * @return
+	 */
+	public int getSamplingHardwareErrorCount();
 }

@@ -67,6 +67,7 @@ public class OptionsTable extends DbTableAdapter {
 	public static final String KEY_SENSOR_RATE = "accelSensorRate";
 	public static final String KEY_UPLOAD_ACCOUNT = "uploadAccount";
 	public static final String KEY_FUSION_TABLE_ID = "fusionTableId";
+	public static final String KEY_FUSION_SUMMARY_ID = "fusionSummaryId";
 	private static final String KEY_LAST_UPDATED_AT = "lastUpdatedAt";	//	for system use only
 	
 	public static final String[] SD_KEYS;
@@ -123,6 +124,7 @@ public class OptionsTable extends DbTableAdapter {
 		KEY_SENSOR_RATE + ", " +
 		KEY_UPLOAD_ACCOUNT + ", " +
 		KEY_FUSION_TABLE_ID + ", " +
+		KEY_FUSION_SUMMARY_ID + ", " +
 		KEY_LAST_UPDATED_AT + 
 		" FROM " + TABLE_NAME;
 	
@@ -155,6 +157,7 @@ public class OptionsTable extends DbTableAdapter {
 	
 	//	fusion tables
 	private String fusionTableId;
+	private String fusionSummaryId;
 	
 	//	updates
 	private long lastUpdatedAt;
@@ -201,6 +204,7 @@ public class OptionsTable extends DbTableAdapter {
 			KEY_SENSOR_RATE+" INTEGER NOT NULL, " +
 			KEY_UPLOAD_ACCOUNT+ " TEXT NULL, " +
 			KEY_FUSION_TABLE_ID+ " TEXT NULL, " +
+			KEY_FUSION_SUMMARY_ID+ " TEXT NULL, " +
 			KEY_LAST_UPDATED_AT+" LONG NOT NULL " +
 			")";
 		//	run the sql
@@ -218,6 +222,10 @@ public class OptionsTable extends DbTableAdapter {
 		Calibrator.resetCalibrationOptions(this);	// set calibration values to defaults
 		setLastUpdated(System.currentTimeMillis());	// last updated now
 		contentValues.put(KEY_ID, DEFAULT_ROW_ID);	//	set row id
+		
+//		contentValues.put(KEY_FUSION_TABLE_ID, "16xG6pAMTbX4kZzPHeUIH-Dl8vrIiqIz9yR-NRz4");
+//		contentValues.put(KEY_FUSION_SUMMARY_ID, "1BHnWn575SbM8NVH5ipfVd8mAmjaKlaUYnP1s_4M");
+		
 		database.insertOrThrow(TABLE_NAME, null, contentValues);
 		contentValues.remove(KEY_ID);				//	remove row id from context values (only used in insert)
 		lastUpdatedAt = 0;							//	reset last updated time to zero so that system can re-load all the values
@@ -350,6 +358,7 @@ public class OptionsTable extends DbTableAdapter {
 				setScale(scale);
 				
 				setFusionTableId(cursor.getString(cursor.getColumnIndex(KEY_FUSION_TABLE_ID)));
+				setFusionSummaryId(cursor.getString(cursor.getColumnIndex(KEY_FUSION_SUMMARY_ID)));
 				
 				setLastUpdated(cursor.getLong(cursor.getColumnIndex(KEY_LAST_UPDATED_AT)));
 
@@ -683,5 +692,20 @@ public class OptionsTable extends DbTableAdapter {
 		this.contentValues.put(KEY_FUSION_TABLE_ID, fusionTableId);
 		this.updatedKeys.add(KEY_FUSION_TABLE_ID);
 	}
-	
+
+	/**
+	 * @return ID of the fusion table summary uploading to
+	 */
+	public String getFusionSummaryId() {
+		return fusionSummaryId;
+	}
+
+	/**
+	 * @param fusionTableId The ID of the fusion table currently uploading to 
+	 */
+	public void setFusionSummaryId(String fusionSummaryId) {
+		this.fusionSummaryId = fusionSummaryId;
+		this.contentValues.put(KEY_FUSION_SUMMARY_ID, fusionSummaryId);
+		this.updatedKeys.add(KEY_FUSION_SUMMARY_ID);
+	}
 }

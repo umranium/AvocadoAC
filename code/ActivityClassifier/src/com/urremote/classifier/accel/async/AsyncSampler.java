@@ -62,7 +62,7 @@ public class AsyncSampler implements Sampler {
     private SampleBatch currentBatch;
     private boolean sampling;
     
-    private int startSamplingHardwareErrorCount = 0; 
+    private int samplingHardwareErrorCount = 0; 
     
     private Runnable finishSampling = new Runnable() {
 		public void run() {
@@ -76,7 +76,7 @@ public class AsyncSampler implements Sampler {
 			}
 		}
 	};
-
+	
     public AsyncSampler(
     		final ActivityRecorderBinder service, 
     		final AsyncAccelReader reader,
@@ -94,34 +94,50 @@ public class AsyncSampler implements Sampler {
     	this.currentBatch.sampleTime = System.currentTimeMillis();
     	
         try {
-			reader.startSampling(currentBatch);
+			reader.startSampling(currentBatch, finishSampling);
 	        Log.d(Constants.TAG, "Started sampling");
 	        this.sampling = true;
-	        handler.postDelayed(finishSampling, Constants.SAMPLING_BATCH_DURATION);
-	        try {
-				if (startSamplingHardwareErrorCount>0) {
-					startSamplingHardwareErrorCount = 0;
-					if (service.isHardwareNotificationOn())
-						service.cancelHardwareNotification();
+	        
+	        //	wait for either all samples to be gathered, or for the period between batches (~30s) to finish. 
+	        long currentTime = System.currentTimeMillis();
+	        while (sampling && currentBatch.getSize()<Constants.NUMBER_OF_SAMPLES && 
+	        		currentTime-currentBatch.sampleTime<Constants.DELAY_SAMPLE_BATCH) {
+	        	try {
+					Thread.sleep(1000L);
+				} catch (InterruptedException e) {
 				}
-			} catch (RemoteException e) {
+	        }
+	        
+	        if (sampling && currentBatch.getSize()<Constants.NUMBER_OF_SAMPLES) {
+	        	throw new HardwareFaultException("Accelerometer rate too slow.");
+	        }
+	        
+			if (samplingHardwareErrorCount>0) {
+				Log.d(Constants.TAG, "Resetting hardware error count to zero");
+				samplingHardwareErrorCount = 0;
+//				if (service.isHardwareNotificationOn()) {
+//					Log.d(Constants.TAG, "Clearing Faulty Hardware Notification");
+//					service.cancelHardwareNotification();
+//				}
 			}
+	        
         } catch (HardwareFaultException e) {
-        	++startSamplingHardwareErrorCount;
-			Log.w(Constants.TAG, "Hardware Fault While Starting Sampling ("+startSamplingHardwareErrorCount+")", e);
+        	++samplingHardwareErrorCount;
+			Log.w(Constants.TAG, "Hardware Fault While Starting Sampling ("+samplingHardwareErrorCount+")", e);
 			
             if (callback != null) {
             	callback.samplerError(currentBatch, e);
             	currentBatch = null;
             }
 			
-			if (startSamplingHardwareErrorCount>=3) {
+			if (samplingHardwareErrorCount>=3) {
 				if (reader.getCurrentSamplingRate()>10) {
 					reader.setCurrentSamplingRate(AsyncAccelReader.GENERIC_SAMPLING_RATE);
-					startSamplingHardwareErrorCount = 0;
+					samplingHardwareErrorCount = 0;
 				} else {
 					try {
-						if (!service.isHardwareNotificationOn()) {
+//						if (!service.isHardwareNotificationOn())
+						{
 							service.handleHardwareFaultException("Faulty Accelerometer", e.getMessage());
 						}
 					} catch (RemoteException e1) {
@@ -136,6 +152,10 @@ public class AsyncSampler implements Sampler {
 		}
         
     }
+    
+    public int getSamplingHardwareErrorCount() {
+		return samplingHardwareErrorCount;
+	}
     
     private void finalizeSampling() {
         this.sampling = false;

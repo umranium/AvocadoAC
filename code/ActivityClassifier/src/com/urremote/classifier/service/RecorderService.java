@@ -127,6 +127,7 @@ public class RecorderService extends Service implements Runnable {
 	private RawDump rawDump;
 	
 	private boolean hardwareNotificationOn = false;
+	private long hardwareNotificationStartTime = 0;
 
 	private Classification latestClassification = new Classification();
 	
@@ -248,7 +249,10 @@ public class RecorderService extends Service implements Runnable {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			if (!samplingExecutorService.isShutdown()) {
-				samplingExecutorService.execute(samplingInvoker);
+				Log.i(Constants.TAG, "Sampling Broadcast Receiver received sampling notification");
+				if (!sampler.isSampling()) {
+					samplingExecutorService.submit(samplingInvoker);
+				}
 			}
 		}
 	};
@@ -258,6 +262,7 @@ public class RecorderService extends Service implements Runnable {
 	 * If done in the main UI thread, the UI gets unresponsive and the application crashes.
 	 */
 	private Runnable samplingInvoker = new Runnable() {
+		
 		public void run() {
 			//	if the sampler is not sampling...
 			if (!sampler.isSampling()) {
@@ -279,6 +284,7 @@ public class RecorderService extends Service implements Runnable {
 					SampleBatch batch = batchBuffer.takeEmptyInstance();
 					Log.i(Constants.TAG, "Sampling Batch");
 					sampler.start(batch);
+					
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -317,7 +323,9 @@ public class RecorderService extends Service implements Runnable {
 		public void samplerError(SampleBatch batch, Exception e) {
 			//	put it back into the buffer as a filled batch
 			try {
+				
 				batchBuffer.returnEmptyInstance(batch);
+				
 			} catch (InterruptedException ex) {
 				ex.printStackTrace();
 			}
@@ -325,39 +333,36 @@ public class RecorderService extends Service implements Runnable {
 
 	};
 
-
 	private void updateScores(long sampleTime, String best, double eeAct, double met) {
 		long start = sampleTime;
 		long end = sampleTime+Constants.DELAY_SAMPLE_BATCH;
 		
-		if (activitiesTable.loadLatest(latestClassification) && best.equals(latestClassification.getClassification())) {
-			int prevNumBatches = latestClassification.getNumberOfBatches();
-			int currNumBatches = prevNumBatches + 1;
+		if (activitiesTable.loadLatest(latestClassification)) {
+			long durationSinceLast = start-latestClassification.getEnd()-2;
 			
-			double totalMet = latestClassification.getMet() * prevNumBatches + met;
-			
-			latestClassification.setNumberOfBatches(currNumBatches);
-			//latestClassification.setTotalEeAct(latestClassification.getTotalEeAct()+(float)eeAct);
-			latestClassification.setMet((float)(totalMet / currNumBatches));
-			latestClassification.setEnd(end);
-			
-			activityWatcher.processLatest(latestClassification);
-			activitiesTable.update(latestClassification);
-		} else {
-			if (latestClassification==null) {
-				latestClassification = new Classification(best, start, end);
-				latestClassification.withContext(this);
-			} else {
-				latestClassification.init(best, start, end);
-				latestClassification.withContext(this);
+			if (durationSinceLast>Constants.DURATION_EMPTY_INSERT_UNKNOWN) {
+				Classification unknown = new Classification(ActivityNames.UNKNOWN, latestClassification.getEnd()+1, start-1);
+				unknown.withContext(this);
+				unknown.setNumberOfBatches(1);
+				unknown.setMet(1.0f);
+				
+				insertOrUpdate(latestClassification, unknown);
+				
+				latestClassification = unknown;
 			}
 			
+			Classification newClass = new Classification(best, start, end);
+			newClass.withContext(this);
+			newClass.setNumberOfBatches(1);
+			newClass.setMet((float)met);
+			insertOrUpdate(latestClassification, newClass);
+		} else {
+			latestClassification.init(best, start, end);
+			latestClassification.withContext(this);
 			latestClassification.setNumberOfBatches(1);
-			//latestClassification.setTotalEeAct((float)eeAct);
 			latestClassification.setMet((float)met);
 
-			activityWatcher.processLatest(latestClassification);
-			activitiesTable.insert(latestClassification);
+			insertOrUpdate(null, latestClassification);
 		}
 		
 		if (Constants.OUTPUT_DEBUG_INFO) {
@@ -367,6 +372,36 @@ public class RecorderService extends Service implements Runnable {
 		applyWakeLock(false); // end of sampling/classification cycle, turn off wake lock after updating
 	}
 
+	private void insertOrUpdate(Classification latestClassification, Classification newClassification) {
+		if (latestClassification==null) {
+			activityWatcher.processLatest(newClassification);
+			activitiesTable.insert(newClassification);
+		} else {
+			if (latestClassification.getEnd()<newClassification.getStart()) {
+				latestClassification.setEnd(newClassification.getStart()-1);
+				activitiesTable.update(latestClassification);
+			}
+			
+			if (latestClassification.getClassification().equals(newClassification.getClassification())) {
+				int prevNumBatches = latestClassification.getNumberOfBatches();
+				int currNumBatches = newClassification.getNumberOfBatches();
+				int totalNumBatches = prevNumBatches + currNumBatches;
+				
+				double totalMet = latestClassification.getMet()*prevNumBatches + newClassification.getMet()*currNumBatches;
+				
+				latestClassification.setNumberOfBatches(totalNumBatches);
+				latestClassification.setMet((float)(totalMet / totalNumBatches));
+				latestClassification.setEnd(newClassification.getEnd());
+				
+				activityWatcher.processLatest(latestClassification);
+				activitiesTable.update(latestClassification);
+			} else {
+				activityWatcher.processLatest(newClassification);
+				activitiesTable.insert(newClassification);
+			}
+		}
+	}
+	
 	/**
 	 * 
 	 */
@@ -510,20 +545,18 @@ public class RecorderService extends Service implements Runnable {
 			Classification lastClassification = new Classification();
 			//	load the latest classification available (false if the database is empty)
 			if (activitiesTable.loadLatest(lastClassification)) {
+				long end = System.currentTimeMillis();
+				if (lastClassification.getEnd()>end) {
+					lastClassification.setEnd(end-1);
+					activitiesTable.update(lastClassification);
+				}
 				long start = lastClassification.getEnd() + 1;
 				
-//				if(!ActivityNames.END.equals(lastClassification.getClassification())){
-//					// the beginning of the new activity is the end of the last + 1,
-//					//	we have to add one because if the end of the last activity is the same as its beginning (no duration passed)
-//					//	then having another activity with the same start throws an exception in the INSERT statement
-//					Classification endClass = new Classification(ActivityNames.END, start, start);
-//					activitiesTable.insert(endClass);
-//				}
 				if (ActivityNames.OFF.equals(lastClassification.getClassification())) {
-					lastClassification.setEnd(System.currentTimeMillis());
+					lastClassification.setEnd(end);
 					activitiesTable.update(lastClassification);
 				} else {
-					Classification offClass = new Classification(ActivityNames.OFF, start, System.currentTimeMillis());
+					Classification offClass = new Classification(ActivityNames.OFF, start, end);
 					offClass.setMet(1.0f);
 					activitiesTable.insert(offClass);
 				}
@@ -644,6 +677,12 @@ public class RecorderService extends Service implements Runnable {
 	}
 
 	protected void handleHardwareFaultException(String title, String msg) {
+		hardwareNotificationStartTime = System.currentTimeMillis();
+		handler.postDelayed(cancelHardwareNotificationRunnable, Constants.DURATION_KEEP_HARDWARE_NOTIFICATION);
+		
+		Log.d(Constants.TAG, "Displaying Faulty Hardware Notification");
+		hardwareNotificationOn = true;
+		
 		Context context = getApplicationContext();
 		
 		// put up the fault notification
@@ -654,12 +693,14 @@ public class RecorderService extends Service implements Runnable {
 				R.drawable.icon,
 				title,
 				System.currentTimeMillis());
-		notification.defaults = Notification.DEFAULT_ALL;
-		notification.flags = Notification.FLAG_ONLY_ALERT_ONCE | Notification.FLAG_AUTO_CANCEL;
-		notification.setLatestEventInfo(context, title, msg+ " Please restart service, after restarting phone.", pendingNotIntent);
+		if (Constants.IS_DEBUGGING) {
+			notification.defaults = Notification.DEFAULT_ALL;
+		} else {
+			notification.defaults = 0;			
+		}
+		notification.flags = Notification.FLAG_ONLY_ALERT_ONCE;
+		notification.setLatestEventInfo(context, title, msg, pendingNotIntent);
 		notificationManager.notify(Constants.NOTIFICATION_ID_HARDWARE_FAULT, notification);
-		
-		hardwareNotificationOn = true;
 		
 		//	turn off the service
 //		this.stopSelf();
@@ -675,10 +716,22 @@ public class RecorderService extends Service implements Runnable {
 //				pendingAlarmIntent	);
 	}
 	
+	private Runnable cancelHardwareNotificationRunnable = new Runnable() {
+		public void run() {
+			if (hardwareNotificationOn) {
+				long currentTime = System.currentTimeMillis();
+				if (currentTime-hardwareNotificationStartTime>=Constants.DURATION_KEEP_HARDWARE_NOTIFICATION) {
+					cancelHardwareNotification();
+				}
+			}
+		}
+	};
+	
 	protected void cancelHardwareNotification() {
 		if (hardwareNotificationOn) {
-			notificationManager.cancel(Constants.NOTIFICATION_ID_HARDWARE_FAULT);
 			hardwareNotificationOn = false;
+			Log.d(Constants.TAG, "Cancelling Faulty Hardware Notification");
+			notificationManager.cancel(Constants.NOTIFICATION_ID_HARDWARE_FAULT);
 		}
 	}
 	

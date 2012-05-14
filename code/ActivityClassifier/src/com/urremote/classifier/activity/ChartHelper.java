@@ -137,6 +137,9 @@ public class ChartHelper {
 		activitiesTable.loadAllBetween(periodStart, periodEnd, classification,
 				new ActivitiesTable.ClassificationDataCallback() {
 					public void onRetrieve(Classification classification) {
+//						if (!ActivityNames.isSystemActivity(classification.getClassification())) {
+//							return;
+//						}
 						if (!activityIndexes.containsKey(classification.getClassification())) {
 							Log.e(Constants.TAG, "ERROR: UNKNOWN ACTIVITY '"+classification.getClassification()+"' FOUND");
 							return;
@@ -172,6 +175,8 @@ public class ChartHelper {
 			
 			int indexOff = activityIndexes.get(ActivityNames.OFF);
 			sumMatrix[i][indexOff] = COL_DURATIONS[i] - totalNonSystem;
+			
+			Log.d(Constants.TAG+"Chart", "col_"+i+" col_duration="+COL_DURATIONS[i]+", total_non_sys="+totalNonSystem+", off="+sumMatrix[i][indexOff]);
 		}
 		
 		int currentComputeData = (currentLoadData+1)%NUM_OF_DATA_SETS;
@@ -224,7 +229,7 @@ public class ChartHelper {
 		{
 			this.put(ActivityNames.OFF,					Color.argb(255, 128, 128, 128));
 			this.put(ActivityNames.END,					Color.argb(255, 255, 255, 255));
-			this.put(ActivityNames.UNKNOWN,				Color.argb(255, 255, 255, 255));
+			this.put(ActivityNames.UNKNOWN,				Color.argb(255, 160, 160, 160));
 			this.put(ActivityNames.UNCARRIED,			Color.argb(255, 109, 206, 250));
 			this.put(ActivityNames.CHARGING,			Color.argb(255, 122, 181, 204));
 			this.put(ActivityNames.CHARGING_TRAVELLING, Color.argb(255, 153, 102, 255));

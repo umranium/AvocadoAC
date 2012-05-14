@@ -47,6 +47,7 @@ import android.util.Log;
 public class AsyncAccelReader {
 	
 	public static final int SPECIFIC_SAMPLING_RATE = 1000000/Constants.RECOMMENDED_SAMPLING_FREQUENCY; // microseconds
+	public static final int SPECIFIC_SAMPLING_PERIOD = 1000/Constants.RECOMMENDED_SAMPLING_FREQUENCY; // milliseconds
 	public static final int GENERIC_SAMPLING_RATE = SensorManager.SENSOR_DELAY_FASTEST; 
 	
 	/*
@@ -73,35 +74,44 @@ public class AsyncAccelReader {
         			
         			if (currentBatch.hasLastSample()) {
         				long prevSampleTime = currentBatch.getLastSampleTime();
-        				float[] prevSample = currentBatch.getLastSample();
         				
-						/*
-						 * Some phone's accelerometers aren't that good,
-						 * sometimes, all of a sudden the accelerometer would
-						 * return zeros in one or more accelerometer axis for a
-						 * one or more samples. To detect and remove these
-						 * anomalies (at the cost of sample timing), we check
-						 * that the value is not zero, or if it is, then there
-						 * were values close to zero before.
-						 */
-						for (int i = 0; i < Constants.ACCEL_DIM; ++i) {
-							if (currentSample[i] == 0.0f) {
-								double diffFromLast = currentSample[i] - prevSample[i];
-								if (diffFromLast < 0.0f)
-									diffFromLast = -diffFromLast;
-								if (diffFromLast > 0.1f) {
-									return;
-								}
-							}
-						}
-        				
-        				double timeDiff = (currentSampleTime-prevSampleTime)/1000.0;
-        				++samplingQualityCount;
-        				samplingQualitySum += timeDiff;
-        				samplingQualitySumSqr += timeDiff*timeDiff;
+        				if (currentSampleTime-prevSampleTime>=SPECIFIC_SAMPLING_PERIOD*9/10) {
+            				float[] prevSample = currentBatch.getLastSample();
+            				
+    						/*
+    						 * Some phone's accelerometers aren't that good,
+    						 * sometimes, all of a sudden the accelerometer would
+    						 * return zeros in one or more accelerometer axis for a
+    						 * one or more samples. To detect and remove these
+    						 * anomalies (at the cost of sample timing), we check
+    						 * that the value is not zero, or if it is, then there
+    						 * were values close to zero before.
+    						 */
+    						for (int i = 0; i < Constants.ACCEL_DIM; ++i) {
+    							if (currentSample[i] == 0.0f) {
+    								double diffFromLast = currentSample[i] - prevSample[i];
+    								if (diffFromLast < 0.0f)
+    									diffFromLast = -diffFromLast;
+    								if (diffFromLast > 0.1f) {
+    									return;
+    								}
+    							}
+    						}
+            				
+            				double timeDiff = (currentSampleTime-prevSampleTime)/1000.0;
+            				++samplingQualityCount;
+            				samplingQualitySum += timeDiff;
+            				samplingQualitySumSqr += timeDiff*timeDiff;
+        				} else {
+        					return;
+        				}
         			}
-
-        			currentBatch.assignSample(currentSampleTime, currentSample);
+        			
+    				currentBatch.assignSample(currentSampleTime, currentSample);
+        		}
+        		
+        		if (!currentBatch.hasSpace()) {
+        			finishedSamplingRunnable.run();
         		}
         	}
         }
@@ -118,11 +128,14 @@ public class AsyncAccelReader {
     private boolean assigningValues;
     private SampleBatch currentBatch;
     private SensorManager manager;
+    //private Sensor accelerometer;
     
     private SqlLiteAdapter sqlLiteAdapter;
     private OptionsTable optionsTable;
     
     private boolean accelListenerRegistered;
+    
+    private Runnable finishedSamplingRunnable;
     
     //	used to compute sampling quality
     private double samplingQualitySum;
@@ -134,6 +147,7 @@ public class AsyncAccelReader {
 
     public AsyncAccelReader(final Context context) {
         manager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        //accelerometer = manager.getDefaultSensor(SensorManager.SENSOR_ACCELEROMETER);
         
         sqlLiteAdapter = SqlLiteAdapter.getInstance(context);
         optionsTable = sqlLiteAdapter.getOptionsTable();
@@ -159,15 +173,26 @@ public class AsyncAccelReader {
 		}
 	}
     
-    public void startSampling(SampleBatch batch) throws HardwareFaultException {
+    public void startSampling(SampleBatch batch, Runnable finishedSamplingRunnable) throws HardwareFaultException {
     	boolean initSuccess = false;
     	try {
+    		Log.d(Constants.TAG, "Reader starting sampling");
+    		
 	    	if (!accelListenerRegistered) {
 	    		Log.i(Constants.TAG, "Turning accelerometer on");
-	            manager.registerListener(accelListener,
-	                    manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-	                    currentSamplingRate
-	                    );
+	    		if (currentSamplingRate<10) {
+	    			//	the sampling rate is one of the predefined generic rates e.g. fastest
+		            manager.registerListener(accelListener,
+		                    manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+		                    currentSamplingRate
+		                    );
+	    		} else {
+	    			//	the sampling rate is the period between subsequent samples
+		            manager.registerListener(accelListener,
+		                    manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+		                    currentSamplingRate*95/100
+		                    );
+	    		}
 	            accelListenerRegistered = true;
 	    	}
 	    	
@@ -175,22 +200,25 @@ public class AsyncAccelReader {
 	        samplingQualitySumSqr = 0.0;
 	        samplingQualityCount = 0.0;
 	        currentBatch = batch;
+	        this.finishedSamplingRunnable = finishedSamplingRunnable;
 	    	assigningValues = true;
+	    	
+//	    	boolean that = true;
+//	    	if (that==true) {
+//	    		throw new HardwareFaultException("Unable to start accelerometer.");
+//	    	}
 	    	
 	    	//	sometimes values are requested before the first
 	    	//		accelerometer sensor change event has occurred,
 	    	//		so wait for the sensor to change.
-	    	if (currentBatch.getSize()<2)
-	    	{
+	    	if (currentBatch.getSize()<2 && assigningValues) {
 	    		Log.v(Constants.TAG, "No values assigned yet from accelerometer, going to wait for values.");
 	    		long startWait = System.currentTimeMillis();
 	    		long current = startWait;
-		    	while (currentBatch.getSize()<2)
-		    	{
+		    	while (currentBatch.getSize()<2 && assigningValues) {
 		    		Thread.yield();
 		    		current = System.currentTimeMillis();
-		    		if (current-startWait>Constants.DELAY_SAMPLE_BATCH)
-		    		{
+		    		if (current-startWait>Constants.DELAY_SAMPLE_BATCH && assigningValues) {
 		    			throw new HardwareFaultException("Unable to start accelerometer.");
 		    		}
 		    	}
@@ -207,21 +235,25 @@ public class AsyncAccelReader {
     }
 
     public void stopSampling() {
-    	if (currentBatch.hasLastSample()) {
-	    	int batchDurationSec = (int)((currentBatch.getLastSampleTime()-currentBatch.getFirstSampleTime())/1000L);
-	    	int size = batchDurationSec*Constants.RECOMMENDED_SAMPLING_FREQUENCY;
-    		Log.d(Constants.TAG, "Downsampling sample batch from "+currentBatch.getSize()+" to "+size);
-	    	currentBatch.downSample(size);
-    	}
+//    	if (currentBatch.hasLastSample()) {
+//	    	int batchDurationSec = (int)((currentBatch.getLastSampleTime()-currentBatch.getFirstSampleTime())/1000L);
+//	    	int size = batchDurationSec*Constants.RECOMMENDED_SAMPLING_FREQUENCY;
+//    		Log.d(Constants.TAG, "Downsampling sample batch from "+currentBatch.getSize()+" to "+size);
+//	    	currentBatch.downSample(size);
+//    	}
+    	
+    	Log.d(Constants.TAG, "Reader stopping sampling");
     	
     	assigningValues = false;
     	currentBatch = null;
-		samplingQualityMean = samplingQualitySum / samplingQualityCount;
-		samplingQualityStdDev = Math.sqrt(
-				samplingQualitySumSqr / samplingQualityCount - 
-				samplingQualityMean * samplingQualityMean
-			);
-		Log.d(Constants.TAG, String.format("Sampling Quality: Delay: Mean=%.2f ms, S.D=%.2f ms", samplingQualityMean, samplingQualityStdDev));
+    	if (samplingQualityCount>2) {
+			samplingQualityMean = samplingQualitySum / samplingQualityCount;
+			samplingQualityStdDev = Math.sqrt(
+					samplingQualitySumSqr / samplingQualityCount - 
+					samplingQualityMean * samplingQualityMean
+				);
+			Log.d(Constants.TAG, String.format("Sampling Quality: Delay: Mean=%.2f ms, S.D=%.2f ms", samplingQualityMean, samplingQualityStdDev));
+    	}
 		
 		if (!optionsTable.getFullTimeAccel()) {
     		manager.unregisterListener(accelListener);

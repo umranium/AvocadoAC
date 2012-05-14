@@ -164,12 +164,12 @@ public class ActivityListActivity extends Activity {
 	
 	private void updateFusionTableUrl() {
 		TextView txtFusionTableUrl = (TextView)findViewById(R.id.txtFusionTableUrl);
-		String fusionTableId = optionsTable.getFusionTableId();
-		if (fusionTableId==null || fusionTableId.length()==0) {
+		String fusionSummaryId = optionsTable.getFusionSummaryId();
+		if (fusionSummaryId==null || fusionSummaryId.length()==0) {
 			txtFusionTableUrl.setText("Not yet uploading to google fusion tables");
 			txtFusionTableUrl.setEnabled(false);
 		} else {
-			String url = "https://www.google.com/fusiontables/DataSource?docid="+fusionTableId;
+			String url = "https://www.google.com/fusiontables/DataSource?docid="+fusionSummaryId;
 			txtFusionTableUrl.setText(Html.fromHtml("Go to <a href=\""+url+"\">Google Fusion Table</a>"));
 			txtFusionTableUrl.setMovementMethod(LinkMovementMethod.getInstance());
 			txtFusionTableUrl.setEnabled(true);

@@ -27,8 +27,8 @@ public class SampleBatch {
 	private boolean charging;
 	
 	public SampleBatch() {
-		data = new float[Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH][Constants.ACCEL_DIM];
-		timeStamps = new long[Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH];
+		data = new float[Constants.NUMBER_OF_SAMPLES][Constants.ACCEL_DIM];
+		timeStamps = new long[Constants.NUMBER_OF_SAMPLES];
 		currentSample = 0;
 	}
 	
@@ -56,7 +56,7 @@ public class SampleBatch {
 	}
 	
 	public boolean hasSpace() {
-		return currentSample<Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH;
+		return currentSample<Constants.NUMBER_OF_SAMPLES;
 	}
 	
 	public void downSample(int size) {

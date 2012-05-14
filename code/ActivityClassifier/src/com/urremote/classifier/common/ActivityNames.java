@@ -2,6 +2,7 @@ package com.urremote.classifier.common;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -86,6 +87,18 @@ public class ActivityNames {
         declaredActivities.add(CHARGING);
         
         return declaredActivities;
+	}
+	
+	public static Set<String> getAllNonSystemActivities(Context context) {
+		Set<String> allActivities = getAllActivities(context);
+		Iterator<String> it = allActivities.iterator();
+		while (it.hasNext()) {
+			String activity = it.next();
+			if (isSystemActivity(activity)) {
+				it.remove();
+			}
+		}
+		return allActivities;
 	}
 
 }

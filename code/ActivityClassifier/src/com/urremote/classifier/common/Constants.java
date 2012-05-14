@@ -76,19 +76,15 @@ public class Constants {
 	public static final int RECOMMENDED_SAMPLING_FREQUENCY = 20;
 	
 	/**
-	 * The duration of a sampling batch (in ms)
+	 * The number of samples per batch to take while sampling
 	 */
-	public static final int SAMPLING_BATCH_DURATION = 6000;
+	public static final int NUMBER_OF_SAMPLES = 128;
 	
 	/**
-	 * The highest possible frequency that this system can support
+	 * The duration between two contiguous classifications, if greater than which, to
+	 * insert an UNKNOWN classification.
 	 */
-	public static final int MAXIMUM_SUPPORTED_FREQUENCY = 300;
-	
-	/**
-	 * The highest possible frequency that this system can support
-	 */
-	public static final int MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH = SAMPLING_BATCH_DURATION*MAXIMUM_SUPPORTED_FREQUENCY/1000;
+	public static final int DURATION_EMPTY_INSERT_UNKNOWN = DELAY_SAMPLE_BATCH*4;
 	
 	/**
 	 * Duration for the {@link AccountThread} to wait for the user's account
@@ -314,6 +310,8 @@ public class Constants {
 	public static final int NOTIFICATION_ID_HARDWARE_FAULT = 2;
 	public static final int NOTIFICATION_ID_AUTHENTICATION_FAILURE = 3;
 	public static final int NOTIFICATION_ID_NO_ACCOUNT = 3;
+	
+	public static final long DURATION_KEEP_HARDWARE_NOTIFICATION = 10*60*1000L;	// 10 min
  
 	/*
 	 ****************************************************************************************************************

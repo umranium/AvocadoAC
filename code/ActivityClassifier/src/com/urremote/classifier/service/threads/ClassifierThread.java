@@ -100,7 +100,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 	private CalcStatistics rawSampleStatistics = new CalcStatistics(Constants.ACCEL_DIM);
 	private CalcStatistics rotatedSampleStatistics = new CalcStatistics(Constants.ACCEL_DIM);	
 
-	private float[][] rotatedMergedSamples = new float[Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH][2];
+	private float[][] rotatedMergedSamples = new float[Constants.NUMBER_OF_SAMPLES][2];
 	private CalcStatistics rotatedMergedSampleStatistics = new CalcStatistics(2);	
 
 	private RotateSamplesToVerticalHorizontal rotateSamples = new RotateSamplesToVerticalHorizontal();

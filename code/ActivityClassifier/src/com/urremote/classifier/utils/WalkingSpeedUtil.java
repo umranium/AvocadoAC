@@ -19,7 +19,7 @@ public class WalkingSpeedUtil {
 	private static final int DATA_V_DIM = 2;
 	private static final float MIN_UPPER_BAND = 1.1f;	// m/s^2
 	private static final float MIN_PEAK_HEIGHT = Constants.GRAVITY*0.25f;	// m/s^2
-	private static final int BUFFER_LEN = Constants.MAXIMUM_SUPPORTED_SAMPLES_PER_BATCH;
+	private static final int BUFFER_LEN = Constants.NUMBER_OF_SAMPLES;
 	
 	//	minimum and maximum, step frequencies for walking
 	private static final float MAX_WALKING_STEP_FREQUENCY = 2.5f;	// Hz

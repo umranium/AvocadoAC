@@ -450,7 +450,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 		if (Constants.IS_DEV_VERSION) {
 			PreferenceCategory developerPrefCat = new PreferenceCategory(this);
-			developerPrefCat.setTitle("Developer Settings");
+			developerPrefCat.setTitle("Experimental");
 
 			aggregatePref = new CheckBoxPreference(this);
 			aggregatePref.setKey("aggregate_preference");
