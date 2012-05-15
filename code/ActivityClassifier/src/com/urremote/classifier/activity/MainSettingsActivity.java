@@ -38,6 +38,7 @@ import android.widget.Toast;
 import com.flurry.android.FlurryAgent;
 import com.urremote.classifier.activity.AccountChooser.AccountHandler;
 import com.urremote.classifier.common.Constants;
+import com.urremote.classifier.common.DbFileUtil;
 import com.urremote.classifier.db.OptionUpdateHandler;
 import com.urremote.classifier.db.OptionsTable;
 import com.urremote.classifier.db.SqlLiteAdapter;
@@ -427,21 +428,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 		copyPref.setOnPreferenceClickListener(new PreferenceScreen.OnPreferenceClickListener(){
 
 			public boolean onPreferenceClick(Preference preference) {
-				String dbSrc = sqlLiteAdapter.getPath();
-				File dbSrcFile = new File(dbSrc);
-				if (dbSrc==null || !dbSrcFile.exists()) {
-					Toast.makeText(getBaseContext(), "Database hasn't been created yet!", Toast.LENGTH_LONG).show();
-				} else {
-					File dbDstFile = new File(Constants.PATH_SD_CARD_DUMP_DB);
-					if (!dbDstFile.getParentFile().exists()) {
-						Log.d(Constants.TAG, "Create DB directory. " + dbDstFile.getParentFile().getAbsolutePath());
-						dbDstFile.getParentFile().mkdirs();
-					}
-
-					copy(dbSrcFile, dbDstFile);
-					Toast.makeText(getBaseContext(), "Database copied into " + dbDstFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
-				}
-
+				DbFileUtil.copyFileToSd(getBaseContext(), Constants.RECORDS_FILE_NAME, sqlLiteAdapter, false);
 				return false;
 			}
 
@@ -608,26 +595,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 		"Offset Z                        : "+offSet[Constants.ACCEL_Z_AXIS]+"\n";
 	}
 
-	private void copy(File sourceFile, File destinationFile) {
-		try {
-			InputStream lm_oInput = new FileInputStream(sourceFile);
-			byte[] buff = new byte[128];
-			FileOutputStream lm_oOutPut = new FileOutputStream(destinationFile);
-			while (true) {
-				int bytesRead = lm_oInput.read(buff);
-				if (bytesRead == -1)
-					break;
-				lm_oOutPut.write(buff, 0, bytesRead);
-			}
-
-			lm_oInput.close();
-			lm_oOutPut.close();
-			lm_oOutPut.flush();
-			lm_oOutPut.close();
-		} catch (Exception e) {
-			Log.e(Constants.TAG, "Copy database to SD Card Error", e);
-		}
-	}
 	public class CheckBoxPreferenceWithLongSummary extends CheckBoxPreference{
 
 		public CheckBoxPreferenceWithLongSummary(Context context) {

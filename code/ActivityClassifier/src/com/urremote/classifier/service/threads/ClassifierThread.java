@@ -358,6 +358,7 @@ public class ClassifierThread extends Thread implements OptionUpdateHandler {
 					rawDump.dumpRawData(batch);
 				}
 				debugDataTable.reset(sampleTime);
+				debugDataTable.assignRaw(batch.data);
 			}
 			
 			{

@@ -31,7 +31,6 @@ public class Constants {
 	 */
 	public final static String DEFAULT_PACKAGE = "com.urremote.classifier";
 	
-	
 	/**
 	 * Used to differentiate between times when the application is
 	 * being debugged (i.e. plugged into the computer), and normal
@@ -42,7 +41,17 @@ public class Constants {
 	/**
 	 * Should we or should we output debugging data?
 	 */
-	public static final boolean OUTPUT_DEBUG_INFO = false;
+	public static final boolean OUTPUT_DEBUG_INFO = true;
+	
+	/**
+	 * Should we routinely backup the DB to the SD-card?
+	 */
+	public static final boolean BACKUP_DB_TO_SDCARD = true;
+	
+	/**
+	 * How frequently should we backup the DB to the SD-card
+	 */
+	public static final long PERIOD_BACKUP_DB_TO_SDCARD = 24*60*60*1000L;
 	
 	/**
 	 * While outputting debugging data,
@@ -128,20 +137,20 @@ public class Constants {
 	/**
 	 * Path to the location where this application stores files in the SD card
 	 */
-	public static final String PATH_SD_CARD_APP_LOC =
-		Environment.getExternalStorageDirectory() + File.separator + "AvocadoAC"; 
+	public static final File PATH_SD_CARD_APP_LOC =
+		new File(Environment.getExternalStorageDirectory(), "AvocadoAC"); 
 //		File.separator + "sdcard" + File.separator + "activityclassifier"; 
 	
 	/**
 	 * Path to the activity records file
 	 */
-	public static final String PATH_SD_CARD_DUMP_DB =  PATH_SD_CARD_APP_LOC + File.separator + RECORDS_FILE_NAME;
+//	public static final String PATH_SD_CARD_DUMP_DB =  PATH_SD_CARD_APP_LOC + File.separator + RECORDS_FILE_NAME;
 	
 	
 	/**
 	 * Path to the device debug logs 
 	 */
-	public static final String PATH_SD_CARD_LOG =  PATH_SD_CARD_APP_LOC + File.separator + "debug.log";
+	public static final String PATH_SD_CARD_LOG =  PATH_SD_CARD_APP_LOC.getAbsolutePath() + File.separator + "debug.log";
 	
 	/**
 	 * URL where the user's information is posted.
@@ -253,7 +262,7 @@ public class Constants {
 	/**
 	 * The maximum duration that debugging data should be maintained in the database
 	 */
-	public final static long DURATION_KEEP_DB_DEBUG_DATA = 12*60*60*1000L;
+	public final static long DURATION_KEEP_DB_DEBUG_DATA = 24*60*60*1000L;
 	
 	/**
 	 * The maximum duration that activity data should be maintained in the database

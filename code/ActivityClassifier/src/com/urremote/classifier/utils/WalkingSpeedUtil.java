@@ -35,7 +35,7 @@ public class WalkingSpeedUtil {
 	//	maximum allowable sampling delay (in milli-seconds) 2 sampling periods @ 20Hz
 	private static final long MAX_SAMPLING_INTERVAL = 50*2;	// milliseconds
 	
-	private String printOutputFolder;
+	private File printOutputFolder;
 	private SimpleDateFormat dateFormat;
 	private PrintStream printStream;
 	
@@ -75,7 +75,7 @@ public class WalkingSpeedUtil {
 		}
 	};
 	
-	public WalkingSpeedUtil(String printOutputFolder, SimpleDateFormat dateFormat) {
+	public WalkingSpeedUtil(File printOutputFolder, SimpleDateFormat dateFormat) {
 		this.printOutputFolder = printOutputFolder;
 		this.dateFormat = dateFormat;
 		
@@ -121,7 +121,7 @@ public class WalkingSpeedUtil {
 		String fname = dateFormat.format(samplingTime);
 		fname = fname.replaceAll("\\W+", "_");
 		try {
-			this.printStream = new PrintStream(new File(printOutputFolder + File.separator + fname + ".txt"));
+			this.printStream = new PrintStream(new File(printOutputFolder, fname + ".txt"));
 		} catch (FileNotFoundException ex) {
 			Log.e(DEBUG, "Error openning file: "+fname);
 		}

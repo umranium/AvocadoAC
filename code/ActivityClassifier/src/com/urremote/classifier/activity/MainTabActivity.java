@@ -286,8 +286,12 @@ public class MainTabActivity extends TabActivity {
 			case CLOSE_START_DIALOG:
 			{
 				try {
-					//	hide the progress dialog box
-					dialog.dismiss();
+					try {
+						//	hide the progress dialog box
+						dialog.dismiss();
+					} catch (Exception e) {
+						Log.w(Constants.TAG, "Error while dismissing dialog box", e);
+					}
 					dialog = null;
 
 					//	if the service is still not running by the end of the delay

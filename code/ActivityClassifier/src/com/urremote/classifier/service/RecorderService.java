@@ -7,6 +7,7 @@ package com.urremote.classifier.service;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -22,6 +23,7 @@ import com.urremote.classifier.activity.MainTabActivity;
 import com.urremote.classifier.auth.AuthManager;
 import com.urremote.classifier.common.ActivityNames;
 import com.urremote.classifier.common.Constants;
+import com.urremote.classifier.common.DbFileUtil;
 import com.urremote.classifier.common.ExceptionHandler;
 import com.urremote.classifier.db.ActivitiesTable;
 import com.urremote.classifier.db.DebugDataTable;
@@ -61,6 +63,7 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.RemoteException;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -111,6 +114,7 @@ public class RecorderService extends Service implements Runnable {
 	private boolean partialWakeLockShouldBeOn;
 	private AlarmManager alarmManager;
 	private PendingIntent pendingSamplingIntent;
+	private PendingIntent pendingBackupIntent;
 	private ExecutorService samplingExecutorService;
 	
 	private NotificationManager notificationManager;
@@ -250,8 +254,24 @@ public class RecorderService extends Service implements Runnable {
 		public void onReceive(Context context, Intent intent) {
 			if (!samplingExecutorService.isShutdown()) {
 				Log.i(Constants.TAG, "Sampling Broadcast Receiver received sampling notification");
+				
 				if (!sampler.isSampling()) {
 					samplingExecutorService.submit(samplingInvoker);
+				}
+			}
+		}
+	};
+	
+	private BroadcastReceiver backupDbBroadcastReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			Log.i(Constants.TAG, "Backup Broadcast Receiver received notification");
+			
+			if (Constants.BACKUP_DB_TO_SDCARD) {
+				long currentTime = System.currentTimeMillis();
+				String fileName = new StringBuffer(DateFormat.format("yyyy_MM_dd_kk_mm_ss", currentTime)).toString() + ".db"; 
+				if (DbFileUtil.copyFileToSd(context, fileName, sqlLiteAdapter, true)) {
+					// log, backup success
 				}
 			}
 		}
@@ -342,6 +362,7 @@ public class RecorderService extends Service implements Runnable {
 			
 			if (durationSinceLast>Constants.DURATION_EMPTY_INSERT_UNKNOWN) {
 				Classification unknown = new Classification(ActivityNames.UNKNOWN, latestClassification.getEnd()+1, start-1);
+				
 				unknown.withContext(this);
 				unknown.setNumberOfBatches(1);
 				unknown.setMet(1.0f);
@@ -596,6 +617,23 @@ public class RecorderService extends Service implements Runnable {
 		alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, 
 				Constants.DELAY_SAMPLE_BATCH, Constants.DELAY_SAMPLE_BATCH, pendingSamplingIntent);
 		this.registerReceiver(startSamplingBroadcastReceiver, new IntentFilter(samplingIntentAction));
+		
+		if (Constants.BACKUP_DB_TO_SDCARD) {
+			long currentTime = System.currentTimeMillis();
+			//	align to period
+			long currentPeriodStart = (currentTime/Constants.PERIOD_BACKUP_DB_TO_SDCARD)*Constants.PERIOD_BACKUP_DB_TO_SDCARD;
+			long nextPeriodStart = currentPeriodStart + Constants.PERIOD_BACKUP_DB_TO_SDCARD;
+			
+			Log.d(Constants.TAG, "Current Time:"+(new Date(currentTime)));
+			Log.d(Constants.TAG, "Current Period Start:"+(new Date(currentPeriodStart)));
+			Log.d(Constants.TAG, "Next Period Start:"+(new Date(nextPeriodStart)));
+			
+			String backupIntentAction = Constants.DEFAULT_PACKAGE+".intent.backup.start";
+			Intent backupIntent = new Intent(backupIntentAction);
+			pendingBackupIntent = PendingIntent.getBroadcast(this, 0, backupIntent, 0);
+			alarmManager.setInexactRepeating(AlarmManager.RTC, nextPeriodStart, Constants.PERIOD_BACKUP_DB_TO_SDCARD, pendingBackupIntent);
+			this.registerReceiver(backupDbBroadcastReceiver, new IntentFilter(backupIntentAction));
+		}
 
 		//	if the service started successfully, then start set the system to show
 		//		that the service started
@@ -645,6 +683,9 @@ public class RecorderService extends Service implements Runnable {
 		}
 		this.unregisterReceiver(startSamplingBroadcastReceiver);
 		this.alarmManager.cancel(pendingSamplingIntent);
+		if (Constants.BACKUP_DB_TO_SDCARD) {
+			this.alarmManager.cancel(pendingBackupIntent);
+		}
 		this.samplingExecutorService.shutdown();
 
 		//	stop threads

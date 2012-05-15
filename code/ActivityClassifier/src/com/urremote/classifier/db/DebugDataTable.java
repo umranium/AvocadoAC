@@ -45,12 +45,29 @@ public class DebugDataTable extends DbTableAdapter {
 	public static final String KEY_FINAL_CLASSIFIER_OUTPUT = "final_classifier_output";
 	public static final String KEY_FINAL_SYSTEM_OUTPUT = "final_system_output";
 	
+	public static final String[] KEY_RAW_X;
+	public static final String[] KEY_RAW_Y;
+	public static final String[] KEY_RAW_Z;
+	
+	static {
+		KEY_RAW_X = new String[Constants.NUMBER_OF_SAMPLES];
+		KEY_RAW_Y = new String[Constants.NUMBER_OF_SAMPLES];
+		KEY_RAW_Z = new String[Constants.NUMBER_OF_SAMPLES];
+		
+		for (int i=0; i<Constants.NUMBER_OF_SAMPLES; ++i) {
+			KEY_RAW_X[i] = String.format("raw_x_%03d", i);
+			KEY_RAW_Y[i] = String.format("raw_y_%03d", i);
+			KEY_RAW_Z[i] = String.format("raw_z_%03d", i);
+		}
+	}
+	
 	//	reusable
 	private ContentValues insertContentValues;
 	private ContentValues updateContentValues;
 	
 	private long sampleTime;
 	private Date startedAtDt = new Date();
+	private float[][] raw;
 	private Float meanX;
 	private Float meanY;
 	private Float meanZ;
@@ -85,11 +102,22 @@ public class DebugDataTable extends DbTableAdapter {
 	
 	@Override
 	protected void createTable(SQLiteDatabase database) {
+		StringBuilder rawCreate = new StringBuilder();
+		for (int i=0; i<Constants.NUMBER_OF_SAMPLES; ++i) {
+			if (i>0) {
+				rawCreate.append(", ");
+			}
+			rawCreate.append(KEY_RAW_X[i]).append(" REAL NULL").append(", ").
+				append(KEY_RAW_Y[i]).append(" REAL NULL").append(", ").
+				append(KEY_RAW_Z[i]).append(" REAL NULL");
+		}
+		
 		//	create the create sql
 		String sql = 
 			"CREATE TABLE "+TABLE_NAME+" (" +
 			KEY_ID+" LONG PRIMARY KEY, " +
 			KEY_STARTED_AT+" TEXT NOT NULL, " +
+			rawCreate.toString()+", " + 
 			KEY_MEAN_X + " REAL NULL, " +
 			KEY_MEAN_Y + " REAL NULL, " +
 			KEY_MEAN_Z + " REAL NULL, " +
@@ -150,6 +178,19 @@ public class DebugDataTable extends DbTableAdapter {
 		
 		insertContentValues.put(KEY_ID, this.sampleTime);
 		insertContentValues.put(KEY_STARTED_AT, Constants.DB_DATE_FORMAT.format(this.startedAtDt));
+		if (raw!=null) {
+			for (int i=0; i<Constants.NUMBER_OF_SAMPLES; ++i) {
+				insertContentValues.put(KEY_RAW_X[i], (Float)this.raw[i][Constants.ACCEL_X_AXIS]);
+				insertContentValues.put(KEY_RAW_Y[i], (Float)this.raw[i][Constants.ACCEL_Y_AXIS]);
+				insertContentValues.put(KEY_RAW_Z[i], (Float)this.raw[i][Constants.ACCEL_Z_AXIS]);
+			}
+		} else {
+			for (int i=0; i<Constants.NUMBER_OF_SAMPLES; ++i) {
+				insertContentValues.put(KEY_RAW_X[i], (Float)null);
+				insertContentValues.put(KEY_RAW_Y[i], (Float)null);
+				insertContentValues.put(KEY_RAW_Z[i], (Float)null);
+			}
+		}
 		insertContentValues.put(KEY_MEAN_X, this.meanX); 
 		insertContentValues.put(KEY_MEAN_Y, this.meanY);
 		insertContentValues.put(KEY_MEAN_Z, this.meanZ);
@@ -224,6 +265,7 @@ public class DebugDataTable extends DbTableAdapter {
 	 */
 	public void reset(long sampleTime) {
 		this.sampleTime = sampleTime;
+		this.raw = null;
 		this.meanX = null;
 		this.meanY = null;
 		this.meanZ = null;
@@ -249,6 +291,10 @@ public class DebugDataTable extends DbTableAdapter {
 		this.classifierAlgoOutput = null;
 		this.aggregatorAlgoOutput = null;
 		this.finalClassifierOutput = null;
+	}
+	
+	public void assignRaw(float[][] raw) {
+		this.raw = raw;
 	}
 	
 	/**
