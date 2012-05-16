@@ -93,7 +93,10 @@ public class DebugDataTable extends DbTableAdapter {
 	private String classifierAlgoOutput;
 	private String aggregatorAlgoOutput;
 	private String finalClassifierOutput;
+	
 
+	private long lastTrim = 0;
+	
 	protected DebugDataTable(Context context) {
 		super(context);
 		this.insertContentValues = new ContentValues();
@@ -254,8 +257,12 @@ public class DebugDataTable extends DbTableAdapter {
 	public void trim()
 	{
 		if (isDatabaseAvailable()) {
-			long cutOffLimit = System.currentTimeMillis() - Constants.DURATION_KEEP_DB_DEBUG_DATA; 
-			database.delete(TABLE_NAME, KEY_ID+"<"+cutOffLimit, null);
+			long currentTime = System.currentTimeMillis();
+			if (currentTime-lastTrim>Constants.DURATION_KEEP_DB_DEBUG_DATA) {
+				long cutOffLimit = currentTime - Constants.DURATION_KEEP_DB_DEBUG_DATA; 
+				database.delete(TABLE_NAME, KEY_ID+"<"+cutOffLimit, null);
+				lastTrim = currentTime;
+			}
 		}
 	}
 	

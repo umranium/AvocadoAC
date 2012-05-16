@@ -71,7 +71,7 @@ public class DbFileUtil {
 		if (!background) {
 			Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
 		}
-		Log.d(Constants.TAG, msg);
+		Log.w(Constants.TAG, msg);
 	}
 	
 	public static boolean hasStorage(boolean requireWriteAccess) {

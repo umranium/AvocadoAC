@@ -58,6 +58,8 @@ public class ActivitiesTable extends DbTableAdapter {
 	private ContentValues insertContentValues;
 	private ContentValues updateContentValues;
 	
+	private long lastTrim = 0;
+	
 	protected ActivitiesTable(Context context) {
 		super(context);
 		
@@ -368,8 +370,12 @@ public class ActivitiesTable extends DbTableAdapter {
 	public void trim()
 	{
 		if (isDatabaseAvailable()) {
-			long cutOffLimit = System.currentTimeMillis() - Constants.DURATION_KEEP_DB_ACTIVITY_DATA;
-			database.delete(TABLE_NAME, KEY_LAST_UPDATED_AT+"<"+cutOffLimit, null);
+			long currentTime = System.currentTimeMillis();
+			if (currentTime-lastTrim>Constants.DURATION_KEEP_DB_ACTIVITY_DATA) {
+				long cutOffLimit = currentTime - Constants.DURATION_KEEP_DB_ACTIVITY_DATA;
+				database.delete(TABLE_NAME, KEY_LAST_UPDATED_AT+"<"+cutOffLimit, null);
+				lastTrim = currentTime;
+			}
 		}
 	}
 	

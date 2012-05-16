@@ -27,10 +27,12 @@ import com.urremote.classifier.db.OptionsTable;
 import com.urremote.classifier.db.SqlLiteAdapter;
 import com.urremote.classifier.rpc.Classification;
 
+import static com.urremote.classifier.fusiontables.FusionTables.DEBUG;
+
 public class FusionTableActivitySync extends FusionTables {
 	
 	private static final String VIEW_NAME = "Activities_Summary";
-
+	
 	private static String[] DB_ACTIVITY_TABLE_COLS = new String[] {
 		ActivitiesTable.KEY_ACTIVITY,
 		ActivitiesTable.KEY_END_LONG,
@@ -78,7 +80,8 @@ public class FusionTableActivitySync extends FusionTables {
 		String tableId = this.optionsTable.getFusionTableId();
 		
 		if (tableId!=null) {
-			Log.i(TAG, "Previous Fusion Table Id found");
+			if (DEBUG)
+				Log.i(TAG, "Previous Fusion Table Id found");
 			
 			List<Table> serverTables = retrieveTables();
 			if (serverTables==null)
@@ -400,36 +403,42 @@ public class FusionTableActivitySync extends FusionTables {
 			connectionError = false;
 			
 			inserts.clear();
-			Log.d(TAG, "Fetching all records either inserted after "+latestStartTime+
-					" or updated after ("+latestUpdateTime+"+"+Constants.DURATION_SERVER_UPDATE_ACTIVITY+")");
+			
+			if (DEBUG)
+				Log.d(TAG, "Fetching all records either inserted after "+latestStartTime+
+						" or updated after ("+latestUpdateTime+"+"+Constants.DURATION_SERVER_UPDATE_ACTIVITY+")");
 			activitiesTable.loadUploadable(latestStartTime, latestUpdateTime+Constants.DURATION_SERVER_UPDATE_ACTIVITY,
 					reusableClassification, new ClassificationDataCallback() {
 				public void onRetrieve(Classification classification) {
 					if (connectionError)
 						return;
-					
-					Log.d(TAG, "\tObtained start="+classification.getStart()+" lastUpdate="+classification.getLastUpdate());
+					if (DEBUG)
+						Log.d(TAG, "\tObtained start="+classification.getStart()+" lastUpdate="+classification.getLastUpdate());
 					if (rowIdCache.hasRow(classification.getStart())) {
-						Log.d(TAG, "\t\tAttempting to update");
+						if (DEBUG)
+							Log.d(TAG, "\t\tAttempting to update");
 						if (!update(table.id, rowIdCache.getRowId(classification.getStart()), classification)) {
 							connectionError = true;
 						}
 					} else {
-						Log.d(TAG, "\t\tGoing to insert");
+						if (DEBUG)
+							Log.d(TAG, "\t\tGoing to insert");
 						inserts.add(new Classification(classification));
 					}
 				}
 			});
 			
 			if (!connectionError && !inserts.isEmpty()) {
-				Log.d(TAG, "\t\tAttempting inserts");
+				if (DEBUG)
+					Log.d(TAG, "\t\tAttempting inserts");
 				for (int start=0; start<inserts.size(); start+=10) {
 					int end = start + 10;
 					if (end>inserts.size())
 						end = inserts.size();
 					
 					if (insert(table.id, inserts.subList(start, end))) {
-						Log.d(TAG, "\t\t\tInserts ["+start+","+end+") successfull");
+						if (DEBUG)
+							Log.d(TAG, "\t\t\tInserts ["+start+","+end+") successfull");
 					}
 				}
 			}

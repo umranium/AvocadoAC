@@ -6,10 +6,12 @@
 package com.urremote.classifier.service;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -267,11 +269,28 @@ public class RecorderService extends Service implements Runnable {
 		public void onReceive(Context context, Intent intent) {
 			Log.i(Constants.TAG, "Backup Broadcast Receiver received notification");
 			
+			if (isRetryingBackup==null || isRetryingBackup==false) {
+				backupDbRunnable.run();
+			} else {
+				Log.w(Constants.TAG, "Previous attempt to backup still retrying");
+			}
+		}
+	};
+	
+	private Boolean isRetryingBackup = null;
+	
+	private Runnable backupDbRunnable = new Runnable() {
+		
+		public void run() {
 			if (Constants.BACKUP_DB_TO_SDCARD) {
 				long currentTime = System.currentTimeMillis();
-				String fileName = new StringBuffer(DateFormat.format("yyyy_MM_dd_kk_mm_ss", currentTime)).toString() + ".db"; 
-				if (DbFileUtil.copyFileToSd(context, fileName, sqlLiteAdapter, true)) {
-					// log, backup success
+				String fileName = new StringBuffer(DateFormat.format("yyyy_MM_dd_kk_mm_ss", currentTime)).toString() + ".db";
+				isRetryingBackup = true;
+				Log.d(Constants.TAG, "Attempting to backup DB");
+				if (!DbFileUtil.copyFileToSd(RecorderService.this, fileName, sqlLiteAdapter, true)) {
+					handler.postDelayed(this, Constants.DELAY_SAMPLE_BATCH);
+				} else {
+					isRetryingBackup = false;
 				}
 			}
 		}
@@ -620,13 +639,24 @@ public class RecorderService extends Service implements Runnable {
 		
 		if (Constants.BACKUP_DB_TO_SDCARD) {
 			long currentTime = System.currentTimeMillis();
+			TimeZone localTimeZone = TimeZone.getDefault();
+			long localOffset = localTimeZone.getRawOffset();
+			if (localTimeZone.inDaylightTime(new Date(currentTime))) {
+				localOffset += localTimeZone.getDSTSavings();
+			}
+			Log.d(Constants.TAG, "Local TimeZone Offset:"+localOffset);
+			long currentLocalTime = currentTime + localOffset; 
+			
 			//	align to period
-			long currentPeriodStart = (currentTime/Constants.PERIOD_BACKUP_DB_TO_SDCARD)*Constants.PERIOD_BACKUP_DB_TO_SDCARD;
+			long currentLocalPeriodStart = (currentLocalTime/Constants.PERIOD_BACKUP_DB_TO_SDCARD)*Constants.PERIOD_BACKUP_DB_TO_SDCARD;
+			long currentPeriodStart = currentLocalPeriodStart - localOffset;
 			long nextPeriodStart = currentPeriodStart + Constants.PERIOD_BACKUP_DB_TO_SDCARD;
 			
-			Log.d(Constants.TAG, "Current Time:"+(new Date(currentTime)));
-			Log.d(Constants.TAG, "Current Period Start:"+(new Date(currentPeriodStart)));
-			Log.d(Constants.TAG, "Next Period Start:"+(new Date(nextPeriodStart)));
+			
+			
+			Log.d(Constants.TAG, "Current Time:"+currentTime+":"+(new Date(currentTime)));
+			Log.d(Constants.TAG, "Current Period Start:"+currentPeriodStart+":"+(new Date(currentPeriodStart)));
+			Log.d(Constants.TAG, "Next Period Start:"+nextPeriodStart+":"+(new Date(nextPeriodStart)));
 			
 			String backupIntentAction = Constants.DEFAULT_PACKAGE+".intent.backup.start";
 			Intent backupIntent = new Intent(backupIntentAction);

@@ -176,7 +176,7 @@ public class ChartHelper {
 			int indexOff = activityIndexes.get(ActivityNames.OFF);
 			sumMatrix[i][indexOff] = COL_DURATIONS[i] - totalNonSystem;
 			
-			Log.d(Constants.TAG+"Chart", "col_"+i+" col_duration="+COL_DURATIONS[i]+", total_non_sys="+totalNonSystem+", off="+sumMatrix[i][indexOff]);
+//			Log.d(Constants.TAG+"Chart", "col_"+i+" col_duration="+COL_DURATIONS[i]+", total_non_sys="+totalNonSystem+", off="+sumMatrix[i][indexOff]);
 		}
 		
 		int currentComputeData = (currentLoadData+1)%NUM_OF_DATA_SETS;

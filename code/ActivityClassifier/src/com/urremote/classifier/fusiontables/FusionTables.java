@@ -42,6 +42,8 @@ public class FusionTables {
 	public static final String SERVICE_ID = "fusiontables";
 	
 	public static final String TAG = Constants.TAG+"FusionHttp";
+	
+	public static final boolean DEBUG = false;
 
 	// /** The path for viewing a map visualization of a table. */
 	// private static final String FUSIONTABLES_MAP =
@@ -244,7 +246,8 @@ public class FusionTables {
 						GDataWrapper.AuthenticationException {
 					GenericUrl url = new GenericUrl(FUSIONTABLES_BASE_FEED_URL);
 					url.set("encid", Boolean.toString(true));
-					Log.d(TAG, "Fusion Table Query: "+query);
+					if (DEBUG)
+						Log.d(TAG, "Fusion Table Query: "+query);
 	
 					HttpRequest request;
 					if (usePost) {
@@ -271,7 +274,8 @@ public class FusionTables {
 					
 					request.setHeaders(headers);
 	
-					Log.d(TAG, "Running query: " + url.toString());
+					if (DEBUG)
+						Log.d(TAG, "Running query: " + url.toString());
 					HttpResponse response;
 					try {
 						response = request.execute();
@@ -296,7 +300,8 @@ public class FusionTables {
 						
 						String reply = replyBldr.toString();
 						
-						Log.d(TAG, "Server Reply: "+reply);
+						if (DEBUG)
+							Log.d(TAG, "Server Reply: "+reply);
 						
 						CSVReader reader = new CSVReader(new StringReader(reply));
 						List<String[]> csvLines = reader.readAll();
@@ -311,7 +316,7 @@ public class FusionTables {
 							results.addAll(csvLines);
 						}
 					} else {
-						Log.d(TAG,
+						Log.w(TAG,
 								"Query failed: " + response.getStatusMessage()
 										+ " (" + response.getStatusCode() + ")");
 						throw new GDataWrapper.HttpException(response
