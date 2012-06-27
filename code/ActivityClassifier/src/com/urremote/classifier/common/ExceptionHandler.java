@@ -40,6 +40,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
 
+import com.flurry.android.FlurryAgent;
 import com.urremote.classifier.activity.MainTabActivity;
 import com.urremote.classifier.service.RecorderService;
 
@@ -115,7 +116,8 @@ public class ExceptionHandler implements UncaughtExceptionHandler {
         String filename = timestamp + ".stacktrace";
         writeToFile(stacktrace, filename);
 
-        sendToServer(stacktrace, filename);
+        FlurryAgent.onError(e.getMessage(), stacktrace, e.getClass().getCanonicalName());
+        //sendToServer(stacktrace, filename);
         
         defaultUEH.uncaughtException(t, e);
     }

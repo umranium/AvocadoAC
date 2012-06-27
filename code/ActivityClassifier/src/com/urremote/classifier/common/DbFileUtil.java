@@ -7,9 +7,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.urremote.classifier.db.Migrator;
+import com.urremote.classifier.db.Migrator.MigrationException;
 import com.urremote.classifier.db.SqlLiteAdapter;
 
 import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteCursorDriver;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteQuery;
 import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
@@ -67,6 +73,76 @@ public class DbFileUtil {
 		}
 	}
 	
+	public static boolean migrateDataFromSd(Context context, String fileName, SqlLiteAdapter sqlLiteAdapter, boolean background) {
+		try {
+			File dbSrcFile = new File(Constants.PATH_SD_CARD_APP_LOC, fileName);
+			if (!dbSrcFile.exists()) {
+				out(context, dbSrcFile.getAbsolutePath()+"\nDoesn't exist!", background);
+				return false;
+			}
+			
+			String dbDstFilePath = sqlLiteAdapter.getPath();
+			sqlLiteAdapter.close();
+			
+			Migrator migrator = new Migrator(dbDstFilePath, dbSrcFile.getAbsolutePath());
+			migrator.migrate();
+			return true;
+		} catch (MigrationException e) {
+			Log.e(Constants.TAG, e.getMessage(), e);
+			out(context, e.getMessage(), background);
+			return false;
+		} finally {
+			if (!sqlLiteAdapter.isOpen())
+				sqlLiteAdapter.open();
+		}
+		
+	}
+	
+	public static boolean copyFileFromSd(Context context, String fileName, SqlLiteAdapter sqlLiteAdapter, boolean background) {
+		String dbDst = sqlLiteAdapter.getPath();
+		File dbDstFile = new File(dbDst);
+		
+		sqlLiteAdapter.close();
+		SQLiteDatabase db = null;
+		
+		try {
+			File dbSrcFile = new File(Constants.PATH_SD_CARD_APP_LOC, fileName);
+			if (!dbSrcFile.exists()) {
+				out(context, dbSrcFile.getAbsolutePath()+"\nDoesn't exist!", background);
+				return false;
+			}
+			
+			db = SQLiteDatabase.openDatabase(dbSrcFile.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
+			if (db==null) {
+				out(context, "The database on the SD card couldn't be openned!", background);
+				return false;
+			}
+			
+			if (db.getVersion()<SqlLiteAdapter.DATABASE_VERSION) {
+				out(context, "The version of the database on the SD card\nis an older than this application requires!", background);
+				return false;
+			}
+			
+			db.close();
+			db = null;
+			
+			try {
+				DbFileUtil.copyFile(dbSrcFile, dbDstFile);
+				out(context, "Database copied from " + dbSrcFile.getAbsolutePath(), background);
+				return true;
+			} catch (Exception e) {
+				out(context, "Database could NOT be copied:\n" + e.getMessage(), background);
+				Log.e(Constants.TAG, "Copy database to SD Card Error", e);
+				return false;
+			}
+		} finally {
+			sqlLiteAdapter.open();
+			if (db!=null) {
+				db.close();
+			}
+		}
+	}
+	
 	private static void out(Context context, String msg, boolean background) {
 		if (!background) {
 			Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
@@ -92,5 +168,6 @@ public class DbFileUtil {
 	    }
 	    return false;
 	}
+	
 	
 }

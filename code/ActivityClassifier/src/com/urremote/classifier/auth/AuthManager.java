@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.urremote.classifier.R;
 import com.urremote.classifier.activity.AccountChooser;
 import com.urremote.classifier.activity.MainSettingsActivity;
+import com.urremote.classifier.activity.MainTabActivity;
 import com.urremote.classifier.common.Constants;
 import com.urremote.classifier.db.OptionUpdateHandler;
 import com.urremote.classifier.db.OptionsTable;
@@ -255,7 +256,7 @@ public class AuthManager {
 				"Authentication Failure",
 				System.currentTimeMillis());
 
-		Intent startSettings = new Intent(context, MainSettingsActivity.class);
+		Intent startSettings = new Intent(context, MainTabActivity.class);
 
 		PendingIntent pendingIntent = PendingIntent.getActivity(context, 0,
 				startSettings, 0);

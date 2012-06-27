@@ -11,16 +11,21 @@ import android.app.TabActivity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.Window;
+import android.widget.Button;
 import android.widget.TabHost;
+import android.widget.TabHost.OnTabChangeListener;
 
 import com.flurry.android.FlurryAgent;
 import com.urremote.classifier.common.Constants;
@@ -30,6 +35,9 @@ import com.urremote.classifier.db.SqlLiteAdapter;
 import com.urremote.classifier.service.RecorderService;
 
 public class MainTabActivity extends TabActivity {
+	
+	public static final String PREFERENCE_CURRENT_TAB = "current_tab";  
+	
 	public static boolean serviceIsRunning = false;
 
 	private final Handler handler = new Handler();
@@ -154,6 +162,8 @@ public class MainTabActivity extends TabActivity {
 		super.onStart();
 		updateButtonRunnable.start();
 		FlurryAgent.onStartSession(this, Constants.FLURRY_SESSION_ID);
+		
+		FlurryAgent.onEvent("Tabs Viewed");
 	}
 
 	/**
@@ -169,7 +179,9 @@ public class MainTabActivity extends TabActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
+		
+		final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+		
 		//set exception handler
 		Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler(this));
 
@@ -178,20 +190,35 @@ public class MainTabActivity extends TabActivity {
 		optionsTable = sqlLiteAdapter.getOptionsTable();
 
 		final TabHost tabHost = getTabHost();
-
-		tabHost.addTab(tabHost.newTabSpec("tab1")
+		
+		tabHost.addTab(tabHost.newTabSpec("chart")
 				.setIndicator(" ",getResources().getDrawable(R.drawable.chart72))
 				.setContent(new Intent(this, ActivityChartActivity.class)
 				));
 
-		tabHost.addTab(tabHost.newTabSpec("tab2")
+		tabHost.addTab(tabHost.newTabSpec("list")
 				.setIndicator(" ",getResources().getDrawable(R.drawable.database72))
 				.setContent(new Intent(this, ActivityListActivity.class)));
 
-		tabHost.addTab(tabHost.newTabSpec("tab3")
+		tabHost.addTab(tabHost.newTabSpec("settings")
 				.setIndicator(" ",getResources().getDrawable(R.drawable.settings72))
 				.setContent(new Intent(this, MainSettingsActivity.class)
 				.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)));
+		
+		tabHost.setOnTabChangedListener(new OnTabChangeListener() {
+			public void onTabChanged(String tabId) {
+				Editor editor = preferences.edit();
+				editor.putString(PREFERENCE_CURRENT_TAB, tabId);
+				editor.commit();
+			}
+		});
+		
+		Bundle extras = this.getIntent().getExtras();
+		if (extras!=null && extras.containsKey(PREFERENCE_CURRENT_TAB)) {
+			tabHost.setCurrentTabByTag(extras.getString(PREFERENCE_CURRENT_TAB));
+		} else 
+			if (preferences.contains(PREFERENCE_CURRENT_TAB))
+				tabHost.setCurrentTabByTag(preferences.getString(PREFERENCE_CURRENT_TAB, ""));
 		
 		bindService(new Intent(this, RecorderService.class), connection, BIND_AUTO_CREATE);
 		EnableDeletion = true;
@@ -210,7 +237,6 @@ public class MainTabActivity extends TabActivity {
 			
 			optionsTable.setServiceUserStarted(true);
 			optionsTable.save();
-
 			
 		} catch (Exception ex) {
 			Log.e(Constants.TAG, "Unable to get service state", ex);

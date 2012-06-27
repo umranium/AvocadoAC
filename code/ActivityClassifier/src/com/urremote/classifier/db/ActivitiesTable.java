@@ -6,6 +6,7 @@ package com.urremote.classifier.db;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import com.urremote.classifier.common.ActivityNames;
 import com.urremote.classifier.common.Constants;
@@ -437,6 +438,10 @@ public class ActivitiesTable extends DbTableAdapter {
 		insertContentValues.put(KEY_MET, classification.getMet());
 		insertContentValues.put(KEY_MYTRACKS_ID, classification.getMyTracksId());
 		insertContentValues.put(KEY_LAST_UPDATED_AT, System.currentTimeMillis());
+		
+//		for (Map.Entry<String,Object> entry:insertContentValues.valueSet()) {
+//			Log.d(Constants.TAG, "Insert: "+entry.getKey()+"="+entry.getValue());
+//		}
 	}
 	
 	/**

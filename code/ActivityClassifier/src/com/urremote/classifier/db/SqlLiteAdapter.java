@@ -59,7 +59,7 @@ public class SqlLiteAdapter {
 		return instance;
 	}
 	
-	private static final int DATABASE_VERSION = 9;
+	public static final int DATABASE_VERSION = 9;
 	
 	private Context context;
 	private SQLiteOpenHelper helper;
@@ -95,6 +95,7 @@ public class SqlLiteAdapter {
 
 			@Override
 			public void onCreate(SQLiteDatabase db) {
+				Log.d(Constants.TAG, "Creating DB");
 				for (DbTableAdapter tableAdapter:SqlLiteAdapter.this.tableAdapters) {
 					tableAdapter.createTable(db);
 				}
@@ -102,6 +103,7 @@ public class SqlLiteAdapter {
 
 			@Override
 			public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+				Log.d(Constants.TAG, "Upgrading DB");
 				for (DbTableAdapter tableAdapter:SqlLiteAdapter.this.tableAdapters) {
 					tableAdapter.dropTable(db);
 				}
@@ -154,6 +156,10 @@ public class SqlLiteAdapter {
 	
 	public String getPath() {
 		return this.database.getPath();
+	}
+	
+	public SQLiteDatabase getDatabase() {
+		return database;
 	}
 	
 	/* (non-Javadoc)

@@ -104,12 +104,12 @@ public class FusionTableActivitySync extends FusionTables {
 		}
 		
 		Table newTable = createTable(ACTIVITY_TABLE);
-		this.optionsTable.setFusionTableId(newTable.id);
 		if (newTable!=null) {
+			this.optionsTable.setFusionTableId(newTable.id);
 			Table newView = createView(VIEW_NAME, newTable.id, ACTIVITY_TABLE);
 			this.optionsTable.setFusionSummaryId(newView.id);
+			this.optionsTable.save();
 		}
-		this.optionsTable.save();
 		
 		return newTable;
 	}

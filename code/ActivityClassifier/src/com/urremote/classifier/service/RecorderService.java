@@ -9,12 +9,15 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.flurry.android.FlurryAgent;
 import com.urremote.classifier.accel.SampleBatch;
 import com.urremote.classifier.accel.SampleBatchBuffer;
 import com.urremote.classifier.accel.Sampler;
@@ -458,6 +461,9 @@ public class RecorderService extends Service implements Runnable {
 		//			LogRedirect.redirect(new File(Constants.PATH_SD_CARD_LOG));			
 		//		}
 		Log.v(Constants.TAG, "RecorderService.onCreate()");
+		
+		FlurryAgent.onStartSession(this, Constants.FLURRY_SESSION_ID);
+		FlurryAgent.onEvent("Service Created");
 	}
 
 	/**
@@ -468,6 +474,8 @@ public class RecorderService extends Service implements Runnable {
 		super.onStart(intent, startId);
 
 		Log.v(Constants.TAG, "RecorderService.onStart()");
+		
+		FlurryAgent.onEvent("Starting Service");
 
 		//	all the initialization code that was here,
 		//		has been moved to the run() function		
@@ -486,6 +494,9 @@ public class RecorderService extends Service implements Runnable {
 		super.onDestroy();
 
 		Log.v(Constants.TAG, "RecorderService.onDestroy()");
+		
+		FlurryAgent.onEndSession(this);
+		FlurryAgent.onEvent("Destroying Service");
 
 		stopService();
 	}
@@ -501,6 +512,7 @@ public class RecorderService extends Service implements Runnable {
 			if (threadLooper!=null)
 				threadLooper.quit();
 
+			FlurryAgent.onEvent("Stopping Service");
 		}
 	}
 
@@ -691,6 +703,7 @@ public class RecorderService extends Service implements Runnable {
 			contentText = "Avocado AC service is running";
 
 		Intent notificationIntent = new Intent(this, MainTabActivity.class);
+		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 		notification.setLatestEventInfo(context, contentTitle, contentText, contentIntent);
 		
@@ -745,9 +758,17 @@ public class RecorderService extends Service implements Runnable {
 			partialWakeLock = null;
 		}
 
+		if (Constants.BACKUP_DB_TO_SDCARD) {
+			this.unregisterReceiver(backupDbBroadcastReceiver);
+		}
 	}
 
 	protected void handleHardwareFaultException(String title, String msg) {
+		Map<String,String> flurryParams = new HashMap<String,String>(2);
+		flurryParams.put("Title", title);
+		flurryParams.put("Message", msg);
+		FlurryAgent.onEvent("Hardware Fault", flurryParams);
+		
 		hardwareNotificationStartTime = System.currentTimeMillis();
 		handler.postDelayed(cancelHardwareNotificationRunnable, Constants.DURATION_KEEP_HARDWARE_NOTIFICATION);
 		

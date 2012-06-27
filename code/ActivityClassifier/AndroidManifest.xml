@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.urremote.classifier"
-    android:versionCode="5"
-    android:versionName="1.4" >
+    android:versionCode="6"
+    android:versionName="1.5" >
 
     <uses-sdk android:minSdkVersion="7" />
 
@@ -37,7 +37,7 @@
 		
 		<activity android:name=".activity.ActivityChartActivity"></activity>
 		<activity android:name=".activity.Sensors" android:theme="@android:style/Theme.Dialog"></activity>
-		<activity android:name=".activity.MainSettingsActivity"></activity>
+		<activity android:name=".activity.MainSettingsActivity" android:launchMode="singleTop"></activity>
 		
     </application>
 

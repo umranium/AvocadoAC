@@ -11,8 +11,10 @@ import com.urremote.classifier.R;
 import com.urremote.classifier.rpc.ActivityRecorderBinder;
 
 import android.accounts.Account;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.TabActivity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -39,6 +41,7 @@ import com.flurry.android.FlurryAgent;
 import com.urremote.classifier.activity.AccountChooser.AccountHandler;
 import com.urremote.classifier.common.Constants;
 import com.urremote.classifier.common.DbFileUtil;
+import com.urremote.classifier.db.Migrator;
 import com.urremote.classifier.db.OptionUpdateHandler;
 import com.urremote.classifier.db.OptionsTable;
 import com.urremote.classifier.db.SqlLiteAdapter;
@@ -68,6 +71,8 @@ public class MainSettingsActivity extends PreferenceActivity {
 	private PreferenceScreen selectAccountPref;
 	private CheckBoxPreference fftOnPref; 
 	private PreferenceScreen forceCalibPref;
+	private PreferenceScreen copyPref;
+	private PreferenceScreen restorePref;
 	
 
 	private Handler mainLooperHandler;
@@ -108,18 +113,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 							// This is to re initiate the manual calibration process.
 							ClassifierThread.forceCalibration = false;
 
-							if(!optionsTable.isServiceUserStarted())
-							{
-								forceCalibPref.setTitle("First, start the service.");
-								forceCalibPref.setEnabled(false);
-								forceCalibPref.setSelectable(false);
-							}
-							else if (optionsTable.isServiceUserStarted())
-							{
-								forceCalibPref.setEnabled(true);
-								forceCalibPref.setTitle("Start Calibration now");
-								forceCalibPref.setSelectable(true);
-							}
+							updateServiceStateDependantPreferences();
 						}
 					});
 				}
@@ -137,7 +131,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 			
 		}
 	};
-
+	
 	/**
 	 * When the Service connection is established in this class
 	 */
@@ -195,6 +189,8 @@ public class MainSettingsActivity extends PreferenceActivity {
 		super.onStart();
 		FlurryAgent.onStartSession(this, Constants.FLURRY_SESSION_ID);
 		bindToService();
+		
+		FlurryAgent.onEvent("Settings Viewed");
 	}
 
 	/**
@@ -323,23 +319,6 @@ public class MainSettingsActivity extends PreferenceActivity {
 
 		forceCalibPref = getPreferenceManager().createPreferenceScreen(this);
 		forceCalibPref.setKey("screen_preference");
-
-		//TODO: Change to service.isRunning()
-		if(!optionsTable.isServiceUserStarted())
-		{
-			forceCalibPref.setTitle("First, start the service.");
-			forceCalibPref.setEnabled(false);
-			forceCalibPref.setSelectable(false);
-		}
-		else if(!ClassifierThread.forceCalibration)
-			forceCalibPref.setTitle("Start Calibration now");
-		else
-		{
-			forceCalibPref.setTitle("Calibration in progress ...");
-			forceCalibPref.setEnabled(false);
-			forceCalibPref.setSelectable(false);
-		}
-
 		forceCalibPref.setSummary("Tab to initiate calibration task now.");
 		forceCalibPref.setOnPreferenceClickListener(new PreferenceScreen.OnPreferenceClickListener(){
 
@@ -347,6 +326,7 @@ public class MainSettingsActivity extends PreferenceActivity {
 				//				showDialog(DIALOG_YES_NO_MESSAGE_FOR_CALIBRATION_START);
 				//
 				//				return false;
+				FlurryAgent.onEvent("Initiated Calibration");
 
 				try {
 					service.showServiceToast("Performing calibration. Please keep the phone still.");
@@ -421,10 +401,9 @@ public class MainSettingsActivity extends PreferenceActivity {
 		});
 		dataPrefCat.addPreference(selectAccountPref);
 
-		PreferenceScreen copyPref = getPreferenceManager().createPreferenceScreen(this);
+		copyPref = getPreferenceManager().createPreferenceScreen(this);
 		copyPref.setKey("copy_preference");
-		copyPref.setTitle("Copy Database to SDcard");
-		copyPref.setSummary("Copy database file to SD card.");
+		copyPref.setTitle("Copy DB to SD card");
 		copyPref.setOnPreferenceClickListener(new PreferenceScreen.OnPreferenceClickListener(){
 
 			public boolean onPreferenceClick(Preference preference) {
@@ -475,14 +454,100 @@ public class MainSettingsActivity extends PreferenceActivity {
 				invokeMyTracksPref.setSummary(invokeMyTracksPref.getSummary()+"\nGoogle MyTracks is not installed yet.");
 			}
 			
+			restorePref = getPreferenceManager().createPreferenceScreen(this);
+			restorePref.setKey("restore_preference");
+			restorePref.setTitle("Restore DB from SD card");
+			restorePref.setOnPreferenceClickListener(new PreferenceScreen.OnPreferenceClickListener(){
+
+				public boolean onPreferenceClick(Preference preference) {
+					boolean success = DbFileUtil.copyFileFromSd(getBaseContext(), Constants.RECORDS_FILE_NAME, sqlLiteAdapter, false);
+					
+					if (success) {
+						Activity parentActivity = MainSettingsActivity.this.getParent();
+						if (parentActivity instanceof TabActivity) {
+							TabActivity tabActivity = (TabActivity)parentActivity;
+							Intent intent = tabActivity.getIntent();
+							tabActivity.finish();
+							MainSettingsActivity.this.startActivity(intent);
+						} else {
+							Intent intent = MainSettingsActivity.this.getIntent();
+							MainSettingsActivity.this.finish();
+							MainSettingsActivity.this.startActivity(intent);
+						}
+						Toast.makeText(MainSettingsActivity.this.getApplicationContext(), "UI reset to new DB", Toast.LENGTH_LONG).show();
+					}
+					
+					return false;
+				}
+
+			});
+			
 			root.addPreference(developerPrefCat);
 			developerPrefCat.addPreference(aggregatePref);
 			developerPrefCat.addPreference(invokeMyTracksPref);
+			developerPrefCat.addPreference(restorePref);
 		}
+		
+		updateServiceStateDependantPreferences();
 
 		return root;
 	}
 
+
+	private void updateServiceStateDependantPreferences() {
+
+		//TODO: Change to service.isRunning()
+		if(!optionsTable.isServiceUserStarted())
+		{
+			forceCalibPref.setTitle("First, start the service.");
+			forceCalibPref.setEnabled(false);
+			forceCalibPref.setSelectable(false);
+		}
+		else if(!ClassifierThread.forceCalibration)
+			forceCalibPref.setTitle("Start Calibration now");
+		else
+		{
+			forceCalibPref.setTitle("Calibration in progress ...");
+			forceCalibPref.setEnabled(false);
+			forceCalibPref.setSelectable(false);
+		}
+
+//		if(!optionsTable.isServiceUserStarted())
+//		{
+//			forceCalibPref.setTitle("First, start the service.");
+//			forceCalibPref.setEnabled(false);
+//			forceCalibPref.setSelectable(false);
+//			
+//			restorePref.setTitle("Restore ");
+//		}
+//		else if (optionsTable.isServiceUserStarted())
+//		{
+//			forceCalibPref.setTitle("Start Calibration now");
+//			forceCalibPref.setEnabled(true);
+//			forceCalibPref.setSelectable(true);
+//		}
+		
+		if (optionsTable.isServiceUserStarted()) {
+			copyPref.setEnabled(false);
+			copyPref.setSummary("Please stop service first");
+		} else {
+			copyPref.setEnabled(true);
+			copyPref.setSummary("Copy database to SD card");
+		}
+		
+		if (restorePref!=null) {
+			if (optionsTable.isServiceUserStarted()) {
+				restorePref.setEnabled(false);
+				restorePref.setSummary("Please stop service first");
+			} else {
+				restorePref.setEnabled(true);
+				restorePref.setSummary("Restore database from SD card.");
+			}
+		}
+		
+	}
+
+	
 	@Override
 	protected Dialog onCreateDialog(int id) {
 		switch (id) {

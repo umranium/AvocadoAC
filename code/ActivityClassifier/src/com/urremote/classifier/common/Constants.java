@@ -46,7 +46,7 @@ public class Constants {
 	/**
 	 * Should we routinely backup the DB to the SD-card?
 	 */
-	public static final boolean BACKUP_DB_TO_SDCARD = true;
+	public static final boolean BACKUP_DB_TO_SDCARD = false;
 	
 	/**
 	 * How frequently should we backup the DB to the SD-card

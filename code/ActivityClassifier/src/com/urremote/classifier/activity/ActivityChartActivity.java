@@ -99,6 +99,8 @@ public class ActivityChartActivity extends Activity {
 	protected void onStart() {
 		super.onStart();
 		FlurryAgent.onStartSession(this, Constants.FLURRY_SESSION_ID);
+		
+		FlurryAgent.onEvent("Chart Viewed");
 	}
 
 	/**
